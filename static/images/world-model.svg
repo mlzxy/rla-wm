@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- World-Model fan art: a sleeping Earth dreams about a tiny alien
+       planet inside a thought bubble. CSS animations are inlined so
+       they still play when the file is loaded via <img>. -->
+
+  <defs>
+    <style>
+      @keyframes z-rise {
+        0%   { transform: translateY(6px)  scale(0.8); opacity: 0; }
+        20%  { opacity: 1; }
+        100% { transform: translateY(-14px) scale(1.05); opacity: 0; }
+      }
+      @keyframes twinkle {
+        0%, 100% { opacity: 0.35; transform: scale(0.85); }
+        50%      { opacity: 1;    transform: scale(1.10); }
+      }
+      @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(-2px); }
+      }
+      @keyframes antenna-blink {
+        0%, 70%, 100% { opacity: 1;   }
+        80%, 95%      { opacity: 0.25; }
+      }
+      .z       { animation: z-rise 3s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+      .z.z2    { animation-delay: 1s; }
+      .z.z3    { animation-delay: 2s; }
+      .sparkle { animation: twinkle 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      .sparkle.s2 { animation-delay: 0.8s; }
+      .sparkle.s3 { animation-delay: 1.6s; }
+      .imagined-world { animation: bob 3.5s ease-in-out infinite; transform-origin: center; }
+      .antenna-light  { animation: antenna-blink 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      .spark { animation: twinkle 1.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      .spark.k2 { animation-delay: 0.5s; }
+      .spark.k3 { animation-delay: 1.0s; }
+    </style>
+  </defs>
+
+  <!-- =============== EARTH CHARACTER (sleeping / dreaming) =============== -->
+  <g>
+    <!-- Body -->
+    <circle cx="60" cy="130" r="48"
+            fill="#5db4e7" stroke="#2d3748" stroke-width="2.8"/>
+
+    <!-- Cute organic continents -->
+    <path d="M 26 118 Q 30 108 42 112 Q 48 120 40 128 Q 28 128 26 118 Z"
+          fill="#6dc97e" stroke="#2d3748" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M 70 128 Q 88 122 98 138 Q 92 150 78 148 Q 64 142 70 128 Z"
+          fill="#6dc97e" stroke="#2d3748" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M 45 158 Q 58 154 65 165 Q 56 170 47 167 Q 42 162 45 158 Z"
+          fill="#6dc97e" stroke="#2d3748" stroke-width="1.8" stroke-linejoin="round"/>
+
+    <!-- Sleepy closed eyes ^^ -->
+    <path d="M 42 124 Q 48 118 54 124"
+          stroke="#2d3748" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    <path d="M 68 124 Q 74 118 80 124"
+          stroke="#2d3748" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+
+    <!-- Pink blush -->
+    <ellipse cx="38" cy="138" rx="5" ry="2.8" fill="#f8a5c2" opacity="0.85"/>
+    <ellipse cx="84" cy="138" rx="5" ry="2.8" fill="#f8a5c2" opacity="0.85"/>
+
+    <!-- Soft sleeping smile -->
+    <path d="M 53 145 Q 60 152 68 145"
+          stroke="#2d3748" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- =============== Z's drifting up =============== -->
+  <g font-family="'Marker Felt', 'Comic Sans MS', cursive, sans-serif" font-weight="900"
+     fill="#2d3748" text-anchor="middle">
+    <text class="z"     x="103" y="115" font-size="13">z</text>
+    <text class="z z2"  x="113" y="103" font-size="11">z</text>
+    <text class="z z3"  x="120" y="92"  font-size="9">z</text>
+  </g>
+
+  <!-- =============== CLOUD THOUGHT BUBBLE =============== -->
+  <g>
+    <!-- Trail puffs from the head up to the bubble -->
+    <circle cx="100" cy="100" r="4.5"
+            fill="white" stroke="#2d3748" stroke-width="2"/>
+    <circle cx="110" cy="90"  r="3.5"
+            fill="white" stroke="#2d3748" stroke-width="2"/>
+
+    <!-- Main cloud as a single smooth bezier silhouette -->
+    <path d="M 90 75
+             Q 78 67 88 57
+             Q 86 42 105 46
+             Q 112 30 132 36
+             Q 152 30 158 46
+             Q 175 50 172 66
+             Q 180 80 164 84
+             Q 156 94 144 87
+             Q 130 94 118 86
+             Q 100 90 90 75 Z"
+          fill="white" stroke="#2d3748" stroke-width="2.6"
+          stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- =============== IMAGINED SCENE (robot agent + tiny earth) =============== -->
+  <g class="imagined-world">
+
+    <!-- Tiny Earth (the modeled world) -->
+    <g>
+      <circle cx="150" cy="60" r="7"
+              fill="#5db4e7" stroke="#2d3748" stroke-width="1.4"/>
+      <ellipse cx="148" cy="58" rx="1.8" ry="1.2" fill="#6dc97e"/>
+      <ellipse cx="152" cy="61" rx="1.6" ry="1.1" fill="#6dc97e"/>
+      <circle  cx="149" cy="63" r="0.9"           fill="#6dc97e"/>
+    </g>
+
+    <!-- Cute robot agent -->
+    <g>
+      <!-- Antenna + status light -->
+      <line x1="113" y1="46" x2="113" y2="42"
+            stroke="#2d3748" stroke-width="1.4" stroke-linecap="round"/>
+      <circle class="antenna-light" cx="113" cy="40.5" r="1.7"
+              fill="#ff8b94" stroke="#2d3748" stroke-width="1.1"/>
+
+      <!-- Head -->
+      <rect x="106" y="46" width="14" height="12" rx="3"
+            fill="#cbd5e1" stroke="#2d3748" stroke-width="1.6"/>
+
+      <!-- Eyes (looking right toward the earth) -->
+      <circle cx="110.2" cy="51.5" r="1.5" fill="#2d3748"/>
+      <circle cx="116.2" cy="51.5" r="1.5" fill="#2d3748"/>
+      <circle cx="110.7" cy="51"   r="0.5" fill="white"/>
+      <circle cx="116.7" cy="51"   r="0.5" fill="white"/>
+
+      <!-- Smile -->
+      <path d="M 110.5 55 Q 113 56.5 115.5 55"
+            stroke="#2d3748" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+
+      <!-- Body -->
+      <rect x="107" y="58" width="12" height="11" rx="2.5"
+            fill="#cbd5e1" stroke="#2d3748" stroke-width="1.6"/>
+
+      <!-- Body button -->
+      <circle cx="113" cy="62.5" r="1.1" fill="#fcd34d" stroke="#2d3748" stroke-width="0.7"/>
+      <rect x="111" y="65.5" width="4" height="1" rx="0.5" fill="#2d3748" opacity="0.55"/>
+
+      <!-- Right arm reaching toward the earth -->
+      <path d="M 119 62 Q 130 58 141 60"
+            stroke="#2d3748" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <circle cx="142.5" cy="60" r="1.7" fill="#cbd5e1" stroke="#2d3748" stroke-width="1.1"/>
+
+      <!-- Left arm hanging back -->
+      <path d="M 107 62 Q 103 65 103 68.5"
+            stroke="#2d3748" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <circle cx="103" cy="69.5" r="1.4" fill="#cbd5e1" stroke="#2d3748" stroke-width="1.1"/>
+
+      <!-- Interaction sparks between robot's hand and the earth -->
+      <circle class="spark"    cx="144" cy="58.5" r="0.65" fill="#fcd34d"/>
+      <circle class="spark k2" cx="146" cy="61"   r="0.55" fill="#fcd34d"/>
+      <circle class="spark k3" cx="145" cy="60"   r="0.45" fill="#fcd34d"/>
+    </g>
+  </g>
+
+  <!-- =============== SPARKLES around the bubble =============== -->
+  <g fill="#fcd34d" stroke="#b45309" stroke-width="0.6">
+    <path class="sparkle"    d="M 100 48 L 102 53 L 107 55 L 102 57 L 100 62 L 98 57 L 93 55 L 98 53 Z"/>
+    <path class="sparkle s2" d="M 168 38 L 170 42 L 174 44 L 170 46 L 168 50 L 166 46 L 162 44 L 166 42 Z"/>
+    <path class="sparkle s3" d="M 178 75 L 179 78 L 182 79 L 179 80 L 178 83 L 177 80 L 174 79 L 177 78 Z"/>
+  </g>
+</svg>

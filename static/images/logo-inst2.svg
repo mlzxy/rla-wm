@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <!-- Outer disc -->
+  <circle cx="32" cy="32" r="30" fill="#7c2d12" stroke="#3f1408" stroke-width="1.5"/>
+  <!-- Inner ring -->
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.55"/>
+  <!-- Monogram -->
+  <text x="32" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+        font-size="26" font-weight="700" fill="#ffffff">A</text>
+  <!-- Decorative dots -->
+  <circle cx="32" cy="9"  r="1.4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="32" cy="55" r="1.4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="9"  cy="32" r="1.4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="55" cy="32" r="1.4" fill="#ffffff" opacity="0.85"/>
+</svg>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paper Site Template</title>
+
+<link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700|Source+Serif+Pro:400,600" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light-border.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+<link rel="stylesheet" href="static/css/paper.css" />
+</head>
+
+<body>
+
+<!-- ============================================================
+     HERO — title, authors, badges, plus two title-bound side cards.
+     ============================================================ -->
+<section class="hero">
+
+  <!-- Floating background geometry. Decorative; aria-hidden.
+       Each child is class="shape <shape-N> [outline|dotgrid]".
+       To use your OWN SVG: drop in <svg> or <img> with a position
+       slot (.shape-1 … .shape-10) and OMIT `.outline` to keep
+       your own fills/strokes. Example near the bottom. -->
+  <div class="hero-bg" aria-hidden="true">
+    <svg class="shape outline shape-1" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48"/></svg>
+    <svg class="shape outline shape-2" viewBox="0 0 100 100"><polygon points="50,6 94,90 6,90"/></svg>
+    <svg class="shape outline shape-3" viewBox="0 0 100 100"><polygon points="50,5 90,28 90,72 50,95 10,72 10,28"/></svg>
+    <svg class="shape dotgrid shape-4" viewBox="0 0 100 100">
+      <circle cx="15" cy="15" r="2.5"/><circle cx="38" cy="15" r="2.5"/><circle cx="62" cy="15" r="2.5"/><circle cx="85" cy="15" r="2.5"/>
+      <circle cx="15" cy="38" r="2.5"/><circle cx="38" cy="38" r="2.5"/><circle cx="62" cy="38" r="2.5"/><circle cx="85" cy="38" r="2.5"/>
+      <circle cx="15" cy="62" r="2.5"/><circle cx="38" cy="62" r="2.5"/><circle cx="62" cy="62" r="2.5"/><circle cx="85" cy="62" r="2.5"/>
+      <circle cx="15" cy="85" r="2.5"/><circle cx="38" cy="85" r="2.5"/><circle cx="62" cy="85" r="2.5"/><circle cx="85" cy="85" r="2.5"/>
+    </svg>
+    <svg class="shape outline shape-5" viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" transform="rotate(15 50 50)"/></svg>
+    <svg class="shape outline shape-6" viewBox="0 0 100 100">
+      <line x1="20" y1="22" x2="78" y2="38"/>
+      <line x1="78" y1="38" x2="50" y2="68"/>
+      <line x1="50" y1="68" x2="18" y2="82"/>
+      <line x1="20" y1="22" x2="50" y2="68"/>
+      <line x1="78" y1="38" x2="18" y2="82"/>
+      <circle class="dot" cx="20" cy="22" r="3.5"/>
+      <circle class="dot" cx="78" cy="38" r="3.5"/>
+      <circle class="dot" cx="50" cy="68" r="3.5"/>
+      <circle class="dot" cx="18" cy="82" r="3.5"/>
+    </svg>
+    <svg class="shape outline shape-7" viewBox="0 0 100 100">
+      <line x1="50" y1="14" x2="50" y2="86"/>
+      <line x1="14" y1="50" x2="86" y2="50"/>
+    </svg>
+    <svg class="shape outline shape-8" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="20"/>
+      <circle cx="50" cy="50" r="34"/>
+      <circle cx="50" cy="50" r="48"/>
+    </svg>
+    <svg class="shape outline shape-9" viewBox="0 0 100 100">
+      <line x1="20" y1="80" x2="80" y2="20"/>
+      <line x1="40" y1="80" x2="80" y2="40"/>
+      <line x1="60" y1="80" x2="80" y2="60"/>
+    </svg>
+
+    <!-- Custom SVG slot — your own SVG, loaded as an <img>.
+         Omit the `.outline` class so its colours are preserved.
+         Override size / opacity per instance via inline CSS variables:
+           --shape-w  · width   (default per-slot)
+           --shape-h  · height  (default per-slot)
+           --shape-opacity · 0–1 visibility (default 0.18) -->
+    <img class="shape shape-10"
+         style="--shape-w:160px; --shape-h:44px; --shape-opacity:.55;"
+         src="static/images/example.svg" alt="">
+  </div>
+
+  <div class="container">
+    <h1 class="reveal">
+      Your Paper Title:
+      <span class="hero-annot" data-annot-id="a" data-color="#ef4444" data-delay="1.0" data-side="right">First Key Idea</span>
+      meets
+      <span class="hero-annot" data-annot-id="b" data-color="#3b82f6" data-delay="2.6" data-side="left">Second Key Idea</span>
+    </h1>
+    <div class="author-list reveal">
+      <span class="author equal"><a href="#">A. Anonymous</a><sup>1</sup></span>
+      <span class="author equal"><a href="#">B. Anonymous</a><sup>1,2</sup></span>
+      <span class="author"><a href="#">C. Anonymous</a><sup>2</sup></span>
+    </div>
+    <div class="affiliations reveal">
+      <span><sup>1</sup><img class="affil-logo" src="static/images/logo-inst1.svg" alt="">Anonymous Institution</span>
+      <span><sup>2</sup><img class="affil-logo" src="static/images/logo-inst2.svg" alt="">Anonymous University</span>
+    </div>
+    <p class="eq-note reveal">* Equal contribution</p>
+
+    <!-- Conference / venue line. Delete this <p> for an arXiv preprint. -->
+    <p class="muted reveal" style="margin-top:8px;">NeurIPS 2026 (under review)</p>
+
+    <!-- Action buttons. Add / remove as needed; brand variants live
+         in paper.css (.btn-link.arxiv / .github / .linkedin / …). -->
+    <div class="actions reveal">
+      <a class="btn-link arxiv" href="https://arxiv.org/abs/0000.00000" target="_blank" rel="noopener">
+        <i class="ai ai-arxiv" aria-hidden="true"></i>
+        arXiv
+      </a>
+      <a class="btn-link github" href="https://github.com/your-org/your-repo" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        Code
+      </a>
+      <a class="btn-link linkedin" href="https://www.linkedin.com/in/your-handle" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+
+    <!-- Demo video. data-src accepts either a YouTube URL or a local
+         file path (e.g. "static/videos/teaser.mp4"). -->
+    <div class="video-player reveal"
+         style="max-width:480px; margin:28px auto 0;"
+         data-src="https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+         data-title="Project teaser"></div>
+
+    <p class="scroll-cue">scroll</p>
+  </div>
+
+  <aside class="side-card" data-annot-id="a"
+         style="top:26%; right:4%; --card-color:#ef4444; --card-color-2:#f59e0b;">
+    <div class="kicker" style="color:#ef4444;">First Key Idea</div>
+    <div class="body">
+      <p>A short, plain-English explanation of the first concept your paper introduces.
+         Two or three sentences is plenty.</p>
+      <p style="color:var(--muted); font-size:12px;">→ See Section 2 for details.</p>
+      <div class="mini-fig"></div>
+    </div>
+  </aside>
+
+  <aside class="side-card" data-annot-id="b"
+         style="top:56%; left:4%; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
+    <div class="kicker" style="color:#3b82f6;">Second Key Idea</div>
+    <div class="body">
+      <p>A short, plain-English explanation of the second concept and how it
+         connects to the first.</p>
+      <p style="color:var(--muted); font-size:12px;">→ See Section 3.</p>
+    </div>
+  </aside>
+</section>
+
+<!-- ============================================================
+     ABSTRACT — paragraph with inline annotations + a TL;DR callout.
+     ============================================================ -->
+<section class="alt">
+  <div class="container narrow">
+    <h2 class="reveal">Abstract</h2>
+    <p class="reveal">
+      We propose
+      <span class="annot" data-color="#ef4444"
+            data-tippy="A short tooltip describing this phrase.">a new method</span>
+      that delivers
+      <span class="annot" data-type="highlight" data-color="rgba(245,158,11,0.35)">strong empirical results</span>
+      across several benchmarks while remaining
+      <span class="annot" data-color="#10b981"
+            data-tippy="Another tooltip — replace with a real claim.">simple to implement</span>.
+      The key insight is a
+      <span class="annot" data-type="circle" data-color="#3b82f6">single, unifying observation</span>
+      that we will walk through in the rest of the page.
+    </p>
+    <div class="callout reveal" data-kind="tldr">
+      <span class="callout-label">TL;DR</span>
+      One or two sentences summarising the contribution. Mention the
+      <strong>headline number</strong> here so readers see it immediately.
+    </div>
+    <p class="reveal muted" style="font-size:14px;">
+      ↓ Hover the underlined phrases to see the tooltip; underlines are drawn by <code>rough-notation</code> as you scroll into view.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     METHOD — pinned scrollytelling: bound text on the left,
+     advancing figure on the right.
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Method</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 48px;text-align:center;">
+      As you scroll, the figure on the right pins and advances. Each paragraph on the left is bound to a slide;
+      its underline highlights when its slide is active.
+    </p>
+  </div>
+
+  <div class="container scrolly">
+    <div class="stage">
+      <div class="text-col">
+        <p data-slide="0">
+          <strong>Step 1.</strong> We start from a raw input and
+          <span class="annot">extract local features</span>
+          using a lightweight encoder.
+        </p>
+        <p data-slide="1">
+          <strong>Step 2.</strong> Features are then
+          <span class="annot">aggregated across scales</span>,
+          producing a compact representation.
+        </p>
+        <p data-slide="2">
+          <strong>Step 3.</strong> A small head
+          <span class="annot">predicts the final output</span>
+          and is the only part trained end-to-end.
+        </p>
+        <p data-slide="3">
+          <strong>Step 4.</strong> At inference we
+          <span class="annot">cache intermediate states</span>
+          for ~3× speedup with no accuracy loss.
+        </p>
+      </div>
+
+      <div class="figure-col">
+        <div class="figure-frame">
+          <div class="figure-slide is-active"><div class="placeholder" style="background:linear-gradient(135deg,#ef4444,#f59e0b);">1</div></div>
+          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">2</div></div>
+          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#10b981,#84cc16);">3</div></div>
+          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);">4</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     ARCHITECTURE — image + text splits (alternating sides).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Architecture</h2>
+
+    <div class="split reveal" data-layout="img-left">
+      <div class="split-media">
+        <div class="placeholder">image →</div>
+      </div>
+      <div class="split-text">
+        <h3>Component One</h3>
+        <p>Describe the first major piece of your architecture here. Two or three
+           short sentences usually beat a wall of text — let the figure do the
+           heavy lifting.</p>
+      </div>
+    </div>
+
+    <div class="split reveal" data-layout="img-right">
+      <div class="split-media">
+        <div class="placeholder" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">← image</div>
+      </div>
+      <div class="split-text">
+        <h3>Component Two</h3>
+        <p>Describe the second piece. The <code>data-layout="img-right"</code>
+           variant places the figure on the right; on mobile, both layouts
+           collapse to a single column with the image on top.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SYSTEM DIAGRAM — inline SVG with path-draw on scroll.
+     ============================================================ -->
+<section class="alt">
+  <div class="container narrow">
+    <h2 class="reveal" style="text-align:center;">System Diagram (SVG)</h2>
+    <p class="reveal muted" style="text-align:center;">
+      Inline SVG, plain elements. The flow lines draw themselves when this section enters the viewport.
+    </p>
+
+    <svg class="svg-diagram reveal" viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+      <rect class="node" x="20"  y="110" width="120" height="60" rx="8"/>
+      <text class="node-label" x="80"  y="145" text-anchor="middle">Input</text>
+      <rect class="node" x="200" y="40"  width="160" height="60" rx="8"/>
+      <text class="node-label" x="280" y="75"  text-anchor="middle">Encoder</text>
+      <rect class="node" x="200" y="180" width="160" height="60" rx="8"/>
+      <text class="node-label" x="280" y="215" text-anchor="middle">Aggregator</text>
+      <rect class="node" x="420" y="110" width="120" height="60" rx="8"/>
+      <text class="node-label" x="480" y="145" text-anchor="middle">Head</text>
+      <rect class="node" x="600" y="110" width="100" height="60" rx="8"/>
+      <text class="node-label" x="650" y="145" text-anchor="middle">Output</text>
+
+      <path class="flow"     d="M 140 140 C 170 140, 170 70, 200 70"/>
+      <path class="flow alt" d="M 140 140 C 170 140, 170 210, 200 210"/>
+      <path class="flow"     d="M 360 70  C 390 70,  390 140, 420 140"/>
+      <path class="flow alt" d="M 360 210 C 390 210, 390 140, 420 140"/>
+      <path class="flow"     d="M 540 140 L 600 140"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================================
+     INKSCAPE SVG — fetched at runtime, injected inline, animated.
+     Run via `python3 -m http.server` so fetch() works (file:// is
+     blocked by CORS; falls back to a static <img> otherwise).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Inkscape SVG</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
+      A real Inkscape export is fetched at runtime, injected inline, and each top-level
+      child is staggered in. Stroked <code>&lt;path&gt;</code>s also get a draw-on-scroll effect.
+    </p>
+    <div class="svg-holder reveal" data-svg-src="static/images/example.svg"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     RESULTS GALLERY — grid of figures with captions.
+     Set --figure-grid-cols inline to change the column count.
+     ============================================================ -->
+<section class="alt">
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Results Gallery</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
+      A simple grid of figures with captions.
+    </p>
+
+    <div class="figure-grid reveal" style="--figure-grid-cols:3;">
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#ef4444,#f59e0b);">A</div><figcaption>Configuration A — clean baseline.</figcaption></figure>
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">B</div><figcaption>Configuration B — with augmentation.</figcaption></figure>
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#10b981,#84cc16);">C</div><figcaption>Configuration C — full model.</figcaption></figure>
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);">D</div><figcaption>Configuration D — ablation 1.</figcaption></figure>
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">E</div><figcaption>Configuration E — ablation 2.</figcaption></figure>
+      <figure><div class="placeholder" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);">F</div><figcaption>Configuration F — final.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     QUALITATIVE RESULTS — Embla carousel (drag / arrows / dots).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Qualitative Results</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
+      A regular carousel users can flip through.
+    </p>
+
+    <div class="embla reveal" data-embla data-loop="true">
+      <div class="embla__container">
+        <div class="embla__slide"><div class="card"><h3>Slide A</h3><p>Replace with a figure, video, or comparison.</p></div></div>
+        <div class="embla__slide"><div class="card"><h3>Slide B</h3><p>Embla is headless, so you wire your own buttons/dots.</p></div></div>
+        <div class="embla__slide"><div class="card"><h3>Slide C</h3><p>Supports drag, keyboard, autoplay, loop, etc.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     BEFORE / AFTER — drag to wipe between two images.
+     ============================================================ -->
+<section class="alt">
+  <div class="container narrow">
+    <h2 class="reveal" style="text-align:center;">Before / After</h2>
+    <p class="reveal muted" style="text-align:center;">
+      Drag the handle to wipe between two images.
+    </p>
+    <div class="compare reveal"
+         data-before="https://picsum.photos/seed/before/1280/720"
+         data-after="https://picsum.photos/seed/after/1280/720"
+         data-before-label="Input"
+         data-after-label="Ours"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     EXPLORER — thumbnail strip + grid sub-component, configured
+     entirely from the embedded JSON below. See the docs for the
+     schema (kinds: color | image | video | sequence; modes:
+     cell | row | col | [explicit indices]).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Explorer</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
+      Hover any thumbnail to swap the panel below. Each panel is its own grid (rows can have
+      different cell counts), with optional row/col labels, captions, and configurable animation order.
+    </p>
+
+    <div class="explorer reveal">
+      <script type="application/json">
+[
+  {
+    "thumb": { "label": "A", "color": "#ef4444" },
+    "title": "Configuration A — irregular grid, row labels, cell-by-cell animation",
+    "rowLabels": ["Input", "Ours"],
+    "animation": { "mode": "cell", "stagger": 0.08 },
+    "rows": [
+      { "cells": [
+        { "kind": "color", "color": "#ef4444", "label": "orig", "caption": "orig" },
+        { "kind": "color", "color": "#f59e0b", "label": "mask", "caption": "mask" }
+      ] },
+      { "cells": [
+        { "kind": "color", "color": "#3b82f6", "label": "1", "caption": "t=1" },
+        { "kind": "color", "color": "#06b6d4", "label": "2", "caption": "t=2" },
+        { "kind": "color", "color": "#10b981", "label": "3", "caption": "t=3" },
+        { "kind": "color", "color": "#84cc16", "label": "4", "caption": "t=4" },
+        { "kind": "color", "color": "#f59e0b", "label": "5", "caption": "t=5" },
+        { "kind": "color", "color": "#ef4444", "label": "6", "caption": "t=6" }
+      ] }
+    ]
+  },
+  {
+    "thumb": { "label": "B", "color": "#3b82f6" },
+    "title": "Configuration B — regular grid with col labels, animated row by row",
+    "rowLabels": ["GT", "Pred"],
+    "colLabels": ["t=0", "t=1", "t=2", "t=3"],
+    "animation": { "mode": "row", "stagger": 0.18 },
+    "rows": [
+      { "cells": [
+        { "kind": "color", "color": "#10b981", "label": "A", "caption": "gt-0" },
+        { "kind": "color", "color": "#34d399", "label": "B", "caption": "gt-1" },
+        { "kind": "color", "color": "#6ee7b7", "label": "C", "caption": "gt-2" },
+        { "kind": "color", "color": "#a7f3d0", "label": "D", "caption": "gt-3" }
+      ] },
+      { "cells": [
+        { "kind": "color", "color": "#3b82f6", "label": "A", "caption": "pred-0" },
+        { "kind": "color", "color": "#60a5fa", "label": "B", "caption": "pred-1" },
+        { "kind": "color", "color": "#93c5fd", "label": "C", "caption": "pred-2" },
+        { "kind": "color", "color": "#bfdbfe", "label": "D", "caption": "pred-3" }
+      ] }
+    ]
+  },
+  {
+    "thumb": { "label": "C", "color": "#10b981" },
+    "title": "Configuration C — image sequences (auto-play frames), explicit animation order",
+    "animation": { "mode": [2, 0, 3, 1], "stagger": 0.15 },
+    "rows": [
+      { "cells": [
+        { "kind": "sequence", "frames": [{"color":"#ef4444"},{"color":"#f59e0b"},{"color":"#10b981"},{"color":"#3b82f6"}], "interval": 350, "caption": "sequence (auto)" },
+        { "kind": "sequence", "frames": [{"color":"#3b82f6"},{"color":"#8b5cf6"},{"color":"#ec4899"},{"color":"#f59e0b"}], "interval": 250, "caption": "faster (250ms)" },
+        { "kind": "sequence", "frames": [{"color":"#10b981"},{"color":"#84cc16"},{"color":"#f59e0b"},{"color":"#ef4444"},{"color":"#8b5cf6"}], "interval": 500, "caption": "5 frames, 500ms" },
+        { "kind": "sequence", "frames": [{"color":"#06b6d4"},{"color":"#3b82f6"},{"color":"#1e40af"}], "interval": 350, "caption": "3 frames" }
+      ] }
+    ]
+  },
+  {
+    "thumb": { "label": "D", "color": "#f59e0b" },
+    "title": "Configuration D — col-by-col animation, mixed cell counts",
+    "rowLabels": ["row 1", "row 2", "row 3"],
+    "animation": { "mode": "col", "stagger": 0.15 },
+    "rows": [
+      { "cells": [
+        { "kind": "color", "color": "#ef4444" },
+        { "kind": "color", "color": "#f59e0b" },
+        { "kind": "color", "color": "#10b981" }
+      ] },
+      { "cells": [
+        { "kind": "color", "color": "#3b82f6" },
+        { "kind": "color", "color": "#8b5cf6" }
+      ] },
+      { "cells": [
+        { "kind": "color", "color": "#06b6d4" },
+        { "kind": "color", "color": "#84cc16" },
+        { "kind": "color", "color": "#ec4899" },
+        { "kind": "color", "color": "#f59e0b" }
+      ] }
+    ]
+  }
+]
+      </script>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     QUANTITATIVE RESULTS — table with .best / .second / .row-divider.
+     ============================================================ -->
+<section class="alt">
+  <div class="container narrow">
+    <h2 class="reveal" style="text-align:center;">Quantitative Results</h2>
+    <p class="reveal muted" style="text-align:center;">
+      Use <code>.best</code> for top score, <code>.second</code> for runner-up, and
+      <code>.row-divider</code> to separate model families.
+    </p>
+
+    <table class="results-table reveal">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th class="num">Acc. ↑</th>
+          <th class="num">FLOPs ↓</th>
+          <th class="num">Params (M) ↓</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Baseline-A</td>            <td class="num">71.2</td><td class="num">9.8B</td><td class="num">86</td></tr>
+        <tr><td>Baseline-B</td>            <td class="num second">73.4</td><td class="num">12.1B</td><td class="num">102</td></tr>
+        <tr class="row-divider"><td>Prior SOTA</td><td class="num">74.0</td><td class="num">15.6B</td><td class="num">142</td></tr>
+        <tr><td><strong>Ours</strong></td> <td class="num best">76.1</td><td class="num best">4.8B</td><td class="num">88</td></tr>
+      </tbody>
+      <caption>Top-1 accuracy and compute on the held-out test set.</caption>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     INTERACTIVE DEMO — example of one-off, page-specific JS.
+     The handler lives in the inline <script> block at the bottom.
+     ============================================================ -->
+<section>
+  <div class="container narrow">
+    <h2 class="reveal">Try it yourself</h2>
+    <p class="reveal muted">An example of an interactive component embedded in the page — pick a config and see the result update.</p>
+
+    <div class="demo reveal">
+      <div class="row">
+        <label for="dataset">Dataset:</label>
+        <select id="dataset">
+          <option value="ImageNet">ImageNet</option>
+          <option value="COCO">COCO</option>
+          <option value="ADE20K">ADE20K</option>
+        </select>
+        <label for="backbone">Backbone:</label>
+        <select id="backbone">
+          <option value="ResNet-50">ResNet-50</option>
+          <option value="ViT-B/16">ViT-B/16</option>
+          <option value="Swin-T">Swin-T</option>
+        </select>
+        <button id="runBtn">Run</button>
+      </div>
+      <div class="panel" id="demoPanel">// Pick options and click Run.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CITATION — code block with auto-injected copy button.
+     ============================================================ -->
+<section class="alt">
+  <div class="container narrow">
+    <h2 class="reveal" style="text-align:center;">Citation</h2>
+    <div class="code-block reveal" data-lang="BibTeX">
+<pre>@inproceedings{anonymous2026paper,
+  title     = {Your Paper Title Here},
+  author    = {Anonymous, A. and Anonymous, B. and Anonymous, C.},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026},
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER — thin attribution bar.
+     ============================================================ -->
+<footer class="footer-bar">
+  Feel free to borrow the source code of this website — just link back to
+  <a href="#">this page</a> in the footer.
+</footer>
+
+
+<!-- ============================================================
+     LIBRARIES — load order matters: GSAP + ScrollTrigger first,
+     then Lenis (so the smooth-scroll ticker can register), then
+     the rest of the helpers. paper.js boots last and wires
+     everything up on DOMContentLoaded.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/embla-carousel/embla-carousel.umd.js"></script>
+<script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script src="static/js/paper.js"></script>
+
+<!-- One-off page logic (the dropdown demo). -->
+<script>
+  document.getElementById('runBtn').addEventListener('click', () => {
+    const ds  = document.getElementById('dataset').value;
+    const bb  = document.getElementById('backbone').value;
+    const acc = (70 + Math.random() * 15).toFixed(2);
+    document.getElementById('demoPanel').textContent =
+      `> running on ${ds} with ${bb}\n> accuracy: ${acc}%\n> (replace this with a real demo or a pre-rendered table lookup)`;
+  });
+</script>
+</body>
+</html>
