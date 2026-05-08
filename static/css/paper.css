@@ -47,6 +47,7 @@ section.alt  { background: var(--bg-soft); }
 .hero {
   position: relative;
   min-height: 90vh;
+  min-height: 90svh;            /* iOS Safari: avoid jump when address bar collapses */
   display: flex; align-items: center;
   text-align: center;
   overflow: hidden;             /* clip floating background shapes */
@@ -240,6 +241,33 @@ section.alt  { background: var(--bg-soft); }
     width: auto; max-width: 420px;
     margin: 12px auto 0;
     display: block;
+  }
+}
+/* Mobile (≤720px): cards stack inline as colored callouts visually linked
+   to their annotated phrase via the kicker color and a "↳ <phrase>" prefix.
+   The data-annot-ref attribute is set by initHero(); cards without it
+   (standalone cards in non-hero sections) just get the wider colored border. */
+@media (max-width: 720px) {
+  .side-card {
+    position: static !important;
+    width: auto !important;
+    max-width: none;
+    margin: 18px 0 0 !important;
+    transform: none !important;
+    opacity: 1 !important;
+    border-left-width: 6px;
+    border-left-color: var(--card-color, var(--rule));
+  }
+  .side-card[data-annot-ref]::before {
+    content: "↳ " attr(data-annot-ref);
+    display: block;
+    font-size: 12px;
+    color: var(--card-color, var(--muted));
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    line-height: 1.4;
   }
 }
 
@@ -468,6 +496,31 @@ section.alt  { background: var(--bg-soft); }
   min-height: 360px;
 }
 .detail .detail-title { font-weight: 600; margin-bottom: 14px; }
+.detail .detail-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+}
+.detail .detail-header .detail-title { margin-bottom: 8px; flex: 1 1 auto; }
+
+/* Animation toggle button (desktop). Hidden on mobile (animation forced on). */
+.detail-toolbar { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.anim-toggle {
+  font: inherit; font-size: 13px;
+  padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--rule); background: var(--bg); cursor: pointer;
+  color: var(--fg);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.anim-toggle:hover { background: var(--bg-soft); }
+.anim-toggle[aria-pressed="true"] {
+  background: var(--accent-2); color: #fff; border-color: var(--accent-2);
+}
+
+/* Animation-mode layout adjustments. The transposed (`columns`) layout has
+   one cell per row; the merged (`rows`) layout has one row of GIF cells. */
+.explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 16 / 9; }
+.explorer[data-anim-mode="columns"] .detail-row { align-items: center; }
+.explorer[data-anim-mode="columns"] .detail-row .row-label { font-weight: 600; color: var(--fg); }
 .detail-grid { display: flex; flex-direction: column; gap: 12px; }
 .detail-row  { display: flex; align-items: stretch; gap: 8px; }
 .detail-row .row-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -832,42 +885,97 @@ section.alt  { background: var(--bg-soft); }
   .container { padding: 0 16px; }
   section { padding: 56px 0; }
 
-  .hero { min-height: auto; padding: 64px 0 32px; }
+  .hero {
+    min-height: auto;
+    padding: 64px 0 32px;
+    /* Stack the container + side-cards vertically; on desktop the cards are
+       absolutely positioned, but on mobile they need to flow inline below. */
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero > .container { width: 100%; }
+  .hero h1 { overflow-wrap: break-word; hyphens: manual; padding: 0 4px; }
+  .hero-annot { white-space: normal; }
   .actions    { gap: 6px; }
   .btn-link   { padding: 7px 12px; font-size: 13px; }
   .btn-link svg { width: 14px; height: 14px; }
   .affiliations { font-size: 13.5px; gap: 4px 16px; }
   .affil-logo   { height: 20px; }
 
+  /* Mobile scrollytelling: sticky-text + inline-figure per step.
+     The original `.figure-col` is hidden via JS-set data attribute; each
+     [data-slide] gets its content wrapped in `.scrolly-mobile-text` (sticky
+     unless the item has nested [data-slide] children) and a clone of the
+     resolved figure as `.scrolly-mobile-figure` injected inline. */
   .scrolly .stage {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    gap: 12px;
-    height: auto; min-height: auto;
+    display: block;
+    height: auto; min-height: 0;
+    gap: 0;
   }
-  .scrolly .figure-col {
-    grid-row: 1;
-    position: sticky; top: 8px;
-    height: 32vh;
-    z-index: 5;
-    background: var(--bg);
-  }
-  .scrolly .figure-col .figure-frame { height: 100%; }
-  .scrolly .figure-slide { padding: 12px; }
+  .scrolly .figure-col[data-scrolly-mobile-hidden] { display: none; }
   .scrolly .text-col {
-    grid-row: 2;
     max-height: none;
     overflow: visible;
-    padding-top: 4px;
+    padding: 0;
   }
   .scrolly .text-col p { opacity: 1; }
   .scrolly .text-col [data-slide] {
-    padding: 14px 8px;
-    min-height: 22vh;
+    padding: 0;
+    min-height: 0;
     opacity: 1;
+    touch-action: manipulation;
+    background: transparent;
+    border-radius: 0;
+    cursor: default;
+    color: var(--fg);                 /* override desktop dimming */
+  }
+  .scrolly .text-col [data-slide]:hover { background: transparent; }
+
+  .scrolly-mobile-text {
+    background: var(--bg);
+    padding: 12px 10px;
+    line-height: 1.55;
+    border-bottom: 1px solid var(--rule);
+  }
+  .scrolly-mobile-text.scrolly-mobile-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .scrolly-mobile-text.scrolly-mobile-skip { font-style: italic; color: var(--muted); }
+  .scrolly-mobile-text.scrolly-mobile-skip [data-slide] { font-style: normal; }
+  .scrolly .text-col [data-slide].is-active-para > .scrolly-mobile-text {
+    background: var(--hover-bg);
   }
 
+  .scrolly-mobile-figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px 24px;
+    opacity: 1;
+    transform: none;
+    position: static;
+    inset: auto;
+  }
+  .scrolly-mobile-figure .svg-holder { max-width: 100%; }
+  .scrolly-mobile-figure .figcaption { margin-top: 12px; padding: 0 6px; }
+
+  /* Force nested lists open on mobile (desktop collapses by default). */
+  .scrolly .text-col li[data-scrolly-mobile-force-open] > ol,
+  .scrolly .text-col li > ol[data-scrolly-mobile-force-open],
+  .scrolly .text-col li > ul[data-scrolly-mobile-force-open] {
+    max-height: none;
+    opacity: 1;
+    margin-top: 8px;
+    padding-left: 0;
+    border-left: none;
+  }
+  .scrolly .text-col li > ol[data-scrolly-mobile-force-open] li,
+  .scrolly .text-col li > ul[data-scrolly-mobile-force-open] li { margin: 0; }
+
+  .embla { touch-action: pan-x; }
   .embla__slide { padding: 12px; }
   .embla__slide .card { padding: 20px; min-height: 180px; }
 
@@ -880,10 +988,16 @@ section.alt  { background: var(--bg-soft); }
   .thumb-nav   { width: 28px; height: 28px; }
 
   .detail                 { padding: 12px; min-height: 240px; }
+  .detail .detail-toolbar { display: none; }
   .detail-row .row-label  { flex: 0 0 48px; font-size: 11px; padding-right: 4px; }
   .detail-row .cells      { gap: 4px; }
   .detail-cell .caption   { font-size: 11px; padding: 4px 6px; }
   .col-labels             { padding-left: 56px; }
+  /* Transposed mode: row labels need slightly more room for method names. */
+  .explorer[data-anim-mode="columns"] .detail-row .row-label {
+    flex: 0 0 80px; font-size: 12px; padding-right: 6px;
+  }
+  .explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 4 / 3; }
 
   .svg-diagram { max-width: 100%; }
 
@@ -909,4 +1023,32 @@ section.alt  { background: var(--bg-soft); }
 
   .results-table { font-size: 12.5px; }
   .results-table th, .results-table td { padding: 6px 8px; }
+  /* Wide tables: scroll horizontally instead of overflowing the container. */
+  .results-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  .results-table caption { white-space: normal; }
+}
+
+/* ============================================================
+   Very narrow phones (≤480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  h1 { font-size: 26px; }
+  h2 { font-size: 22px; }
+  .container { padding: 0 14px; }
+
+  /* Trim more decorative shapes for visual breathing room. */
+  .hero-bg .shape-5,
+  .hero-bg .shape-6,
+  .hero-bg .shape-8,
+  .hero-bg .shape-9 { display: none; }
+
+  .actions { gap: 4px; }
+  .btn-link { padding: 6px 10px; font-size: 12.5px; }
+
+  .markdown-block.tight { font-size: 15px; }
 }

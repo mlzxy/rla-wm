@@ -351,5 +351,13 @@
     right: 16px;
     padding: 8px 14px;
     font-size: 12px;
+    min-height: 40px;
+  }
+}
+@media (max-width: 480px) {
+  .theme-switcher {
+    bottom: 12px;
+    right: 12px;
+    opacity: 0.92;
   }
 }

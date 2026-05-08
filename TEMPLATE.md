@@ -422,6 +422,20 @@ A configurable component for showing many figure variants. The entire DOM is bui
 
 `stagger` is in seconds. Rows can have unequal cell counts; any cell not referenced by an explicit index list still appears, just at the end.
 
+**GIF / animation mode** (`animation.gif`, `animation.merge`)
+
+For grids of time-step rows × method columns (e.g. predictions at t=10, t=20, t=30 across multiple models), you can collapse the time axis into per-cell GIFs:
+
+| Field | Default | Effect |
+|---|---|---|
+| `gif` | `false` | Master switch. On mobile (`≤720px`) this is forced `true`. |
+| `merge` | unset | `"columns"` transposes to per-method rows (each method gets one row whose single cell cycles through its time frames). `"rows"` collapses non-skip rows into one merged row of GIF cells. |
+| `interval` | `600` | Milliseconds between frames. |
+| `skipRows` | `[0]` | Indices of rows to keep static (typically the input row). |
+| `mergedRowLabel` | `"Predictions"` | Row label for the merged row (only when `merge: "rows"`). |
+
+A small `▶ Animate` toolbar button appears on the explorer; click to toggle animation mode on desktop. Mobile always renders in animation mode (the toggle is hidden). When `prefers-reduced-motion` is set, animation is suppressed.
+
 ### Code block with copy button
 
 ```html

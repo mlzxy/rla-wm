@@ -3,7 +3,14 @@
     "thumb": { "src": "https://picsum.photos/seed/thumb/120/80" },
     "title": "Push-T, ManiSkill",
     "rowLabels": ["Input", "Output <br> (t = 10)",  "Output <br> (t = 20)",  "Output <br> (t = 30)"],
-    "animation": { "mode": "cell", "stagger": 0.08 },
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08,
+      "gif": false,
+      "merge": "columns",
+      "interval": 600,
+      "skipRows": [0]
+    },
     "captionMarkdown": true,
     "rows": [
       { 

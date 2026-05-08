@@ -98,14 +98,25 @@
     const phrases = $$('.hero-annot[data-annot-id]');
     if (!phrases.length) return;
 
+    const isMobile = () => window.matchMedia('(max-width: 720px)').matches;
+
     // Pre-hide each card and offset it in the direction it'll fly in.
+    // On mobile, skip the offset so the static-flow card layout isn't shifted.
     phrases.forEach((phrase) => {
       const id   = phrase.dataset.annotId;
       const side = phrase.dataset.side || 'right';
       const card = $(`.side-card[data-annot-id="${id}"]`);
-      if (card) gsap.set(card, { opacity: 0, x: side === 'right' ? 30 : -30 });
+      if (!card) return;
+      // Bind card to its phrase text so mobile CSS can render a "↳ <phrase>" reference.
+      card.dataset.annotRef = phrase.textContent.trim().replace(/\s+/g, ' ');
+      if (isMobile()) {
+        gsap.set(card, { opacity: 1, x: 0, clearProps: 'opacity,transform' });
+      } else {
+        gsap.set(card, { opacity: 0, x: side === 'right' ? 30 : -30 });
+      }
     });
 
+    const annotations = [];
     phrases.forEach((phrase) => {
       const id     = phrase.dataset.annotId;
       const type   = phrase.dataset.type   || 'underline';
@@ -117,11 +128,32 @@
       const card   = $(`.side-card[data-annot-id="${id}"]`);
 
       const ann = RN.annotate(phrase, { type, color, strokeWidth: stroke, padding: pad, animationDuration: dur });
+      annotations.push({ ann, phrase, type, color, stroke, pad, dur });
       gsap.delayedCall(delay, () => {
         ann.show();
-        if (card) gsap.to(card, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' });
+        if (card && !isMobile()) gsap.to(card, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' });
       });
     });
+
+    // Redraw annotations on resize (rough-notation does not auto-redraw,
+    // so the underline drifts when the phrase wraps to new lines on mobile).
+    let resizeTimer = null;
+    let lastWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+      if (window.innerWidth === lastWidth) return; // ignore iOS address-bar Y-only resizes
+      lastWidth = window.innerWidth;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        annotations.forEach(({ ann, phrase, type, color, stroke, pad, dur }) => {
+          try { ann.remove(); } catch (e) {}
+          const fresh = RN.annotate(phrase, { type, color, strokeWidth: stroke, padding: pad, animationDuration: 0 });
+          fresh.show();
+          // Replace the reference in our list so future resizes also work.
+          const slot = annotations.find((a) => a.phrase === phrase);
+          if (slot) slot.ann = fresh;
+        });
+      }, 180);
+    }, { passive: true });
   }
 
   /* ============================================================
@@ -343,6 +375,79 @@
         }
 
         if (isMobile) {
+          // Mobile layout: sticky-text + inline-figure per step.
+          // Each [data-slide] item gets its content wrapped in a sticky
+          // `.scrolly-mobile-text` block, followed by a clone of its resolved
+          // figure as `.scrolly-mobile-figure`. Items with nested [data-slide]
+          // descendants don't get sticky (would stack with their children's
+          // stickies); their text just flows. The original `.figure-col` is
+          // hidden. On breakpoint change back to desktop, the cleanup function
+          // unwraps everything and removes clones.
+
+          const figureCol = $('.figure-col', scrolly);
+          const allSlides = $$('.text-col [data-slide]', scrolly);
+          const cloneRefs   = [];   // figure clones to remove on cleanup
+          const wrapRefs    = [];   // text wrappers to unwrap on cleanup
+          const listForce   = [];   // nested lists we forced open
+
+          if (figureCol) figureCol.dataset.scrollyMobileHidden = '1';
+
+          allSlides.forEach((p) => {
+            // Idempotency guard: if already restructured, skip.
+            if (p.querySelector(':scope > .scrolly-mobile-text')) return;
+
+            const figIdx = resolveFigIdx(p.dataset.slide);
+            const hasNestedSlide = !!p.querySelector(':scope > ol [data-slide], :scope > ul [data-slide]');
+            const isSkip = p.hasAttribute('data-skip') || p.hasAttribute('data-disabled');
+
+            const nestedList = p.querySelector(':scope > ol, :scope > ul');
+            const textWrap = document.createElement('div');
+            textWrap.className = 'scrolly-mobile-text';
+            if (!hasNestedSlide) textWrap.classList.add('scrolly-mobile-sticky');
+            if (isSkip) textWrap.classList.add('scrolly-mobile-skip');
+
+            // Move every non-list child into the wrap.
+            const moved = [];
+            Array.from(p.childNodes).forEach((node) => {
+              if (node === nestedList) return;
+              moved.push(node);
+              textWrap.appendChild(node);
+            });
+            if (nestedList) p.insertBefore(textWrap, nestedList);
+            else p.appendChild(textWrap);
+            wrapRefs.push({ wrap: textWrap, parent: p, moved });
+
+            // Insert figure clone (skipped section-headers like "3. Applications" don't get one).
+            if (!isSkip && figIdx >= 0 && figureSlides[figIdx]) {
+              const figClone = figureSlides[figIdx].cloneNode(true);
+              figClone.classList.remove('figure-slide');
+              figClone.classList.remove('is-active');
+              figClone.classList.add('scrolly-mobile-figure');
+              // Strip `.reveal` from clones — its hidden state is tied to the
+              // original's ScrollTrigger, which doesn't apply here.
+              const stripReveal = (el) => {
+                if (el.classList.contains('reveal')) {
+                  el.classList.remove('reveal');
+                  el.style.opacity = '1';
+                  el.style.transform = 'none';
+                }
+              };
+              stripReveal(figClone);
+              $$('.reveal', figClone).forEach(stripReveal);
+              if (nestedList) p.insertBefore(figClone, nestedList);
+              else p.appendChild(figClone);
+              cloneRefs.push(figClone);
+            }
+          });
+
+          // Force-open any nested lists that the desktop collapse rule would hide.
+          $$('.text-col li > ol, .text-col li > ul', scrolly).forEach((list) => {
+            if (list.dataset.scrollyMobileForceOpen) return;
+            list.dataset.scrollyMobileForceOpen = '1';
+            listForce.push(list);
+          });
+
+          // Sync .is-active-para (for highlighting) as user scrolls.
           textParagraphs.forEach((p, i) => {
             ScrollTrigger.create({
               trigger: p,
@@ -352,6 +457,17 @@
               onEnterBack: () => setActiveSlide(i),
             });
           });
+          setActiveSlide(0);
+
+          return () => {
+            cloneRefs.forEach((el) => el.remove());
+            wrapRefs.forEach(({ wrap, parent }) => {
+              while (wrap.firstChild) parent.insertBefore(wrap.firstChild, wrap);
+              wrap.remove();
+            });
+            listForce.forEach((list) => { delete list.dataset.scrollyMobileForceOpen; });
+            if (figureCol) delete figureCol.dataset.scrollyMobileHidden;
+          };
         }
       });
     });
@@ -556,7 +672,12 @@
           <button class="thumb-nav next" aria-label="next">›</button>
         </div>
         <div class="detail">
-          <div class="detail-title">—</div>
+          <div class="detail-header">
+            <div class="detail-title">—</div>
+            <div class="detail-toolbar">
+              <button class="anim-toggle" type="button" aria-pressed="false" title="Toggle animation mode">▶ Animate</button>
+            </div>
+          </div>
           <div class="col-labels-host"></div>
           <div class="detail-grid"></div>
         </div>
@@ -566,6 +687,9 @@
       const detailTitle    = $('.detail-title', root);
       const detailGrid     = $('.detail-grid',  root);
       const colLabelsEl    = $('.col-labels-host', root);
+      const animToggleBtn  = $('.anim-toggle', root);
+      let activeIdx = 0;
+      let explorerAnimToggle = false;
 
       configs.forEach((cfg, i) => {
         const slide = document.createElement('div');
@@ -654,8 +778,122 @@
         return media;
       }
 
-      function renderDetail(cfg) {
+      // Animation mode: turn a column-major grid (rows = time-step, cols = method)
+      // into an animated GIF layout. Two layouts are supported:
+      //   merge: "columns"  → transpose: each column becomes its own row, the row's
+      //                       single cell cycles through that column's frames.
+      //   merge: "rows"     → collapse non-skip rows into a single row of GIF cells.
+      // The input row(s) listed in `animation.skipRows` (default [0]) are preserved
+      // as-is so static reference content (input frames, action chunks) stays visible.
+      function synthesizeAnimatedConfig(cfg, merge, animCfg) {
+        const skipRows = animCfg.skipRows || [0];
+        const interval = animCfg.interval || 600;
+
+        const animRows = cfg.rows.map((row, idx) => ({ row, idx }))
+          .filter(({ idx }) => !skipRows.includes(idx));
+        if (!animRows.length) return cfg;
+
+        const firstAnimRow = animRows[0].row;
+        const colCount     = firstAnimRow.cells ? firstAnimRow.cells.length : 0;
+        if (!colCount) return cfg;
+
+        const colLabels = (firstAnimRow.colLabels && firstAnimRow.colLabels.length === colCount)
+          ? firstAnimRow.colLabels
+          : (cfg.colLabels && cfg.colLabels.length === colCount ? cfg.colLabels : null);
+
+        // Convert <br> to a space so multi-line column labels collapse cleanly
+        // into a single-line row-label. Other HTML (e.g. <strong>, emoji) is
+        // preserved — the row-label is rendered via innerHTML.
+        const flattenLabel = (s) => (s || '').replace(/<br\s*\/?>/gi, ' ');
+
+        const buildColumnSequenceCell = (c) => {
+          const frames = [];
+          animRows.forEach(({ row }) => {
+            const cell = row.cells && row.cells[c];
+            if (!cell) return;
+            if (cell.kind === 'image' && cell.src)        frames.push({ src: cell.src });
+            else if (cell.kind === 'color' && cell.color) frames.push({ color: cell.color });
+            // 'video' and 'sequence' kinds aren't fanned out — they animate themselves.
+          });
+          if (!frames.length) return null;
+          const sample = animRows[0].row.cells[c] || {};
+          const out = { kind: 'sequence', frames, interval };
+          if (sample.maxWidth)  out.maxWidth  = sample.maxWidth;
+          if (sample.maxHeight) out.maxHeight = sample.maxHeight;
+          return out;
+        };
+
+        if (merge === 'columns') {
+          const newRows = [];
+          const newRowLabels = [];
+          // Preserve skipped rows (e.g. input row) at the top.
+          skipRows.forEach((sIdx) => {
+            if (cfg.rows[sIdx]) {
+              newRows.push(cfg.rows[sIdx]);
+              newRowLabels.push((cfg.rowLabels && cfg.rowLabels[sIdx]) || '');
+            }
+          });
+          // Then one row per column.
+          for (let c = 0; c < colCount; c++) {
+            const seqCell = buildColumnSequenceCell(c);
+            if (!seqCell) continue;
+            newRows.push({ cells: [seqCell] });
+            newRowLabels.push(colLabels ? flattenLabel(colLabels[c]) : '');
+          }
+          return Object.assign({}, cfg, {
+            rows: newRows,
+            rowLabels: newRowLabels,
+            colLabels: undefined,
+          });
+        }
+
+        if (merge === 'rows') {
+          const seqCells = [];
+          for (let c = 0; c < colCount; c++) {
+            const seqCell = buildColumnSequenceCell(c);
+            if (seqCell) seqCells.push(seqCell);
+          }
+          const newRows = [];
+          const newRowLabels = [];
+          skipRows.forEach((sIdx) => {
+            if (cfg.rows[sIdx]) {
+              newRows.push(cfg.rows[sIdx]);
+              newRowLabels.push((cfg.rowLabels && cfg.rowLabels[sIdx]) || '');
+            }
+          });
+          if (seqCells.length) {
+            newRows.push({ cells: seqCells, colLabels });
+            newRowLabels.push(animCfg.mergedRowLabel || 'Predictions');
+          }
+          return Object.assign({}, cfg, {
+            rows: newRows,
+            rowLabels: newRowLabels,
+            colLabels: undefined,
+          });
+        }
+
+        return cfg;
+      }
+
+      function renderDetail(srcCfg) {
         clearDetail();
+        // Determine effective animation flags.
+        const isMobile      = window.matchMedia('(max-width: 720px)').matches;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const animCfg = srcCfg.animation || {};
+        const gifOn   = !reducedMotion && (isMobile || animCfg.gif === true || explorerAnimToggle);
+        let   merge   = false;
+        if (gifOn) {
+          // On mobile we always merge (default columns) regardless of toggle.
+          // On desktop we respect the toggle and the JSON config.
+          if (isMobile)                     merge = animCfg.merge || 'columns';
+          else if (animCfg.merge)           merge = animCfg.merge;
+          else if (explorerAnimToggle)      merge = 'columns';
+        }
+        const cfg = (gifOn && merge) ? synthesizeAnimatedConfig(srcCfg, merge, animCfg) : srcCfg;
+        // Mark the explorer root so CSS can adjust spacing/labels for narrow rows.
+        root.dataset.animMode = (gifOn && merge) ? merge : 'static';
+
         detailTitle.innerHTML = cfg.title || '';
 
         if (cfg.colLabels && cfg.colLabels.length) {
@@ -729,6 +967,7 @@
       }
 
       function activate(idx) {
+        activeIdx = idx;
         $$('.thumb', root).forEach((t) => t.classList.toggle('is-active', +t.dataset.thumbIdx === idx));
         renderDetail(configs[idx]);
       }
@@ -740,6 +979,28 @@
         const t = e.target.closest('.thumb');
         if (t) activate(+t.dataset.thumbIdx);
       });
+
+      // Toolbar: animation toggle (desktop only — mobile force-on via CSS hide).
+      if (animToggleBtn) {
+        animToggleBtn.addEventListener('click', () => {
+          explorerAnimToggle = !explorerAnimToggle;
+          animToggleBtn.setAttribute('aria-pressed', String(explorerAnimToggle));
+          animToggleBtn.textContent = explorerAnimToggle ? '⏸ Static' : '▶ Animate';
+          renderDetail(configs[activeIdx]);
+        });
+      }
+
+      // Re-render when the breakpoint changes (mobile↔desktop) so the
+      // animation-mode forced state re-evaluates.
+      let lastIsMobile = window.matchMedia('(max-width: 720px)').matches;
+      window.addEventListener('resize', () => {
+        const nowIsMobile = window.matchMedia('(max-width: 720px)').matches;
+        if (nowIsMobile !== lastIsMobile) {
+          lastIsMobile = nowIsMobile;
+          renderDetail(configs[activeIdx]);
+        }
+      }, { passive: true });
+
       activate(0);
     }
   }
