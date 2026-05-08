@@ -728,17 +728,25 @@ section.alt  { background: var(--bg-soft); }
   background: var(--accent-3); border-color: var(--accent-3); color: white;
 }
 
+/* Side-card anchor — section needs to be a positioned ancestor */
+.has-side-card { position: relative; }
+
 /* ---------------- Results table ---------------- */
+.results-table-wrapper {
+  width: 100%;
+  max-width: var(--table-max-width, none);
+  margin: 16px 0;
+}
 .results-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  margin: 16px 0;
+  margin: 0;
 }
 .results-table th, .results-table td {
   padding: 10px 14px;
   border-bottom: 1px solid var(--rule);
-  text-align: left;
+  text-align: center;
 }
 .results-table thead th {
   font-weight: 600;
@@ -746,14 +754,22 @@ section.alt  { background: var(--bg-soft); }
   background: var(--bg-soft);
 }
 .results-table tbody tr:hover { background: var(--table-hover-bg); }
-.results-table .num     { text-align: right; font-variant-numeric: tabular-nums; }
-.results-table .best    { font-weight: 700; color: var(--accent-1); }
+.results-table .num     { font-variant-numeric: tabular-nums; }
+.results-table .best    { font-weight: 700; color: #16a34a; }
 .results-table .second  { text-decoration: underline; text-underline-offset: 3px; }
 .results-table .row-divider td { border-top: 2px solid var(--fg); }
-.results-table caption {
-  caption-side: bottom; text-align: left;
-  font-size: 12px; color: var(--muted); padding-top: 8px;
+
+/* Caption inside the table wrapper */
+.results-table-caption {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  margin-bottom: 0;
 }
+
+/* markdown-table source element — hidden, replaced by <table> at init */
+.markdown-table[data-table] { display: none; }
 
 /* ---------------- Plain video frame ---------------- */
 .paper-video {

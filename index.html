@@ -288,7 +288,7 @@ RLA is our latent action representation learned from DINO token residuals, for v
       Given an input frame (from validation set) at $t=0$, each world model predicts future frames at $t=h, t=2h, \dots$ from the input action chunk $a_{t:t+h}, a_{t+h:t+2h}, \dots$.
     </p>
 
-    <div class="explorer reveal" data-src="static/data/explorer.json"></div>
+    <div class="explorer reveal" data-src="static/data/explorer.real.json"></div>
   </div>
 </section>
 
@@ -314,14 +314,28 @@ RLA is our latent action representation learned from DINO token residuals, for v
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Learning from Actionless Videos</h2>
     <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
-      We add a linear layer on top of a BC policy to predict RLA $z$, which learns from videos whose action or proprioception are not available. As RLA enable accurate prediction of $s_{t+h}$, this simple framework becomes a minimalist world action model, which improves performance, without inference cost or coupling to a video backbone.
+      We add a linear layer on top of a BC policy to predict RLA $z$, which learns from videos whose action or proprioception are not available. As RLA enable accurate prediction of $s_{t+h}$, this simple framework becomes a <span class="annot">minimalist world action model</span>, which improves performance, without inference cost or coupling to a video backbone.
     </p>
     <div class="svg-holder reveal" data-svg-src="static/images/wam.svg"></div>
   </div>
 </section>
 
 
-<section style="position:relative;">
+<section class="alt">
+  <div class="container">
+    <div class="markdown-table reveal" data-table>>
+| Method | PushT | Roll Ball | Pull Cube | Pull Cube w. Tool | Poke Cube |  Avg SR ↑ |
+| --- | --- | --- | --- | --- | --- | --- |
+| BC-ResNet | 3.6 | 42.0 | 33.6 | 7.6 | 49.2 | 27.2 |
+| **+RLA (Ours)** | *15.2 | *43.8 | *43.6 | *12.0 | *63.6| *35.6 |
+
+<div> Improved success rates over baseline by learning from actionless videos via RLA.</div>
+    </div>
+  </div>
+</section>
+
+
+<section class="has-side-card">
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Visual Reinforcement Learning inside RLA-WM</h2>
     <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
@@ -330,9 +344,23 @@ RLA is our latent action representation learned from DINO token residuals, for v
     <div class="svg-holder reveal" data-svg-src="static/images/wmrl.svg"></div>
   </div>
 
-  <aside class="side-card reveal"
-         style="top:60%; right:3%; --card-width:260px; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
-    <!-- <div class="kicker" style="color:#3b82f6;font-size:14px;">Paper</div> -->
+
+</section>
+
+
+<section class="alt has-side-card">
+  <div class="container">
+    <div class="markdown-table reveal" data-table>>
+| Method | XArm (Poke Cube) | UR10e (Roll Ball) | UR10e (PushT) |
+| --- | --- | --- | --- |
+| BC-ResNet | 89.9 | 65.5 | 17.2 |
+| **WMRL (Ours)** | *95.9 | *73.1 | *20.7 |
+
+<!-- <div>Improvements over baseline by learning from actionless videos via RLA.</div> -->
+    </div>
+  </div>
+  <!-- <aside class="side-card reveal"
+         style="top:-10%; right:3%; --card-width:260px; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
     <div class="body" style="font-size:15px;">
       <p style="margin-bottom:12px;">Want more details? Check out our paper!</p>
       <a class="btn-link arxiv" href="https://arxiv.org/abs/0000.00000" target="_blank" rel="noopener" style="display:inline-flex; gap:6px; align-items:center; padding:6px 14px;">
@@ -340,9 +368,8 @@ RLA is our latent action representation learned from DINO token residuals, for v
         arXiv
       </a>
     </div>
-  </aside>
+  </aside> -->
 </section>
-
 <!-- <section>
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Applications</h2>

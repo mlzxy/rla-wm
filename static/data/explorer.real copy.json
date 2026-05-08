@@ -1,0 +1,1827 @@
+[
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/ur10e/000095/step000_gt.png"
+    },
+    "title": "PushT-v2 (UR10e) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/ur10e/000095/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000095/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/xarm/000032/step000_gt.png"
+    },
+    "title": "PokeCube-v2 (XArm) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/xarm/000032/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/xarm/000032/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/panda/000034/step000_gt.png"
+    },
+    "title": "PullCubeTool-v1 (Panda) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/panda/000034/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000034/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/ur10e/000020/step000_gt.png"
+    },
+    "title": "RollBall-v1 (UR10e) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/ur10e/000020/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000020/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/ur10e/000094/step000_gt.png"
+    },
+    "title": "PushT-v2 (UR10e) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/ur10e/000094/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/ur10e/000094/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/panda/000020/step000_gt.png"
+    },
+    "title": "PullCube-v2 (Panda) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/panda/000020/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000020/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/maniskill/panda/000101/step000_gt.png"
+    },
+    "title": "PullCube-v2 (Panda) — ManiSkill",
+    "rowLabels": [
+      "Input",
+      "Output (t = 10)",
+      "Output (t = 20)",
+      "Output (t = 30)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/maniskill/panda/000101/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–30)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step010_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step020_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/maniskill/panda/000101/step030_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/pusht/000084/step000_gt.png"
+    },
+    "title": "PushT — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/pusht/000084/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000084/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/rope/000095/step000_gt.png"
+    },
+    "title": "Rope — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/rope/000095/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000095/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/box/000063/step000_gt.png"
+    },
+    "title": "Box — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/box/000063/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/box/000063/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/rope/000107/step000_gt.png"
+    },
+    "title": "Rope — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/rope/000107/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000107/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/pusht/000051/step000_gt.png"
+    },
+    "title": "PushT — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/pusht/000051/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/pusht/000051/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "thumb": {
+      "src": "static/explorer/iws/rope/000127/step000_gt.png"
+    },
+    "title": "Rope — IWS",
+    "rowLabels": [
+      "Input",
+      "Output (t = 15)",
+      "Output (t = 30)",
+      "Output (t = 45)",
+      "Output (t = 60)"
+    ],
+    "animation": {
+      "mode": "cell",
+      "stagger": 0.08
+    },
+    "captionMarkdown": true,
+    "rows": [
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step000_gt.png",
+            "caption": "Input Frame (t = 0)",
+            "maxWidth": "160px"
+          },
+          {
+            "kind": "video",
+            "src": "static/explorer/iws/rope/000127/gt_rollout.mp4",
+            "caption": "Robot Actions (t = 0–60)",
+            "maxWidth": "160px"
+          }
+        ]
+      },
+      {
+        "colLabels": [
+          "Ground-Truth",
+          "<strong>RLA-WM (Ours)</strong> ✅",
+          "Vid2World",
+          "DINO-WM",
+          "RAE",
+          "FM-WM"
+        ],
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step015_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step030_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step045_schrod-bridge.png"
+          }
+        ]
+      },
+      {
+        "cells": [
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_gt.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_rla.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_vid2world.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_dinowm.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_rae.png"
+          },
+          {
+            "kind": "image",
+            "src": "static/explorer/iws/rope/000127/step060_schrod-bridge.png"
+          }
+        ]
+      }
+    ]
+  }
+]

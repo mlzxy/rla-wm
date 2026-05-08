@@ -186,9 +186,9 @@
       // Skip already-rendered blocks
       if (container.dataset.markdownRendered === 'true') return;
 
-      // Get raw markdown text.  Use .trim() — the outer whitespace is
-      // just HTML indentation and is never meaningful markdown content.
-      var raw = container.textContent.trim();
+      // Get raw markdown text.  Use innerHTML (not textContent) so that
+      // inline HTML like <span class="annot"> survives into marked.
+      var raw = container.innerHTML.trim();
 
       if (!raw) return;
 
@@ -224,17 +224,207 @@
       // Apply code highlighting
       highlightCodeInElement(container);
 
+      // Activate any .annot elements inside the rendered markdown.
+      // initAnnotations() runs before initMarkdown(), so new <span>s
+      // injected here were never processed.
+      if (typeof ScrollTrigger !== 'undefined') {
+        $$('.annot', container).forEach(function (el) {
+          if (el.classList.contains('hero-annot')) return;
+          if (el.closest('.scrolly')) return;
+          if (el.dataset.color) el.style.setProperty('--annot-bg', el.dataset.color);
+          ScrollTrigger.create({
+            trigger: el, start: 'top 85%',
+            onEnter:     function () { el.classList.add('is-active'); },
+            onLeaveBack: function () { el.classList.remove('is-active'); },
+          });
+        });
+      }
+
       // Mark as rendered
       container.dataset.markdownRendered = 'true';
     });
   }
 
+  /* ============================================================
+     Markdown-table → .results-table converter
+     Finds [data-table] elements, parses markdown pipe-table syntax,
+     and replaces the source element with a styled <table>.
+
+     Special markers (processed BEFORE marked parses them):
+       *value  → cell gets class "best"      (asterisk stripped)
+       ~value  → cell gets class "second"    (tilde stripped)
+       ---     → row  gets class "row-divider" (entire row, single cell)
+
+     Auto-detected:
+       Headers containing ↑ or ↓ → class "num"
+       **text**                  → <strong>text</strong> (standard markdown)
+
+     Usage:
+       <div class="markdown-table reveal" data-table
+            data-caption="Optional caption text.">
+     | Method | Acc. ↑ | FLOPs ↓ |
+     |--------|--------|---------|
+     | Baseline-A | 71.2 | 9.8B |
+     | Baseline-B | ~73.4 | 12.1B |
+     | --- |
+     | **Ours** | *76.1 | *4.8B |
+       </div>
+     ============================================================ */
+  function initMarkdownTables(root) {
+    var containers = root
+      ? [root]
+      : $$('.markdown-table[data-table]');
+
+    containers.forEach(function (container) {
+      if (container.dataset.tableRendered === 'true') return;
+
+      var raw = container.textContent.trim();
+      if (!raw) return;
+
+      // ---------- Extract caption (anything after the last pipe-table line) ----------
+      // Split into lines; the last non-empty, non-pipe line(s) become the caption.
+      var lines = raw.split(/\r?\n/);
+      var captionLines = [];
+      while (lines.length && !/\|/.test(lines[lines.length - 1].trim())) {
+        captionLines.unshift(lines.pop().trim());
+      }
+      var captionText = captionLines.join(' ').trim();
+      // Rejoin remaining table rows
+      raw = lines.join('\n').trim();
+      if (!raw) return;
+
+      // ---------- Pre-process: protect special markers ----------
+      // Replace *value and ~value with marker tokens that survive
+      // marked's parsing, then restore them after.
+      var BEST  = 'XXBESTXX';
+      var SCND  = 'XXSCNDXX';
+      var DIV   = 'XXDIVXX';
+
+      // Protect --- divider rows (a row whose only cell is exactly ---)
+      // Markdown: | --- |  → after trim becomes "---"
+      // We replace standalone "---" rows with a token row.
+      raw = raw.replace(/^\s*\|\s*---\s*\|\s*$/gm, '| ' + DIV + ' |');
+      // Also handle "--- |" or "| ---" variants
+      raw = raw.replace(/^\s*\|\s*---\s*$/gm, '| ' + DIV);
+      raw = raw.replace(/^\s*---\s*\|\s*$/gm, DIV + ' |');
+
+      // Protect *value and ~value inside table cells
+      // Use lookahead (?=\|) so the shared pipe separator is not consumed,
+      // allowing adjacent cells to also be matched.
+      raw = raw.replace(/\|\s*\*(?!\*)\s*([^|\n]+?)\s*(?=\|)/g, '| ' + BEST + ' $1 ');
+      raw = raw.replace(/\|\s*~\s*([^|\n]+?)\s*(?=\|)/g, '| ' + SCND + ' $1 ');
+
+      // ---------- Parse with marked ----------
+      var renderer = createRenderer();
+      var html;
+      try {
+        html = marked.parse(raw, { renderer: renderer, breaks: false });
+      } catch (e) {
+        console.error('[markdown.js] Table parse failed:', e.message);
+        return;
+      }
+
+      // ---------- Post-process: convert <table> → .results-table ----------
+      // Replace <table> with our styled version
+      html = html.replace(/<table>/g, '<table class="results-table">');
+
+      // Process header cells: detect arrows → add .num
+      html = html.replace(/<th(.*?)>(.*?)<\/th>/g, function (m, attrs, content) {
+        var cls = attrs.includes('class="') ? attrs : attrs + ' class=""';
+        if (/[↑↓]/.test(content)) {
+          cls = cls.replace(/class="([^"]*)"/, 'class="$1 num"');
+        }
+        return '<th' + cls + '>' + content + '</th>';
+      });
+
+      // Process body cells: restore BEST/SCND tokens
+      html = html.replace(/<td(.*?)>(.*?)<\/td>/g, function (m, attrs, content) {
+        var cls = attrs.includes('class="') ? attrs : attrs + ' class=""';
+        if (content.indexOf(BEST) !== -1) {
+          content = content.replace(new RegExp(BEST + '\\s*', 'g'), '');
+          cls = cls.replace(/class="([^"]*)"/, 'class="$1 num best"');
+        } else if (content.indexOf(SCND) !== -1) {
+          content = content.replace(new RegExp(SCND + '\\s*', 'g'), '');
+          cls = cls.replace(/class="([^"]*)"/, 'class="$1 num second"');
+        } else {
+          // Auto-detect numeric cells: if content is a pure number (or B/M)
+          if (/^[\d.]+[BMKk]?$/.test(content.trim()) || /^[↑↓]/.test(content.trim())) {
+            cls = cls.replace(/class="([^"]*)"/, 'class="$1 num"');
+          }
+        }
+        return '<td' + cls + '>' + content + '</td>';
+      });
+
+      // Wrap table (+ optional caption) in .results-table-wrapper
+      var captionHtml = '';
+      if (captionText) {
+        captionHtml = '<p class="results-table-caption">' + captionText + '</p>';
+      }
+      html = '<div class="results-table-wrapper">' + html + captionHtml + '</div>';
+
+      // Apply data-width (sets --table-max-width on the wrapper)
+      var tableWidth = container.dataset.width;
+      if (tableWidth) {
+        html = html.replace(
+          '<div class="results-table-wrapper">',
+          '<div class="results-table-wrapper" style="--table-max-width:' + tableWidth + ';">'
+        );
+      }
+
+      // ---------- Replace source element ----------
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      var tableWrapper = tmp.firstChild;  // .results-table-wrapper
+      var table = tableWrapper && tableWrapper.querySelector('table.results-table');
+
+      if (table) {
+        // --- Handle divider row via DOM ---
+        var rows = table.querySelectorAll('tr');
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].textContent.indexOf(DIV) !== -1) {
+            var nextRow = rows[i + 1];
+            if (nextRow) nextRow.classList.add('row-divider');
+            rows[i].remove();
+            break;
+          }
+        }
+
+        // Copy classes from source container (e.g. "reveal") to the wrapper
+        if (container.className) {
+          var srcClasses = container.className.replace(/\bmarkdown-table\b/g, '').trim();
+          if (srcClasses) {
+            tableWrapper.className = (tableWrapper.className + ' ' + srcClasses).trim();
+          }
+        }
+
+        container.parentNode.insertBefore(tableWrapper, container);
+        container.remove();
+
+        // Apply reveal animation to the wrapper (not just the table)
+        if (tableWrapper.classList.contains('reveal') &&
+            typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+          gsap.to(tableWrapper, {
+            opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+            scrollTrigger: {
+              trigger: tableWrapper,
+              start: 'top 85%',
+              end: 'bottom 15%',
+              toggleActions: 'play none none reverse',
+            },
+          });
+        }
+      }
+    });
+  }
+
   // Expose globally so paper.js can call it
   window.initMarkdown = initMarkdown;
+  window.initMarkdownTables = initMarkdownTables;
 
   // Also expose a tiny namespace
   window.PaperMarkdown = {
     init: initMarkdown,
+    initMarkdownTables: initMarkdownTables,
     highlightCodeInElement: highlightCodeInElement,
     renderMathInBlock: renderMathInBlock,
   };

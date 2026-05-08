@@ -550,7 +550,7 @@
     function buildExplorer(root, configs) {
       // Build skeleton.
       root.innerHTML = `
-        <div class="thumb-strip embla">
+        <div class="thumb-strip embla" data-lenis-prevent>
           <div class="embla__container"></div>
           <button class="thumb-nav prev" aria-label="prev">‹</button>
           <button class="thumb-nav next" aria-label="next">›</button>
@@ -582,6 +582,13 @@
       const embla   = EmblaCarousel(stripEl, { dragFree: true, containScroll: 'trimSnaps' });
       $('.thumb-nav.prev', root).addEventListener('click', () => embla.scrollPrev());
       $('.thumb-nav.next', root).addEventListener('click', () => embla.scrollNext());
+
+      // Mouse-wheel → horizontal scroll on the thumb strip
+      stripEl.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // native horizontal
+        e.preventDefault();
+        if (e.deltaY > 0) embla.scrollNext(); else embla.scrollPrev();
+      }, { passive: false });
 
       let activeIntervals = [];
       function clearDetail() {
@@ -949,6 +956,7 @@
     initCompareSliders();
     initVideoPlayers();
     if (typeof initMarkdown === 'function') initMarkdown();
+    if (typeof initMarkdownTables === 'function') initMarkdownTables();
   }
 
   if (document.readyState === 'loading') {
@@ -963,5 +971,6 @@
     initEmblas, initSvgFlows, initExternalSvgs, initExplorers,
     initCodeBlocks, initCompareSliders, initVideoPlayers,
     initMarkdown: typeof initMarkdown === 'function' ? initMarkdown : null,
+    initMarkdownTables: typeof initMarkdownTables === 'function' ? initMarkdownTables : null,
   };
 })();
