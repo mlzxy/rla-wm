@@ -285,7 +285,9 @@ RLA is our latent action representation learned from DINO token residuals, for v
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Future Prediction</h2>
     <p class="reveal narrow muted markdown-block tight" style="margin:0 auto 32px;text-align:center;" data-markdown>
-      Given an input frame (from validation set) at $t=0$, each world model predicts future frames at $t=h, t=2h, \dots$ from the input action chunk $a_{t:t+h}, a_{t+h:t+2h}, \dots$.
+Given an input frame (from validation set) at $t=0$, each world model predicts future frames at $t=h, t=2h, \dots$ from the input action chunk $a_{t:t+h}, a_{t+h:t+2h}, \dots$. 
+
+We use the official action space for each task in IWS. The action space of all ManiSkill tasks is <span class="annot">simply the robot's joint angles</span>.
     </p>
 
     <div class="explorer reveal" data-src="static/data/explorer.real.json"></div>
@@ -303,7 +305,7 @@ RLA is our latent action representation learned from DINO token residuals, for v
     <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
       RLA-WM predicts future states by generating the residual latent action $z$ via flow matching, and decodes $\hat{s}_{t+h}$ with pre-trained RLA decoder $f_\text{dec}$.
     </p>
-    <div class="svg-holder reveal" data-svg-src="static/images/rla-wm.svg"></div>
+    <div class="svg-holder reveal" data-svg-src="static/images/rla-wm.svg" data-fullscreen></div>
   </div>
 </section>
 
@@ -316,7 +318,7 @@ RLA is our latent action representation learned from DINO token residuals, for v
     <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
       We add a linear layer on top of a BC policy to predict RLA $z$, which learns from videos whose action or proprioception are not available. As RLA enable accurate prediction of $s_{t+h}$, this simple framework becomes a <span class="annot">minimalist world action model</span>, which improves performance, without inference cost or coupling to a video backbone.
     </p>
-    <div class="svg-holder reveal" data-svg-src="static/images/wam.svg"></div>
+    <div class="svg-holder reveal" data-svg-src="static/images/wam.svg" data-fullscreen></div>
   </div>
 </section>
 
@@ -341,7 +343,7 @@ RLA is our latent action representation learned from DINO token residuals, for v
     <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
       We show the first demonstration of visual RL inside a world model learned from offline videos only, which we refer to as <span class="annot" >World Model-based Reinforcement Learning (WMRL)</span>.
     </p>
-    <div class="svg-holder reveal" data-svg-src="static/images/wmrl.svg"></div>
+    <div class="svg-holder reveal" data-svg-src="static/images/wmrl.svg" data-fullscreen></div>
   </div>
 
 

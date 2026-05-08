@@ -130,8 +130,10 @@ section.alt  { background: var(--bg-soft); }
   .hero-bg .shape-4,
   .hero-bg .shape-7,
   .hero-bg .shape-10 { display: none; }   /* trim a few on mobile to reduce clutter */
+  .hero-annot { white-space: normal; }
 }
 .hero-annot { position: relative; white-space: nowrap; }
+.hero h1 { position: relative; }  /* positioning context for rough-notation SVGs */
 .hero .authors { color: var(--muted); margin-bottom: 8px; }
 
 /* ---------------- Action buttons (arXiv / GitHub / LinkedIn / …) ----
@@ -457,6 +459,74 @@ section.alt  { background: var(--bg-soft); }
 .svg-holder { width: 100%; max-width: 900px; margin: 0 auto; }
 .svg-holder svg { width: 100%; height: auto; display: block; }
 
+/* ---------------- SVG expand-to-fullscreen (mobile) ---------------
+   A small button below the SVG that opens it in a landscape-oriented
+   fullscreen overlay, so wide diagrams are readable on phones.
+   --------------------------------------------------------------- */
+.svg-expand-btn {
+  display: none;
+  margin: 16px auto 0;
+  padding: 6px 16px;
+  font: inherit; font-size: 13px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.svg-expand-btn:hover { background: var(--bg-soft); color: var(--fg); }
+
+@media (max-width: 720px) {
+  .svg-holder[data-fullscreen] + .svg-expand-btn { display: block; }
+}
+
+/* Fullscreen overlay for SVG diagrams. */
+.svg-fs-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+.svg-fs-overlay.is-open { opacity: 1; pointer-events: auto; }
+.svg-fs-overlay .svg-fs-content {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 48px 16px;
+}
+.svg-fs-overlay .svg-fs-content svg {
+  width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  display: block;
+}
+/* Landscape hint: on phones rotate the SVG zone so wide diagrams
+   use the long edge of the screen. Only applied when the overlay
+   is open and the viewport is portrait-ish. */
+.svg-fs-overlay.is-landscape .svg-fs-content {
+  transform: rotate(90deg);
+  width: 100vh; height: 100vw;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform-origin: center center;
+  margin-top: -50vw;
+  margin-left: -50vh;
+}
+.svg-fs-close {
+  position: absolute; top: 16px; right: 16px; z-index: 10;
+  width: 40px; height: 40px;
+  border: none; border-radius: 999px;
+  background: rgba(0,0,0,0.08);
+  color: #333;
+  font-size: 24px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .15s ease;
+}
+.svg-fs-close:hover { background: rgba(0,0,0,0.15); }
+
 /* ---------------- Explorer ---------------- */
 .thumb-strip {
   position: relative;
@@ -518,21 +588,42 @@ section.alt  { background: var(--bg-soft); }
 
 /* Animation-mode layout adjustments. The transposed (`columns`) layout has
    one cell per row; the merged (`rows`) layout has one row of GIF cells. */
-.explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 16 / 9; }
+.explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 1 / 1; }
 .explorer[data-anim-mode="columns"] .detail-row { align-items: center; }
-.explorer[data-anim-mode="columns"] .detail-row .row-label { font-weight: 600; color: var(--fg); }
+.explorer[data-anim-mode="columns"] .detail-row .row-label {
+  font-weight: 600; color: var(--fg);
+  flex: 0 0 80px; min-width: 80px;
+  word-break: break-word; overflow-wrap: break-word;
+  font-size: 12px;
+}
+.explorer[data-anim-mode="columns"] .detail-row .cells {
+  flex: 1; width: 100%; min-width: 0;
+}
+.explorer[data-anim-mode="columns"] .detail-cell {
+  width: 100%; max-width: 100%;
+}
+
+/* On desktop, keep animation rows compact so images stay in proportion */
+@media (min-width: 721px) {
+  .explorer[data-anim-mode="columns"] .detail-row .cells {
+    max-width: 50%;
+  }
+  .explorer[data-anim-mode="columns"] .detail-row .row-label {
+    flex: 0 0 140px;
+  }
+}
 .detail-grid { display: flex; flex-direction: column; gap: 12px; }
 .detail-row  { display: flex; align-items: stretch; gap: 8px; }
 .detail-row .row-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .detail-row .row-label {
   flex: 0 0 80px;
   display: flex; align-items: center; justify-content: flex-end;
-  padding-right: 8px; color: var(--muted); font-size: 13px;
+  padding: 0 8px 0 4px; color: var(--muted); font-size: 13px;
   text-align: right;
 }
 .detail-row .cells { display: flex; gap: 8px; flex: 1; }
 .detail-cell {
-  flex: 1 1 0; min-width: 0;
+  flex: 1 1 0; min-width: 0; max-width: 100%;
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg);
@@ -562,12 +653,13 @@ section.alt  { background: var(--bg-soft); }
 .detail-cell .media.media-sequence .media-frame {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
   opacity: 1;
   transition: opacity 180ms ease;
   will-change: opacity;
   backface-visibility: hidden;
+  background: var(--bg-soft);
 }
 .detail-cell .media.media-sequence .media-frame.is-hidden { opacity: 0; }
 .detail-cell .caption {
@@ -579,12 +671,12 @@ section.alt  { background: var(--bg-soft); }
   display: flex; gap: 8px; padding-left: 88px; margin-bottom: 6px;
   color: var(--muted); font-size: 12px;
 }
-.col-labels span { flex: 1 1 0; text-align: center; }
+.col-labels span { flex: 1 1 0; min-width: 0; text-align: center; overflow-wrap: break-word; word-break: break-word; hyphens: auto; }
 .row-col-labels {
   display: flex; gap: 8px;
   color: var(--muted); font-size: 12px;
 }
-.row-col-labels span { flex: 1 1 0; text-align: center; }
+.row-col-labels span { flex: 1 1 0; min-width: 0; text-align: center; overflow-wrap: break-word; word-break: break-word; hyphens: auto; }
 
 /* ---------------- Author list + affiliations ---------------- */
 .author-list {
@@ -949,14 +1041,12 @@ section.alt  { background: var(--bg-soft); }
 
   .scrolly-mobile-text {
     background: var(--bg);
-    padding: 18px 12px;
+    padding: 16px 14px;
     line-height: 1.55;
-    border-bottom: 1px solid var(--rule);
-  }
-  .scrolly-mobile-text.scrolly-mobile-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    margin: 6px 2px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05);
   }
   .scrolly-mobile-text.scrolly-mobile-skip { font-style: italic; color: var(--muted); }
   .scrolly-mobile-text.scrolly-mobile-skip [data-slide] { font-style: normal; }
@@ -969,7 +1059,11 @@ section.alt  { background: var(--bg-soft); }
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px 8px 36px;
+    padding: 0 8px 8px;
+    margin-top: 24px;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
     opacity: 1;
     transform: none;
     position: static;
@@ -1011,21 +1105,38 @@ section.alt  { background: var(--bg-soft); }
 
   .detail                 { padding: 12px; min-height: 240px; }
   .detail .detail-toolbar { display: none; }
-  .detail-row .row-label  { flex: 0 0 48px; font-size: 11px; padding-right: 4px; }
-  .detail-row .cells      { gap: 4px; }
+  .detail-row .row-label  { flex: 0 0 48px; font-size: 11px; padding: 0 6px 0 2px; }
+  .detail-row .cells      { gap: 4px; justify-content: flex-start; }
   .detail-cell .caption   { font-size: 11px; padding: 4px 6px; }
-  .col-labels             { padding-left: 56px; }
-  /* Transposed mode: row labels need slightly more room for method names. */
-  .explorer[data-anim-mode="columns"] .detail-row .row-label {
-    flex: 0 0 80px; font-size: 12px; padding-right: 6px;
+  /* On mobile, un-constrain maxWidth-limited static cells so all images are uniform size */
+  .detail-cell .media[data-constrained] {
+    aspect-ratio: auto !important;
+    flex: 1 1 0 !important;
+    align-self: stretch !important;
   }
-  .explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 4 / 3; }
+  .detail-cell .media[data-constrained] img,
+  .detail-cell .media[data-constrained] video {
+    max-width: 100% !important;
+    max-height: none !important;
+  }
+  .col-labels             { padding-left: 56px; }
+  /* Transposed mode: row labels stay compact; method names wrap naturally. */
+  .explorer[data-anim-mode="columns"] .detail-row .row-label {
+    flex: 0 0 80px; min-width: 80px; font-size: 12px; padding: 0 6px 0 2px; word-break: break-word;
+  }
+  .explorer[data-anim-mode="columns"] .detail-row .cells {
+    flex: 1; min-width: 0; justify-content: flex-start !important;
+  }
+  .explorer[data-anim-mode="columns"] .detail-cell {
+    flex: 0 0 auto; min-width: 0; max-width: 85%;
+  }
+  .explorer[data-anim-mode="columns"] .detail-cell .media { aspect-ratio: 1 / 1; }
 
   /* Per-row opt-in: stack cells vertically on mobile (configured via JSON
      `stackOnMobile: true`). The row label is vertically centered across the
      stacked cells so labels like "Input" still read as a single group. */
   .detail-row[data-stack-mobile] {
-    align-items: center;
+    align-items: flex-start;
   }
   .detail-row[data-stack-mobile] .cells {
     flex-direction: column;

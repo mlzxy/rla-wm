@@ -117,6 +117,47 @@
     });
 
     const annotations = [];
+    let isMobileActive = isMobile();
+
+    function applyMobileCssUnderline(phrase, color, stroke, pad) {
+      phrase.style.textDecoration = 'underline';
+      phrase.style.textDecorationColor = color;
+      phrase.style.textDecorationThickness = stroke + 'px';
+      phrase.style.textUnderlineOffset = pad + 'px';
+    }
+
+    function clearMobileCssUnderline(phrase) {
+      phrase.style.textDecoration = '';
+      phrase.style.textDecorationColor = '';
+      phrase.style.textDecorationThickness = '';
+      phrase.style.textUnderlineOffset = '';
+    }
+
+    function removeAllRoughNotations() {
+      annotations.forEach((a) => {
+        if (a.ann) { try { a.ann.remove(); } catch (e) {} a.ann = null; }
+      });
+    }
+
+    function createAnnotation(phrase, obj) {
+      const { type, color, stroke, pad, dur } = obj;
+      if (isMobileActive) {
+        // CSS text-decoration handles multiline text wrapping natively
+        applyMobileCssUnderline(phrase, color, stroke, pad);
+        obj.ann = null;
+        obj.isCss = true;
+      } else {
+        clearMobileCssUnderline(phrase);
+        obj.ann = RN.annotate(phrase, { type, color, strokeWidth: stroke, padding: pad, animationDuration: dur });
+        obj.isCss = false;
+        gsap.delayedCall(obj.delay, () => {
+          if (obj.ann) obj.ann.show();
+          const card = $(`.side-card[data-annot-id="${obj.id}"]`);
+          if (card && !isMobile()) gsap.to(card, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' });
+        });
+      }
+    }
+
     phrases.forEach((phrase) => {
       const id     = phrase.dataset.annotId;
       const type   = phrase.dataset.type   || 'underline';
@@ -125,34 +166,32 @@
       const pad    = num(phrase.dataset.padding,  3);
       const dur    = num(phrase.dataset.duration, 700);
       const delay  = num(phrase.dataset.delay,    1.0);
-      const card   = $(`.side-card[data-annot-id="${id}"]`);
 
-      const ann = RN.annotate(phrase, { type, color, strokeWidth: stroke, padding: pad, animationDuration: dur });
-      annotations.push({ ann, phrase, type, color, stroke, pad, dur });
-      gsap.delayedCall(delay, () => {
-        ann.show();
-        if (card && !isMobile()) gsap.to(card, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' });
-      });
+      const obj = { ann: null, phrase, id, type, color, stroke, pad, dur, delay, isCss: false };
+      annotations.push(obj);
+      createAnnotation(phrase, obj);
     });
 
-    // Redraw annotations on resize (rough-notation does not auto-redraw,
-    // so the underline drifts when the phrase wraps to new lines on mobile).
-    let resizeTimer = null;
-    let lastWidth = window.innerWidth;
+    // When crossing the mobile/desktop breakpoint, switch between
+    // CSS text-decoration (mobile) and rough-notation (desktop).
     window.addEventListener('resize', () => {
-      if (window.innerWidth === lastWidth) return; // ignore iOS address-bar Y-only resizes
-      lastWidth = window.innerWidth;
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        annotations.forEach(({ ann, phrase, type, color, stroke, pad, dur }) => {
-          try { ann.remove(); } catch (e) {}
-          const fresh = RN.annotate(phrase, { type, color, strokeWidth: stroke, padding: pad, animationDuration: 0 });
-          fresh.show();
-          // Replace the reference in our list so future resizes also work.
-          const slot = annotations.find((a) => a.phrase === phrase);
-          if (slot) slot.ann = fresh;
-        });
-      }, 180);
+      const nowMobile = isMobile();
+      if (nowMobile === isMobileActive) return;
+      isMobileActive = nowMobile;
+      removeAllRoughNotations();
+      // Re-show side cards
+      phrases.forEach((phrase) => {
+        const id   = phrase.dataset.annotId;
+        const side = phrase.dataset.side || 'right';
+        const card = $(`.side-card[data-annot-id="${id}"]`);
+        if (!card) return;
+        if (nowMobile) {
+          gsap.set(card, { opacity: 1, x: 0, clearProps: 'opacity,transform' });
+        } else {
+          gsap.set(card, { opacity: 0, x: side === 'right' ? 30 : -30 });
+        }
+      });
+      annotations.forEach((obj) => createAnnotation(obj.phrase, obj));
     }, { passive: true });
   }
 
@@ -375,13 +414,11 @@
         }
 
         if (isMobile) {
-          // Mobile layout: sticky-text + inline-figure per step.
-          // Each [data-slide] item gets its content wrapped in a sticky
-          // `.scrolly-mobile-text` block, followed by a clone of its resolved
-          // figure as `.scrolly-mobile-figure`. Items with nested [data-slide]
-          // descendants don't get sticky (would stack with their children's
-          // stickies); their text just flows. The original `.figure-col` is
-          // hidden. On breakpoint change back to desktop, the cleanup function
+          // Mobile layout: text + inline-figure per step.
+          // Each [data-slide] item gets its content and resolved figure clone
+          // wrapped together inside a `.scrolly-mobile-text` block.
+          // The original `.figure-col` is hidden.
+          // On breakpoint change back to desktop, the cleanup function
           // unwraps everything and removes clones.
 
           const figureCol = $('.figure-col', scrolly);
@@ -397,13 +434,11 @@
             if (p.querySelector(':scope > .scrolly-mobile-text')) return;
 
             const figIdx = resolveFigIdx(p.dataset.slide);
-            const hasNestedSlide = !!p.querySelector(':scope > ol [data-slide], :scope > ul [data-slide]');
             const isSkip = p.hasAttribute('data-skip') || p.hasAttribute('data-disabled');
 
             const nestedList = p.querySelector(':scope > ol, :scope > ul');
             const textWrap = document.createElement('div');
             textWrap.className = 'scrolly-mobile-text';
-            if (!hasNestedSlide) textWrap.classList.add('scrolly-mobile-sticky');
             if (isSkip) textWrap.classList.add('scrolly-mobile-skip');
 
             // Move every non-list child into the wrap.
@@ -413,11 +448,8 @@
               moved.push(node);
               textWrap.appendChild(node);
             });
-            if (nestedList) p.insertBefore(textWrap, nestedList);
-            else p.appendChild(textWrap);
-            wrapRefs.push({ wrap: textWrap, parent: p, moved });
 
-            // Insert figure clone (skipped section-headers like "3. Applications" don't get one).
+            // Insert figure clone INSIDE the text wrap (skipped section-headers don't get one).
             if (!isSkip && figIdx >= 0 && figureSlides[figIdx]) {
               const figClone = figureSlides[figIdx].cloneNode(true);
               figClone.classList.remove('figure-slide');
@@ -434,10 +466,13 @@
               };
               stripReveal(figClone);
               $$('.reveal', figClone).forEach(stripReveal);
-              if (nestedList) p.insertBefore(figClone, nestedList);
-              else p.appendChild(figClone);
+              textWrap.appendChild(figClone);
               cloneRefs.push(figClone);
             }
+
+            if (nestedList) p.insertBefore(textWrap, nestedList);
+            else p.appendChild(textWrap);
+            wrapRefs.push({ wrap: textWrap, parent: p, moved });
           });
 
           // Force-open any nested lists that the desktop collapse rule would hide.
@@ -637,6 +672,98 @@
   }
 
   /* ============================================================
+     SVG Fullscreen expand (mobile).  Markup:
+       <div class="svg-holder" data-svg-src="…" data-fullscreen></div>
+     On mobile (≤720px), a small "⛶ Expand" button appears after the
+     SVG.  Tapping it opens the SVG in a landscape-oriented fullscreen
+     overlay so wide diagrams are readable.
+     ============================================================ */
+  function initSvgFullscreen() {
+    const isMobile = () => window.matchMedia('(max-width: 720px)').matches;
+    const holders = $$('.svg-holder[data-fullscreen]');
+    if (!holders.length) return;
+
+    holders.forEach((holder) => {
+      // Inject expand button after holder.
+      let btn = holder.nextElementSibling;
+      if (!btn || !btn.classList.contains('svg-expand-btn')) {
+        btn = document.createElement('button');
+        btn.className = 'svg-expand-btn';
+        btn.type = 'button';
+        btn.textContent = '⛶ Expand';
+        holder.insertAdjacentElement('afterend', btn);
+      }
+
+      // Build fullscreen overlay once, lazily.
+      let overlay = null;
+      let content = null;
+      let closeBtn = null;
+
+      function ensureOverlay() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.className = 'svg-fs-overlay';
+        content = document.createElement('div');
+        content.className = 'svg-fs-content';
+        closeBtn = document.createElement('button');
+        closeBtn.className = 'svg-fs-close';
+        closeBtn.type = 'button';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('aria-label', 'Close');
+        overlay.appendChild(closeBtn);
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        document.addEventListener('keydown', onKey);
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape' && overlay && overlay.classList.contains('is-open')) close();
+      }
+
+      function open() {
+        ensureOverlay();
+        // Clone the current SVG into the overlay.
+        const svg = holder.querySelector('svg');
+        if (!svg) return;
+        content.innerHTML = '';
+        const clone = svg.cloneNode(true);
+        clone.removeAttribute('width');
+        clone.removeAttribute('height');
+        content.appendChild(clone);
+        // Determine landscape mode: if viewport is portrait (height > width)
+        // and the SVG's natural aspect ratio is wider than tall, rotate.
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const vb = clone.viewBox && clone.viewBox.baseVal
+          ? clone.viewBox.baseVal
+          : null;
+        const svgW = (vb && vb.width)  || vw;
+        const svgH = (vb && vb.height) || vh;
+        const wideSVG = svgW > svgH;
+        if (vh > vw && wideSVG) {
+          overlay.classList.add('is-landscape');
+        } else {
+          overlay.classList.remove('is-landscape');
+        }
+        overlay.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function close() {
+        if (!overlay) return;
+        overlay.classList.remove('is-open');
+        overlay.classList.remove('is-landscape');
+        document.body.style.overflow = '';
+      }
+
+      btn.addEventListener('click', open);
+    });
+  }
+
+  /* ============================================================
      Explorer: thumb strip + grid sub-component.
      Markup:
        <div class="explorer">
@@ -794,10 +921,24 @@
           }
 
           let f = 0;
+
+          // Time-step label overlay (if frameLabels provided)
+          let labelEl = null;
+          if (cell.frameLabels && cell.frameLabels.length) {
+            labelEl = document.createElement('div');
+            labelEl.className = 'sequence-label';
+            labelEl.style.cssText = 'position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:11px;color:#fff;background:rgba(0,0,0,0.55);padding:2px 6px;pointer-events:none;z-index:2;';
+            labelEl.textContent = cell.frameLabels[0] || '';
+            media.appendChild(labelEl);
+          }
+
           const tick = () => {
             const next = (f + 1) % layers.length;
             layers[f].classList.add('is-hidden');
             layers[next].classList.remove('is-hidden');
+            if (labelEl && cell.frameLabels) {
+              labelEl.textContent = cell.frameLabels[next] || '';
+            }
             f = next;
           };
           activeIntervals.push(setInterval(tick, cell.interval || 400));
@@ -835,16 +976,19 @@
 
         const buildColumnSequenceCell = (c) => {
           const frames = [];
-          animRows.forEach(({ row }) => {
+          const frameLabels = [];
+          animRows.forEach(({ row, idx }) => {
             const cell = row.cells && row.cells[c];
             if (!cell) return;
             if (cell.kind === 'image' && cell.src)        frames.push({ src: cell.src });
             else if (cell.kind === 'color' && cell.color) frames.push({ color: cell.color });
             // 'video' and 'sequence' kinds aren't fanned out — they animate themselves.
+            const rawLabel = (cfg.rowLabels && cfg.rowLabels[idx]) || '';
+            frameLabels.push(rawLabel.replace(/<br\s*\/?>/gi, ' ').trim());
           });
           if (!frames.length) return null;
           const sample = animRows[0].row.cells[c] || {};
-          const out = { kind: 'sequence', frames, interval };
+          const out = { kind: 'sequence', frames, interval, frameLabels };
           if (sample.maxWidth)  out.maxWidth  = sample.maxWidth;
           if (sample.maxHeight) out.maxHeight = sample.maxHeight;
           return out;
@@ -912,10 +1056,11 @@
         let   merge   = false;
         if (gifOn) {
           // On mobile we always merge (default columns) regardless of toggle.
-          // On desktop we respect the toggle and the JSON config.
+          // On desktop we respect the toggle and the JSON config, but default
+          // to 'rows' so all methods stay in a single compact row.
           if (isMobile)                     merge = animCfg.merge || 'columns';
           else if (animCfg.merge)           merge = animCfg.merge;
-          else if (explorerAnimToggle)      merge = 'columns';
+          else if (explorerAnimToggle)      merge = 'rows';
         }
         const cfg = (gifOn && merge) ? synthesizeAnimatedConfig(srcCfg, merge, animCfg) : srcCfg;
         // Mark the explorer root so CSS can adjust spacing/labels for narrow rows.
@@ -1224,6 +1369,10 @@
   }
 
   /* ============================================================
+     SVG long-press on mobile — tap shows hint tooltip,
+     long-press opens the SVG in a fullscreen overlay.
+     ============================================================ */
+  /* ============================================================
      Boot.
      ============================================================ */
   function boot() {
@@ -1246,6 +1395,7 @@
     initCodeBlocks();
     initCompareSliders();
     initVideoPlayers();
+    initSvgFullscreen();
     if (typeof initMarkdown === 'function') initMarkdown();
     if (typeof initMarkdownTables === 'function') initMarkdownTables();
   }
@@ -1260,7 +1410,7 @@
   window.Paper = {
     initReveal, initAnnotations, initTooltips, initHero, initScrolly,
     initEmblas, initSvgFlows, initExternalSvgs, initExplorers,
-    initCodeBlocks, initCompareSliders, initVideoPlayers,
+    initCodeBlocks, initCompareSliders, initVideoPlayers, initSvgFullscreen,
     initMarkdown: typeof initMarkdown === 'function' ? initMarkdown : null,
     initMarkdownTables: typeof initMarkdownTables === 'function' ? initMarkdownTables : null,
   };
