@@ -422,6 +422,10 @@ A configurable component for showing many figure variants. The entire DOM is bui
 
 `stagger` is in seconds. Rows can have unequal cell counts; any cell not referenced by an explicit index list still appears, just at the end.
 
+**Per-row mobile stacking** (`row.stackOnMobile`)
+
+Set `stackOnMobile: true` on any row to make its cells lay out **vertically** (one cell per row) when the viewport is ≤720px. The row label stays vertically centered across the stacked cells. Useful when a row has only a few cells (e.g. an input row of `[input frame, action chunk video]`) that read better stacked than squeezed side-by-side on a phone. Rows without the flag keep the desktop horizontal layout.
+
 **GIF / animation mode** (`animation.gif`, `animation.merge`)
 
 For grids of time-step rows × method columns (e.g. predictions at t=10, t=20, t=30 across multiple models), you can collapse the time axis into per-cell GIFs:

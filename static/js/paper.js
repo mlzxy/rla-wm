@@ -756,24 +756,51 @@
           media.appendChild(v);
           applyMaxSize(media, v, cell);
         } else if (cell.kind === 'sequence') {
-          let f = 0;
-          const apply = () => {
-            const fr = cell.frames[f];
+          // Stack all frames as layered, pre-loaded children of `media` and
+          // cycle by toggling opacity. Avoids the white-flash that happens
+          // when swapping a single <img>'s src each tick (the browser briefly
+          // shows the old image at unknown decode state). All frames are
+          // decoded once up front, so cycling is just a CSS toggle.
+          if (!cell.frames || !cell.frames.length) return media;
+          media.classList.add('media-sequence');
+          media.textContent = '';
+
+          const layers = cell.frames.map((fr, i) => {
+            let layer;
             if (fr.src) {
-              media.style.background = ''; media.textContent = '';
-              if (!media.querySelector('img')) {
-                media.innerHTML = '<img>';
-                applyMaxSize(media, media.querySelector('img'), cell);
-              }
-              media.querySelector('img').src = fr.src;
+              layer = document.createElement('img');
+              layer.src     = fr.src;
+              layer.alt     = '';
+              layer.decoding = 'async';
+              layer.loading = i === 0 ? 'eager' : 'lazy';
             } else {
-              media.style.background = fr.color;
-              media.textContent = (f + 1) + '/' + cell.frames.length;
+              layer = document.createElement('div');
+              layer.style.background = fr.color || '#000';
             }
-            f = (f + 1) % cell.frames.length;
+            layer.classList.add('media-frame');
+            if (i !== 0) layer.classList.add('is-hidden');
+            media.appendChild(layer);
+            return layer;
+          });
+
+          // Honor maxWidth / maxHeight if the cell sets them — only the
+          // first layer drives the size; subsequent layers fill that box.
+          if (cell.maxWidth || cell.maxHeight) {
+            applyMaxSize(media, layers[0], cell);
+            for (let i = 1; i < layers.length; i++) {
+              if (cell.maxWidth)  layers[i].style.maxWidth  = cell.maxWidth;
+              if (cell.maxHeight) layers[i].style.maxHeight = cell.maxHeight;
+            }
+          }
+
+          let f = 0;
+          const tick = () => {
+            const next = (f + 1) % layers.length;
+            layers[f].classList.add('is-hidden');
+            layers[next].classList.remove('is-hidden');
+            f = next;
           };
-          apply();
-          activeIntervals.push(setInterval(apply, cell.interval || 400));
+          activeIntervals.push(setInterval(tick, cell.interval || 400));
         }
         return media;
       }
@@ -907,6 +934,9 @@
         const rowsAsCells = [];
         cfg.rows.forEach((row, ri) => {
           const rowEl = document.createElement('div'); rowEl.className = 'detail-row';
+          // Opt-in: rows with `stackOnMobile: true` switch their cells from
+          // horizontal to vertical layout on ≤720px (CSS reads this attr).
+          if (row.stackOnMobile) rowEl.dataset.stackMobile = '1';
           if (cfg.rowLabels) {
             const lab = document.createElement('div'); lab.className = 'row-label';
             lab.innerHTML = cfg.rowLabels[ri] || '';

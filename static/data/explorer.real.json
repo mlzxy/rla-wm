@@ -17,6 +17,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -144,6 +145,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -271,6 +273,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -398,6 +401,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -525,6 +529,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -652,6 +657,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -780,6 +786,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -936,6 +943,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -1092,6 +1100,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -1248,6 +1257,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -1404,6 +1414,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
@@ -1560,6 +1571,7 @@
     "captionMarkdown": true,
     "rows": [
       {
+        "stackOnMobile": true,
         "cells": [
           {
             "kind": "image",
