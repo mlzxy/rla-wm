@@ -1,23 +1,42 @@
 [
   {
     "thumb": { "src": "https://picsum.photos/seed/thumb/120/80" },
-    "title": "Future Prediction",
-    "rowLabels": ["Input", "Ours"],
+    "title": "Push-T, ManiSkill",
+    "rowLabels": ["Input", "Output <br> (t = 10)",  "Output <br> (t = 20)",  "Output <br> (t = 30)"],
     "animation": { "mode": "cell", "stagger": 0.08 },
+    "captionMarkdown": true,
     "rows": [
       { 
         "cells": [
-        { "kind": "image", "src": "https://picsum.photos/seed/orig/300/300", "caption": "orig", "maxWidth": "160px" },
-        { "kind": "video", "src": "https://www.w3schools.com/html/mov_bbb.mp4", "caption": "mask", "maxWidth": "160px" }
+        { "kind": "image", "src": "https://picsum.photos/seed/orig/300/300", "caption": "Input Frame (t = 0)", "maxWidth": "160px" },
+        { "kind": "video", "src": "https://www.w3schools.com/html/mov_bbb.mp4", "caption": "Robot Actions (t = 0-30)", "maxWidth": "160px" }
       ] },
-      { "colLabels": ["t=1", "t=2", "t=3", "t=4", "t=5", "t=6"],
+      { "colLabels": ["Ground-Truth", "<strong>RLA-WM (Ours)</strong> ✅", "Vid2World", "DINO-WM", "RAE", "FM-WM"],
         "cells": [
-        { "kind": "image", "src": "https://picsum.photos/seed/pred1/300/300", "caption": "t=1" },
-        { "kind": "image", "src": "https://picsum.photos/seed/pred2/300/300", "caption": "t=2" },
-        { "kind": "image", "src": "https://picsum.photos/seed/pred3/300/300", "caption": "t=3" },
-        { "kind": "image", "src": "https://picsum.photos/seed/pred4/300/300", "caption": "t=4" },
-        { "kind": "image", "src": "https://picsum.photos/seed/pred5/300/300", "caption": "t=5" },
-        { "kind": "image", "src": "https://picsum.photos/seed/pred6/300/300", "caption": "t=6" }
+        { "kind": "image", "src": "https://picsum.photos/seed/pred1/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred2/300/300"  },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred3/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred4/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred5/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred6/300/300" }
+      ] },
+      {
+        "cells": [
+        { "kind": "image", "src": "https://picsum.photos/seed/pred1/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred2/300/300"  },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred3/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred4/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred5/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred6/300/300" }
+      ] },
+      {
+        "cells": [
+        { "kind": "image", "src": "https://picsum.photos/seed/pred1/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred2/300/300"  },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred3/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred4/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred5/300/300" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred6/300/300" }
       ] }
     ]
   }

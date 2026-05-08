@@ -649,12 +649,12 @@
 
       function renderDetail(cfg) {
         clearDetail();
-        detailTitle.textContent = cfg.title || '';
+        detailTitle.innerHTML = cfg.title || '';
 
         if (cfg.colLabels && cfg.colLabels.length) {
           colLabelsEl.className = 'col-labels';
           cfg.colLabels.forEach((label) => {
-            const s = document.createElement('span'); s.textContent = label; colLabelsEl.appendChild(s);
+            const s = document.createElement('span'); s.innerHTML = label; colLabelsEl.appendChild(s);
           });
         }
 
@@ -664,7 +664,7 @@
           const rowEl = document.createElement('div'); rowEl.className = 'detail-row';
           if (cfg.rowLabels) {
             const lab = document.createElement('div'); lab.className = 'row-label';
-            lab.textContent = cfg.rowLabels[ri] || '';
+            lab.innerHTML = cfg.rowLabels[ri] || '';
             rowEl.appendChild(lab);
           }
           // Wrapper for column labels + cells
@@ -673,7 +673,7 @@
           if (row.colLabels && row.colLabels.length) {
             const cl = document.createElement('div'); cl.className = 'row-col-labels';
             row.colLabels.forEach((label) => {
-              const s = document.createElement('span'); s.textContent = label; cl.appendChild(s);
+              const s = document.createElement('span'); s.innerHTML = label; cl.appendChild(s);
             });
             rowBody.appendChild(cl);
           }
@@ -689,7 +689,7 @@
             if (mediaEl.dataset.constrained === 'true') cellEl.style.flex = 'none';
             if (cell.caption) {
               const cap = document.createElement('div'); cap.className = 'caption';
-              cap.textContent = cell.caption;
+              cap.innerHTML = cell.caption;
               cellEl.appendChild(cap);
             }
             cellsWrap.appendChild(cellEl);
