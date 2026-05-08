@@ -3,13 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Paper Site Template</title>
+<title>RLA-WM</title>
 
 <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700|Source+Serif+Pro:400,600" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
 <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light-border.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
 <link rel="stylesheet" href="static/css/paper.css" />
+<link rel="stylesheet" href="static/css/themes.css" />
+<link rel="stylesheet" href="static/css/markdown.css" />
+
+<link rel="apple-touch-icon" sizes="180x180" href="static/images/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="static/images/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="static/images/favicon/favicon-16x16.png">
 </head>
 
 <body>
@@ -67,77 +74,89 @@
            --shape-w  · width   (default per-slot)
            --shape-h  · height  (default per-slot)
            --shape-opacity · 0–1 visibility (default 0.18) -->
-    <img class="shape shape-10"
+    <!-- <img class="shape shape-10"
          style="--shape-w:160px; --shape-h:44px; --shape-opacity:.55;"
-         src="static/images/example.svg" alt="">
+         src="static/images/example.svg" alt=""> -->
   </div>
 
   <div class="container">
     <h1 class="reveal">
-      Your Paper Title:
-      <span class="hero-annot" data-annot-id="a" data-color="#ef4444" data-delay="1.0" data-side="right">First Key Idea</span>
-      meets
-      <span class="hero-annot" data-annot-id="b" data-color="#3b82f6" data-delay="2.6" data-side="left">Second Key Idea</span>
+      Learning 
+       <span class="hero-annot" data-annot-id="a" data-color="#ef4444" data-delay="1.0" data-side="right">Visual Feature-Based World Models</span>
+      via
+      <span class="hero-annot" data-annot-id="b" data-color="#3b82f6" data-delay="2.0" data-side="right">Residual Latent Action</span>
     </h1>
     <div class="author-list reveal">
-      <span class="author equal"><a href="#">A. Anonymous</a><sup>1</sup></span>
-      <span class="author equal"><a href="#">B. Anonymous</a><sup>1,2</sup></span>
-      <span class="author"><a href="#">C. Anonymous</a><sup>2</sup></span>
+      Submission #638
+    </div>
+    <!-- <div class="author-list reveal">
+      <span class="author "><a href="https://mlzxy.github.io/" target="_blank">Xinyu Zhang</a><sup>1</sup></span>
+      <span class="author"><a href="https://zhengtongxu.github.io/website/" target="_blank">Zhengtong Xu</a><sup>2</sup></span>
+      <span class="author"><a href="https://www.linkedin.com/in/yutian-tao-cs" target="_blank">Yutian Tao</a><sup>3</sup></span>
+      <span class="author"><a href="https://yepw.github.io/" target="_blank">Yeping Wang</a><sup>3</sup></span>
+      <span class="author"><a href="https://www.purduemars.com/" target="_blank">Yu She</a><sup>2</sup></span>
+      <span class="author"><a href="http://rl.cs.rutgers.edu/" target="_blank">Abdeslam Boularias</a><sup>1</sup></span>
     </div>
     <div class="affiliations reveal">
-      <span><sup>1</sup><img class="affil-logo" src="static/images/logo-inst1.svg" alt="">Anonymous Institution</span>
-      <span><sup>2</sup><img class="affil-logo" src="static/images/logo-inst2.svg" alt="">Anonymous University</span>
-    </div>
-    <p class="eq-note reveal">* Equal contribution</p>
+      <span><sup>1</sup><img class="affil-logo" src="static/images/rutgers.png" alt="">Rutgers University</span>
+      <span><sup>2</sup><img class="affil-logo" src="static/images/purdue.svg" alt="">Purdue University</span>
+      <span><sup>3</sup><img class="affil-logo" src="static/images/wisc.svg" alt="">University of Wisconsin-Madison</span>
+    </div> -->
+    <!-- <p class="eq-note reveal">* Equal contribution</p> -->
 
     <!-- Conference / venue line. Delete this <p> for an arXiv preprint. -->
-    <p class="muted reveal" style="margin-top:8px;">NeurIPS 2026 (under review)</p>
+    <!-- <p class="muted reveal" style="margin-top:8px;">NeurIPS 2026 (under review)</p> -->
 
     <!-- Action buttons. Add / remove as needed; brand variants live
          in paper.css (.btn-link.arxiv / .github / .linkedin / …). -->
     <div class="actions reveal">
-      <a class="btn-link arxiv" href="https://arxiv.org/abs/0000.00000" target="_blank" rel="noopener">
+      <!-- TODO -->
+      <!-- <a class="btn-link arxiv" href="https://arxiv.org/abs/0000.00000" target="_blank" rel="noopener">
         <i class="ai ai-arxiv" aria-hidden="true"></i>
         arXiv
       </a>
-      <a class="btn-link github" href="https://github.com/your-org/your-repo" target="_blank" rel="noopener">
+      <a class="btn-link github" href="https://github.com/mlzxy/rla-wm" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         Code
-      </a>
-      <a class="btn-link linkedin" href="https://www.linkedin.com/in/your-handle" target="_blank" rel="noopener">
+      </a> -->
+
+      <!-- TODO, linkedin post handle -->
+      <!-- <a class="btn-link linkedin" href="https://www.linkedin.com/in/your-handle" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
         LinkedIn
-      </a>
+      </a> -->
     </div>
 
     <!-- Demo video. data-src accepts either a YouTube URL or a local
          file path (e.g. "static/videos/teaser.mp4"). -->
-    <div class="video-player reveal"
+    <!-- TODO: update video, re-recorded -->
+     <div class="video-player reveal"
          style="max-width:480px; margin:28px auto 0;"
-         data-src="https://www.youtube.com/watch?v=aqz-KE-bpKQ"
-         data-title="Project teaser"></div>
-
+         data-src="static/videos/main.mp4"
+         data-title="Overview"></div> 
     <p class="scroll-cue">scroll</p>
   </div>
 
   <aside class="side-card" data-annot-id="a"
-         style="top:26%; right:4%; --card-color:#ef4444; --card-color-2:#f59e0b;">
-    <div class="kicker" style="color:#ef4444;">First Key Idea</div>
+         style="top:26%; right:4%; --card-color:#ef4444; --card-width:280px; --card-color-2:#f59e0b;--card-font-size:17px; ">
+    <div class="kicker" style="color:#ef4444;font-size:16px">World Models</div>
     <div class="body">
-      <p>A short, plain-English explanation of the first concept your paper introduces.
-         Two or three sentences is plenty.</p>
-      <p style="color:var(--muted); font-size:12px;">→ See Section 2 for details.</p>
-      <div class="mini-fig"></div>
+      <p>that predict features of future frames, such as DINO tokens, rather
+than just videos.</p>
+      <!-- <p style="color:var(--muted); font-size:12px;">→ See Section 2 for details.</p> -->
+      <!-- <div class="mini-fig"></div> -->
     </div>
   </aside>
 
   <aside class="side-card" data-annot-id="b"
-         style="top:56%; left:4%; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
-    <div class="kicker" style="color:#3b82f6;">Second Key Idea</div>
-    <div class="body">
-      <p>A short, plain-English explanation of the second concept and how it
-         connects to the first.</p>
-      <p style="color:var(--muted); font-size:12px;">→ See Section 3.</p>
+         style="top:56%; left:4%; --card-width:340px; --card-font-size:17px; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
+    <div class="kicker" style="color:#3b82f6;font-size:16px"><strong>R</strong>esidual <strong>L</strong>atent <strong>A</strong>ction</div>
+    <div class="body" style="">
+      <div class="markdown-block reveal tight"  data-markdown>
+RLA is our latent action representation learned from DINO token residuals, for visual state dynamics modeling. 
+      </div>
+      <div class="svg-holder reveal" data-svg-src="static/images/rla-simple.svg" style="max-width:220px;"></div>
+      <div class="figcaption"> RLA Autoencoder Learning </div>
     </div>
   </aside>
 </section>
@@ -145,7 +164,7 @@
 <!-- ============================================================
      ABSTRACT — paragraph with inline annotations + a TL;DR callout.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container narrow">
     <h2 class="reveal">Abstract</h2>
     <p class="reveal">
@@ -170,55 +189,121 @@
       ↓ Hover the underlined phrases to see the tooltip; underlines are drawn by <code>rough-notation</code> as you scroll into view.
     </p>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
      METHOD — pinned scrollytelling: bound text on the left,
      advancing figure on the right.
      ============================================================ -->
 <section>
-  <div class="container">
-    <h2 class="reveal" style="text-align:center;">Method</h2>
-    <p class="reveal narrow muted" style="margin:0 auto 48px;text-align:center;">
-      As you scroll, the figure on the right pins and advances. Each paragraph on the left is bound to a slide;
-      its underline highlights when its slide is active.
-    </p>
-  </div>
-
   <div class="container scrolly">
     <div class="stage">
       <div class="text-col">
-        <p data-slide="0">
-          <strong>Step 1.</strong> We start from a raw input and
-          <span class="annot">extract local features</span>
-          using a lightweight encoder.
-        </p>
-        <p data-slide="1">
-          <strong>Step 2.</strong> Features are then
-          <span class="annot">aggregated across scales</span>,
-          producing a compact representation.
-        </p>
-        <p data-slide="2">
-          <strong>Step 3.</strong> A small head
-          <span class="annot">predicts the final output</span>
-          and is the only part trained end-to-end.
-        </p>
-        <p data-slide="3">
-          <strong>Step 4.</strong> At inference we
-          <span class="annot">cache intermediate states</span>
-          for ~3× speedup with no accuracy loss.
-        </p>
-      </div>
+        <h2 class="reveal" style="text-align:left; margin-bottom:1em;">Summary</h2>
+        <!-- Nested scrolly list. Each [data-slide] id is matched to a
+             figure-slide with the same id. Children inherit a parent's
+             figure when their own id has no matching figure-slide
+             (e.g. "1.2" below falls back to "1"). -->
+        <ol class="scrolly-list">
+          <li data-slide="1">
+            <strong>1.</strong> RLA is surprisingly easy to learn, yet ideal for model state evolution.
+            <ul>
+              <li data-slide="1.1">
+                <strong>1.1</strong> RLA is <span class="annot" >predictive</span>. 
+                <span class="markdown-block" data-markdown>Decoder $f_\text{dec}$ accurately reconstructs $s_{t+h}$ from RLA $z$ and $s_t$ with just transformers without diffusion.</span>
+              </li>
+              <li data-slide="1.2">
+                <strong>1.2</strong> RLA is <span class="annot">generalizable</span>, even when trained on limited data.
+              </li>
+              <li data-slide="1.3">
+                <strong>1.3</strong> RLA encodes <span class="annot">temporal progression</span> in latent space.
+              </li>
+            </ul>
+          </li>
+          <li data-slide="2">
+            <strong>2.</strong> We build RLA World Model (<span class="annot">RLA-WM</span>), a simple and efficient state-of-the-art.
+          </li>
+          <li data-slide="3" data-skip>
+            <strong>3.</strong> Applications
+            <ul>
+              <li data-slide="3.1">
+                <strong>3.1</strong> RLA extends a BC policy to a <span class="annot">minimalist world action model</span> with just a linear layer, so it can learn directly from videos.
+              </li>
+              <li data-slide="3.2">
+                <strong>3.2</strong> We demonstrates <span class="annot">visual RL inside our RLA-WM</span>, which is learned from offline videos, without online interaction or handcrafted rewards.
+              </li>
+          </li>
 
+        </ol>
+      </div>
+<!-- $s_t$ denotes DINO token for frame $t$. -->
       <div class="figure-col">
-        <div class="figure-frame">
-          <div class="figure-slide is-active"><div class="placeholder" style="background:linear-gradient(135deg,#ef4444,#f59e0b);">1</div></div>
-          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">2</div></div>
-          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#10b981,#84cc16);">3</div></div>
-          <div class="figure-slide"><div class="placeholder" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);">4</div></div>
+        <div class="figure-frame flat">
+          <!-- Match by data-slide id. "1.2" is intentionally omitted so
+               that step 1.2 inherits the figure for step 1. -->
+          <div class="figure-slide is-active" data-slide="1">
+             <div class="svg-holder reveal" style="max-width:260px;" data-svg-src="static/images/rla.svg"></div>
+          </div>
+          <div class="figure-slide" data-slide="1.1" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/predictive.svg"></div>
+            <div class="figcaption markdown-block" data-markdown="">
+              We use image $512\times 512$, which means the DINO token dimension is $1024\times 1024$, yet with a RLA dimension of 2048 or just 64, we reconstruct $s_{t+h}$ with high fidelity. 
+            </div>
+          </div>
+          <div class="figure-slide" data-slide="1.2" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/generalizable.svg"></div>
+            <div class="figcaption">These robot-object interactions were never observed during RLA autoencoder training. Yet, RLA still reconstructs them well.</div>
+          </div>
+          <div class="figure-slide" data-slide="1.3" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/temporal.svg"></div>
+            <div class="figcaption">Interpolating between a Gaussian noise and RLA produces frames that approximates temporally intermediate states. This indicates that the RLA latent space inherently captures temporal progression.</div>
+          </div>
+          <div class="figure-slide" data-slide="2" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/rla-wm-simple.svg"></div>
+            <div class="figcaption">We predict RLA to estimate state evolution, instead of absolute states.</div>
+          </div>
+          <div class="figure-slide" data-slide="3.1" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/exp1-simple.svg"></div>
+          </div>
+          <div class="figure-slide" data-slide="3.2" style="flex-direction:column;">
+            <div class="svg-holder reveal" data-svg-src="static/images/exp2-simple.svg"></div>
+          </div>
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     EXPLORER — thumbnail strip + grid sub-component, configured
+     entirely from the embedded JSON below. See the docs for the
+     schema (kinds: color | image | video | sequence; modes:
+     cell | row | col | [explicit indices]).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Future Prediction</h2>
+    <p class="reveal narrow muted markdown-block tight" style="margin:0 auto 32px;text-align:center;" data-markdown>
+      Given an input frame (from validation set) at $t=0$, each world model predicts future frames at $t=h, t=2h, \dots$ from the input action chunk $a_{t:t+h}, a_{t+h:t+2h}, \dots$.
+    </p>
+
+    <div class="explorer reveal" data-src="static/data/explorer.json"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     INKSCAPE SVG — fetched at runtime, injected inline, animated.
+     Run via `python3 -m http.server` so fetch() works (file:// is
+     blocked by CORS; falls back to a static <img> otherwise).
+     ============================================================ -->
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">RLA World Model</h2>
+    <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
+      RLA-WM predicts future states by generating the residual latent action $z$ via flow matching, and decodes $\hat{s}_{t+h}$ with pre-trained RLA decoder $f_\text{dec}$.
+    </p>
+    <div class="svg-holder reveal" data-svg-src="static/images/rla-wm.svg"></div>
   </div>
 </section>
 
@@ -227,11 +312,44 @@
      ============================================================ -->
 <section>
   <div class="container">
-    <h2 class="reveal" style="text-align:center;">Architecture</h2>
+    <h2 class="reveal" style="text-align:center;">Learning from Actionless Videos</h2>
+    <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
+      We add a linear layer on top of a BC policy to predict RLA $z$, which learns from videos whose action or proprioception are not available. As RLA enable accurate prediction of $s_{t+h}$, this simple framework becomes a minimalist world action model, which improves performance, without inference cost or coupling to a video backbone.
+    </p>
+    <div class="svg-holder reveal" data-svg-src="static/images/wam.svg"></div>
+  </div>
+</section>
+
+
+<section style="position:relative;">
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Visual Reinforcement Learning inside RLA-WM</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
+      We show the first demonstration of visual RL inside a world model learned from offline videos only, which we refer to as <span class="annot" >World Model-based Reinforcement Learning (WMRL)</span>.
+    </p>
+    <div class="svg-holder reveal" data-svg-src="static/images/wmrl.svg"></div>
+  </div>
+
+  <aside class="side-card reveal"
+         style="top:60%; right:3%; --card-width:260px; --card-color:#3b82f6; --card-color-2:#06b6d4; border-left-color:#3b82f6;">
+    <!-- <div class="kicker" style="color:#3b82f6;font-size:14px;">Paper</div> -->
+    <div class="body" style="font-size:15px;">
+      <p style="margin-bottom:12px;">Want more details? Check out our paper!</p>
+      <a class="btn-link arxiv" href="https://arxiv.org/abs/0000.00000" target="_blank" rel="noopener" style="display:inline-flex; gap:6px; align-items:center; padding:6px 14px;">
+        <i class="ai ai-arxiv" aria-hidden="true"></i>
+        arXiv
+      </a>
+    </div>
+  </aside>
+</section>
+
+<!-- <section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Applications</h2>
 
     <div class="split reveal" data-layout="img-left">
       <div class="split-media">
-        <div class="placeholder">image →</div>
+        <div class="svg-holder reveal" data-svg-src="static/images/wam.svg" data-svg-start="top bottom-=80"></div>
       </div>
       <div class="split-text">
         <h3>Component One</h3>
@@ -243,7 +361,7 @@
 
     <div class="split reveal" data-layout="img-right">
       <div class="split-media">
-        <div class="placeholder" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">← image</div>
+        <div class="svg-holder reveal" data-svg-src="static/images/wmrl.svg" data-svg-start="top bottom-=80"></div>
       </div>
       <div class="split-text">
         <h3>Component Two</h3>
@@ -253,12 +371,12 @@
       </div>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
      SYSTEM DIAGRAM — inline SVG with path-draw on scroll.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container narrow">
     <h2 class="reveal" style="text-align:center;">System Diagram (SVG)</h2>
     <p class="reveal muted" style="text-align:center;">
@@ -284,29 +402,15 @@
       <path class="flow"     d="M 540 140 L 600 140"/>
     </svg>
   </div>
-</section>
+</section> -->
 
-<!-- ============================================================
-     INKSCAPE SVG — fetched at runtime, injected inline, animated.
-     Run via `python3 -m http.server` so fetch() works (file:// is
-     blocked by CORS; falls back to a static <img> otherwise).
-     ============================================================ -->
-<section>
-  <div class="container">
-    <h2 class="reveal" style="text-align:center;">Inkscape SVG</h2>
-    <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
-      A real Inkscape export is fetched at runtime, injected inline, and each top-level
-      child is staggered in. Stroked <code>&lt;path&gt;</code>s also get a draw-on-scroll effect.
-    </p>
-    <div class="svg-holder reveal" data-svg-src="static/images/example.svg"></div>
-  </div>
-</section>
+
 
 <!-- ============================================================
      RESULTS GALLERY — grid of figures with captions.
      Set --figure-grid-cols inline to change the column count.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Results Gallery</h2>
     <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
@@ -322,12 +426,12 @@
       <figure><div class="placeholder" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);">F</div><figcaption>Configuration F — final.</figcaption></figure>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
      QUALITATIVE RESULTS — Embla carousel (drag / arrows / dots).
      ============================================================ -->
-<section>
+<!-- <section>
   <div class="container">
     <h2 class="reveal" style="text-align:center;">Qualitative Results</h2>
     <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
@@ -342,12 +446,12 @@
       </div>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
      BEFORE / AFTER — drag to wipe between two images.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container narrow">
     <h2 class="reveal" style="text-align:center;">Before / After</h2>
     <p class="reveal muted" style="text-align:center;">
@@ -359,112 +463,14 @@
          data-before-label="Input"
          data-after-label="Ours"></div>
   </div>
-</section>
+</section> -->
 
-<!-- ============================================================
-     EXPLORER — thumbnail strip + grid sub-component, configured
-     entirely from the embedded JSON below. See the docs for the
-     schema (kinds: color | image | video | sequence; modes:
-     cell | row | col | [explicit indices]).
-     ============================================================ -->
-<section>
-  <div class="container">
-    <h2 class="reveal" style="text-align:center;">Explorer</h2>
-    <p class="reveal narrow muted" style="margin:0 auto 32px;text-align:center;">
-      Hover any thumbnail to swap the panel below. Each panel is its own grid (rows can have
-      different cell counts), with optional row/col labels, captions, and configurable animation order.
-    </p>
 
-    <div class="explorer reveal">
-      <script type="application/json">
-[
-  {
-    "thumb": { "label": "A", "color": "#ef4444" },
-    "title": "Configuration A — irregular grid, row labels, cell-by-cell animation",
-    "rowLabels": ["Input", "Ours"],
-    "animation": { "mode": "cell", "stagger": 0.08 },
-    "rows": [
-      { "cells": [
-        { "kind": "color", "color": "#ef4444", "label": "orig", "caption": "orig" },
-        { "kind": "color", "color": "#f59e0b", "label": "mask", "caption": "mask" }
-      ] },
-      { "cells": [
-        { "kind": "color", "color": "#3b82f6", "label": "1", "caption": "t=1" },
-        { "kind": "color", "color": "#06b6d4", "label": "2", "caption": "t=2" },
-        { "kind": "color", "color": "#10b981", "label": "3", "caption": "t=3" },
-        { "kind": "color", "color": "#84cc16", "label": "4", "caption": "t=4" },
-        { "kind": "color", "color": "#f59e0b", "label": "5", "caption": "t=5" },
-        { "kind": "color", "color": "#ef4444", "label": "6", "caption": "t=6" }
-      ] }
-    ]
-  },
-  {
-    "thumb": { "label": "B", "color": "#3b82f6" },
-    "title": "Configuration B — regular grid with col labels, animated row by row",
-    "rowLabels": ["GT", "Pred"],
-    "colLabels": ["t=0", "t=1", "t=2", "t=3"],
-    "animation": { "mode": "row", "stagger": 0.18 },
-    "rows": [
-      { "cells": [
-        { "kind": "color", "color": "#10b981", "label": "A", "caption": "gt-0" },
-        { "kind": "color", "color": "#34d399", "label": "B", "caption": "gt-1" },
-        { "kind": "color", "color": "#6ee7b7", "label": "C", "caption": "gt-2" },
-        { "kind": "color", "color": "#a7f3d0", "label": "D", "caption": "gt-3" }
-      ] },
-      { "cells": [
-        { "kind": "color", "color": "#3b82f6", "label": "A", "caption": "pred-0" },
-        { "kind": "color", "color": "#60a5fa", "label": "B", "caption": "pred-1" },
-        { "kind": "color", "color": "#93c5fd", "label": "C", "caption": "pred-2" },
-        { "kind": "color", "color": "#bfdbfe", "label": "D", "caption": "pred-3" }
-      ] }
-    ]
-  },
-  {
-    "thumb": { "label": "C", "color": "#10b981" },
-    "title": "Configuration C — image sequences (auto-play frames), explicit animation order",
-    "animation": { "mode": [2, 0, 3, 1], "stagger": 0.15 },
-    "rows": [
-      { "cells": [
-        { "kind": "sequence", "frames": [{"color":"#ef4444"},{"color":"#f59e0b"},{"color":"#10b981"},{"color":"#3b82f6"}], "interval": 350, "caption": "sequence (auto)" },
-        { "kind": "sequence", "frames": [{"color":"#3b82f6"},{"color":"#8b5cf6"},{"color":"#ec4899"},{"color":"#f59e0b"}], "interval": 250, "caption": "faster (250ms)" },
-        { "kind": "sequence", "frames": [{"color":"#10b981"},{"color":"#84cc16"},{"color":"#f59e0b"},{"color":"#ef4444"},{"color":"#8b5cf6"}], "interval": 500, "caption": "5 frames, 500ms" },
-        { "kind": "sequence", "frames": [{"color":"#06b6d4"},{"color":"#3b82f6"},{"color":"#1e40af"}], "interval": 350, "caption": "3 frames" }
-      ] }
-    ]
-  },
-  {
-    "thumb": { "label": "D", "color": "#f59e0b" },
-    "title": "Configuration D — col-by-col animation, mixed cell counts",
-    "rowLabels": ["row 1", "row 2", "row 3"],
-    "animation": { "mode": "col", "stagger": 0.15 },
-    "rows": [
-      { "cells": [
-        { "kind": "color", "color": "#ef4444" },
-        { "kind": "color", "color": "#f59e0b" },
-        { "kind": "color", "color": "#10b981" }
-      ] },
-      { "cells": [
-        { "kind": "color", "color": "#3b82f6" },
-        { "kind": "color", "color": "#8b5cf6" }
-      ] },
-      { "cells": [
-        { "kind": "color", "color": "#06b6d4" },
-        { "kind": "color", "color": "#84cc16" },
-        { "kind": "color", "color": "#ec4899" },
-        { "kind": "color", "color": "#f59e0b" }
-      ] }
-    ]
-  }
-]
-      </script>
-    </div>
-  </div>
-</section>
 
 <!-- ============================================================
      QUANTITATIVE RESULTS — table with .best / .second / .row-divider.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container narrow">
     <h2 class="reveal" style="text-align:center;">Quantitative Results</h2>
     <p class="reveal muted" style="text-align:center;">
@@ -490,13 +496,13 @@
       <caption>Top-1 accuracy and compute on the held-out test set.</caption>
     </table>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
      INTERACTIVE DEMO — example of one-off, page-specific JS.
      The handler lives in the inline <script> block at the bottom.
      ============================================================ -->
-<section>
+<!-- <section>
   <div class="container narrow">
     <h2 class="reveal">Try it yourself</h2>
     <p class="reveal muted">An example of an interactive component embedded in the page — pick a config and see the result update.</p>
@@ -520,12 +526,12 @@
       <div class="panel" id="demoPanel">// Pick options and click Run.</div>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
-     CITATION — code block with auto-injected copy button.
+TODO     CITATION — code block with auto-injected copy button.
      ============================================================ -->
-<section class="alt">
+<!-- <section class="alt">
   <div class="container narrow">
     <h2 class="reveal" style="text-align:center;">Citation</h2>
     <div class="code-block reveal" data-lang="BibTeX">
@@ -537,15 +543,15 @@
 }</pre>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ============================================================
-     FOOTER — thin attribution bar.
+TODO     FOOTER — thin attribution bar. 
      ============================================================ -->
-<footer class="footer-bar">
-  Feel free to borrow the source code of this website — just link back to
-  <a href="#">this page</a> in the footer.
-</footer>
+<!-- <footer class="footer-bar">
+  Feel free to borrow the <a href="#">source code</a> of this website — just link back to
+  the <a href="#">RLA-WM</a> page in the footer.
+</footer> -->
 
 
 <!-- ============================================================
@@ -561,17 +567,26 @@
 <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
 <script src="https://unpkg.com/@popperjs/core@2"></script>
 <script src="https://unpkg.com/tippy.js@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="static/js/themes.js"></script>
+<script src="static/js/markdown.js"></script>
 <script src="static/js/paper.js"></script>
 
 <!-- One-off page logic (the dropdown demo). -->
 <script>
-  document.getElementById('runBtn').addEventListener('click', () => {
-    const ds  = document.getElementById('dataset').value;
-    const bb  = document.getElementById('backbone').value;
-    const acc = (70 + Math.random() * 15).toFixed(2);
-    document.getElementById('demoPanel').textContent =
-      `> running on ${ds} with ${bb}\n> accuracy: ${acc}%\n> (replace this with a real demo or a pre-rendered table lookup)`;
-  });
+  let runBtn = document.getElementById('runBtn');
+  if (runBtn) {
+    runBtn.addEventListener('click', () => {
+      const ds  = document.getElementById('dataset').value;
+      const bb  = document.getElementById('backbone').value;
+      const acc = (70 + Math.random() * 15).toFixed(2);
+      document.getElementById('demoPanel').textContent =
+        `> running on ${ds} with ${bb}\n> accuracy: ${acc}%\n> (replace this with a real demo or a pre-rendered table lookup)`;
+    });
+  }
 </script>
 </body>
 </html>

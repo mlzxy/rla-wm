@@ -56,24 +56,17 @@
      are activated by the scrolly module instead (active-slide bound).
      ============================================================ */
   function initAnnotations() {
-    const RN = window.RoughNotation;
     $$('.annot').forEach((el) => {
       // Skip hero phrases (handled by initHero) and scrolly-bound phrases
       // (handled by initScrolly via the active-slide highlight).
       if (el.classList.contains('hero-annot')) return;
       if (el.closest('.scrolly')) return;
 
-      const type    = el.dataset.type    || 'underline';
-      const color   = el.dataset.color   || '#3b82f6';
-      const stroke  = num(el.dataset.stroke,   2);
-      const padding = num(el.dataset.padding,  2);
-      const dur     = num(el.dataset.duration, 600);
-
-      const ann = RN.annotate(el, { type, color, strokeWidth: stroke, padding, animationDuration: dur });
+      if (el.dataset.color) el.style.setProperty('--annot-bg', el.dataset.color);
       ScrollTrigger.create({
         trigger: el, start: 'top 85%',
-        onEnter:     () => ann.show(),
-        onLeaveBack: () => ann.hide(),
+        onEnter:     () => el.classList.add('is-active'),
+        onLeaveBack: () => el.classList.remove('is-active'),
       });
     });
   }
@@ -155,11 +148,56 @@
     const RN = window.RoughNotation;
     $$('.scrolly').forEach((scrolly) => {
       const figureSlides   = $$('.figure-slide', scrolly);
-      const textParagraphs = $$('.text-col p[data-slide]', scrolly);
-      const NUM_SLIDES     = figureSlides.length;
-      if (!NUM_SLIDES) return;
+      // Text items are anything with [data-slide] inside .text-col — supports
+      // both the old flat <p data-slide="0"> and a real nested <ol>/<ul>:
+      //   <ol><li data-slide="1">…<ul><li data-slide="1.1">…</li></ul></li></ol>
+      // Items with [data-skip] (or [data-disabled]) are still rendered but
+      // are NOT activatable: excluded from the scroll/hover/click rotation
+      // and the figure column simply keeps the previous step's figure.
+      const textParagraphs = $$('.text-col [data-slide]', scrolly)
+        .filter((p) => !p.hasAttribute('data-skip') && !p.hasAttribute('data-disabled'));
+      // Mark all skipped items so CSS can dim them visually.
+      $$('.text-col [data-slide][data-skip], .text-col [data-slide][data-disabled]', scrolly)
+        .forEach((p) => p.classList.add('is-skip'));
+      const NUM_SLIDES     = textParagraphs.length;          // scroll length tracks text-step count
+      if (!NUM_SLIDES || !figureSlides.length) return;
+
+      // Map each figure slide's id → its DOM index. If a figure-slide has no
+      // [data-slide], fall back to its sequential numeric position so legacy
+      // (index-based) markup keeps working.
+      const figIdToIdx = new Map();
+      figureSlides.forEach((el, i) => {
+        const id = (el.dataset.slide != null && el.dataset.slide !== '')
+          ? String(el.dataset.slide) : String(i);
+        if (!figIdToIdx.has(id)) figIdToIdx.set(id, i);
+      });
+
+      // Resolve a text item's slide id → figure index.
+      // If exact match misses, walk up the dotted hierarchy ("1.2.3" → "1.2" → "1"),
+      // so child nodes inherit their parent's figure when none of their own is given.
+      function resolveFigIdx(slideId) {
+        let id = String(slideId);
+        while (id.length) {
+          if (figIdToIdx.has(id)) return figIdToIdx.get(id);
+          const dot = id.lastIndexOf('.');
+          if (dot < 0) return -1;
+          id = id.slice(0, dot);
+        }
+        return -1;
+      }
+
+      // Pre-resolve each text step → figure index. Unresolved ones inherit
+      // the previous resolved figure (sticky), so a stray text node never
+      // blanks the figure column.
+      let lastSeen = -1;
+      const stepFigIdx = textParagraphs.map((p) => {
+        const r = resolveFigIdx(p.dataset.slide);
+        if (r >= 0) lastSeen = r;
+        return lastSeen >= 0 ? lastSeen : 0;
+      });
 
       // Auto-generate progress dots inside each .figure-frame if missing.
+      // One dot per *text step* (so progress reflects narration length).
       const frame = $('.figure-frame', scrolly);
       let progress = $('.figure-progress', scrolly);
       if (frame && !progress) {
@@ -170,22 +208,17 @@
       }
       const progressDots = progress ? Array.from(progress.children) : [];
 
-      // Auto-annotate each phrase inside paragraphs (color/type configurable
-      // via data-* on the .annot element). Add .is-active when its slide is.
-      const phraseAnnots = []; // [{ el, ann, slideIdx }]
-      textParagraphs.forEach((p) => {
-        const slideIdx = +p.dataset.slide;
+      // Collect each phrase inside paragraphs. They simply toggle .is-active
+      // (CSS background highlight) when their step is the active one.
+      const phrasePlain = []; // [{ el, stepIdx }]
+      textParagraphs.forEach((p, stepIdx) => {
         $$('.annot', p).forEach((el) => {
-          const type   = el.dataset.type   || 'underline';
-          const color  = el.dataset.color  || '#3b82f6';
-          const stroke = num(el.dataset.stroke, 2);
-          const pad    = num(el.dataset.padding, 2);
-          const dur    = num(el.dataset.duration, 600);
-          const ann = RN.annotate(el, { type, color, strokeWidth: stroke, padding: pad, animationDuration: dur });
-          phraseAnnots.push({ el, ann, slideIdx });
+          if (el.dataset.color) el.style.setProperty('--annot-bg', el.dataset.color);
+          phrasePlain.push({ el, stepIdx });
         });
       });
-      // Draw all phrase annotations once the section enters view.
+      const phraseAnnots = []; // legacy, kept empty so existing refs are no-ops
+      // (no rough-notation to draw)
       if (phraseAnnots.length) {
         ScrollTrigger.create({
           trigger: scrolly, start: 'top 80%',
@@ -193,12 +226,31 @@
           onLeaveBack: () => phraseAnnots.forEach(({ ann }) => ann.hide()),
         });
       }
+      // Pre-resolve each text item's chain of <li>s (itself + ancestors)
+      // inside the text-col, so we can mark them "open" when this step (or one
+      // of its descendants) is active. Used by the collapse/expand behaviour.
+      const stepAncestors = textParagraphs.map((p) => {
+        const out = [];
+        let n = p;
+        const root = $('.text-col', scrolly);
+        while (n && n !== root) {
+          if (n.tagName === 'LI') out.push(n);
+          n = n.parentElement;
+        }
+        return out;
+      });
+      const allListItems = Array.from(new Set(stepAncestors.flat()));
 
-      function setActiveSlide(idx) {
-        figureSlides.forEach((s, i)  => s.classList.toggle('is-active', i === idx));
-        progressDots.forEach((d, i)  => d.classList.toggle('is-active', i === idx));
-        textParagraphs.forEach((p, i) => p.classList.toggle('is-active-para', i === idx));
-        phraseAnnots.forEach(({ el, slideIdx }) => el.classList.toggle('is-active', slideIdx === idx));
+      function setActiveSlide(stepIdx) {
+        const figIdx = stepFigIdx[stepIdx];
+        figureSlides.forEach((s, i)  => s.classList.toggle('is-active', i === figIdx));
+        progressDots.forEach((d, i)  => d.classList.toggle('is-active', i === stepIdx));
+        textParagraphs.forEach((p, i) => p.classList.toggle('is-active-para', i === stepIdx));
+        phraseAnnots.forEach(({ el, stepIdx: si }) => el.classList.toggle('is-active', si === stepIdx));
+        phrasePlain.forEach(({ el, stepIdx: si })  => el.classList.toggle('is-active', si === stepIdx));
+        // Open only the ancestor <li>s of the active step; collapse all others.
+        const openSet = new Set(stepAncestors[stepIdx] || []);
+        allListItems.forEach((li) => li.classList.toggle('is-open', openSet.has(li)));
       }
 
       gsap.matchMedia().add({
@@ -226,25 +278,67 @@
           // Also requires real cursor movement since the last scroll (synthetic
           // mouseenter events fire when the pin engages and DOM gets reparented).
           let lastMouseMoveAt = 0;
-          const onMove = () => { lastMouseMoveAt = performance.now(); };
+          let hoveredEl = null;
+          const onMove = (e) => {
+            lastMouseMoveAt = performance.now();
+            hoveredEl = e.target;
+          };
           window.addEventListener('mousemove', onMove);
 
           const handlers = [];
           textParagraphs.forEach((p, i) => {
-            const fn = () => {
-              if (scrollingNow) return;
-              if (performance.now() - lastMouseMoveAt > 120) return;
-              if (p.classList.contains('is-active-para')) return;
-              const targetY = trig.start + ((i + 0.5) / NUM_SLIDES) * (trig.end - trig.start);
-              if (lenis) lenis.scrollTo(targetY, { duration: 0.6 });
-              else window.scrollTo({ top: targetY, behavior: 'smooth' });
+            let retryTimer = 0;
+            const targetY = () =>
+              trig.start + ((i + 0.5) / NUM_SLIDES) * (trig.end - trig.start);
+            const tryJump = () => {
+              if (p.classList.contains('is-active-para')) return true;
+              if (scrollingNow) return false;
+              if (performance.now() - lastMouseMoveAt > 120) return false;
+              // Don't activate the parent if the cursor is actually over a
+              // deeper [data-slide] descendant.
+              if (hoveredEl && hoveredEl.closest &&
+                  hoveredEl.closest('[data-slide]') !== p) return false;
+              if (lenis) lenis.scrollTo(targetY(), { duration: 0.25 });
+              else window.scrollTo({ top: targetY(), behavior: 'smooth' });
+              return true;
             };
-            p.addEventListener('mouseenter', fn);
-            handlers.push([p, fn]);
+            const enter = () => {
+              if (tryJump()) return;
+              // Hover was blocked (e.g. wheel scroll still settling). Keep
+              // retrying while the user keeps hovering — the active step will
+              // catch up shortly after they pause.
+              clearInterval(retryTimer);
+              retryTimer = setInterval(() => {
+                if (tryJump()) clearInterval(retryTimer);
+              }, 120);
+            };
+            const leave = () => { clearInterval(retryTimer); retryTimer = 0; };
+            // Click: activate immediately + jump scroll position to match.
+            // Stop propagation so a nested <li>'s click doesn't also fire on
+            // its ancestor [data-slide] (which would re-activate the parent).
+            const click = (ev) => {
+              const closest = ev.target.closest('[data-slide]');
+              if (closest !== p) return; // a deeper item handled it
+              ev.preventDefault();
+              ev.stopPropagation();
+              clearInterval(retryTimer);
+              setActiveSlide(i);
+              const y = targetY();
+              if (lenis) lenis.scrollTo(y, { duration: 0.15, immediate: false });
+              else window.scrollTo({ top: y, behavior: 'auto' });
+            };
+            p.addEventListener('mouseenter', enter);
+            p.addEventListener('mouseleave', leave);
+            p.addEventListener('click', click);
+            handlers.push([p, enter, leave, click]);
           });
           return () => {
             window.removeEventListener('mousemove', onMove);
-            handlers.forEach(([p, fn]) => p.removeEventListener('mouseenter', fn));
+            handlers.forEach(([p, enter, leave, click]) => {
+              p.removeEventListener('mouseenter', enter);
+              p.removeEventListener('mouseleave', leave);
+              p.removeEventListener('click', click);
+            });
           };
         }
 
@@ -404,25 +498,24 @@
           });
         });
 
-        // Opacity-only initial state (CSS transforms on SVG children with
-        // their own transform="..." would blow up the layout without
-        // transform-box: fill-box).
-        gsap.set(children, { opacity: 0 });
-
-        ScrollTrigger.create({
-          trigger: holder,
-          start,
-          onEnter: () => {
-            gsap.to(children, { opacity: 1, duration: fade, stagger, ease: 'power2.out' });
-            gsap.to(drawables.map((d) => d.p), { strokeDashoffset: 0, duration: draw, stagger, ease: 'power2.out' });
-          },
-          onLeaveBack: () => {
-            gsap.set(children, { opacity: 0 });
-            drawables.forEach(({ p, len }) => gsap.set(p, { strokeDashoffset: len }));
+        // Fade children in on scroll via a GSAP timeline + embedded ScrollTrigger.
+        // Using fromTo with immediateRender:false ensures the initial opacity:0 is
+        // only applied when the animation actually starts — if the trigger is beyond
+        // the scrollable range the children stay at their natural CSS opacity (1).
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: holder,
+            start,
+            toggleActions: 'play none none reverse',
+            onLeaveBack: () => {
+              drawables.forEach(({ p, len }) => gsap.set(p, { strokeDashoffset: len }));
+            },
           },
         });
-
-        ScrollTrigger.refresh();
+        tl.fromTo(children, { opacity: 0 }, { opacity: 1, duration: fade, stagger, ease: 'power2.out', immediateRender: false });
+        if (drawables.length) {
+          tl.to(drawables.map((d) => d.p), { strokeDashoffset: 0, duration: draw, stagger, ease: 'power2.out' }, 0);
+        }
       }
     });
   }
@@ -438,12 +531,23 @@
      ============================================================ */
   function initExplorers() {
     $$('.explorer').forEach((root) => {
+      // Support both inline JSON (<script type="application/json">)
+      // and external JSON loaded via data-src.
+      const src = root.dataset.src;
       const cfgScript = $('script[type="application/json"]', root);
-      if (!cfgScript) return;
-      let configs = [];
-      try { configs = JSON.parse(cfgScript.textContent); } catch (e) { console.error('[paper.js] explorer JSON parse failed', e); return; }
-      if (!Array.isArray(configs) || !configs.length) return;
+      if (cfgScript) {
+        let configs = [];
+        try { configs = JSON.parse(cfgScript.textContent); } catch (e) { console.error('[paper.js] explorer JSON parse failed', e); return; }
+        if (Array.isArray(configs) && configs.length) buildExplorer(root, configs);
+      } else if (src) {
+        fetch(src)
+          .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then((configs) => { if (Array.isArray(configs) && configs.length) buildExplorer(root, configs); })
+          .catch((e) => console.error('[paper.js] explorer fetch failed for ' + src, e));
+      }
+    });
 
+    function buildExplorer(root, configs) {
       // Build skeleton.
       root.innerHTML = `
         <div class="thumb-strip embla">
@@ -466,7 +570,11 @@
       configs.forEach((cfg, i) => {
         const slide = document.createElement('div');
         slide.className = 'embla__slide';
-        slide.innerHTML = `<div class="thumb" data-thumb-idx="${i}" style="background:${cfg.thumb.color};">${cfg.thumb.label}</div>`;
+        if (cfg.thumb.src) {
+          slide.innerHTML = `<div class="thumb" data-thumb-idx="${i}"><img src="${cfg.thumb.src}" alt=""></div>`;
+        } else {
+          slide.innerHTML = `<div class="thumb" data-thumb-idx="${i}" style="background:${cfg.thumb.color};">${cfg.thumb.label || ''}</div>`;
+        }
         stripContainer.appendChild(slide);
       });
 
@@ -484,6 +592,22 @@
         colLabelsEl.className = 'col-labels-host';
       }
 
+      function applyMaxSize(media, img, cell) {
+        if (cell.maxWidth) img.style.maxWidth = cell.maxWidth;
+        if (cell.maxHeight) img.style.maxHeight = cell.maxHeight;
+        if (cell.maxWidth || cell.maxHeight) {
+          img.style.width = 'auto';
+          img.style.height = 'auto';
+          img.style.objectFit = 'contain';
+          // Shrink the media container to fit the constrained image
+          media.style.aspectRatio = 'auto';
+          media.style.flex = 'none';
+          media.style.alignSelf = 'center';
+          // Mark the media so renderDetail can shrink the parent cell
+          media.dataset.constrained = 'true';
+        }
+      }
+
       function buildCellMedia(cell) {
         const media = document.createElement('div');
         media.className = 'media';
@@ -494,17 +618,22 @@
           const img = document.createElement('img');
           img.src = cell.src; img.alt = cell.label || '';
           media.appendChild(img);
+          applyMaxSize(media, img, cell);
         } else if (cell.kind === 'video') {
           const v = document.createElement('video');
           v.src = cell.src; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
           media.appendChild(v);
+          applyMaxSize(media, v, cell);
         } else if (cell.kind === 'sequence') {
           let f = 0;
           const apply = () => {
             const fr = cell.frames[f];
             if (fr.src) {
               media.style.background = ''; media.textContent = '';
-              if (!media.querySelector('img')) media.innerHTML = '<img>';
+              if (!media.querySelector('img')) {
+                media.innerHTML = '<img>';
+                applyMaxSize(media, media.querySelector('img'), cell);
+              }
               media.querySelector('img').src = fr.src;
             } else {
               media.style.background = fr.color;
@@ -538,11 +667,26 @@
             lab.textContent = cfg.rowLabels[ri] || '';
             rowEl.appendChild(lab);
           }
+          // Wrapper for column labels + cells
+          const rowBody = document.createElement('div'); rowBody.className = 'row-body';
+          // Per-row column labels (optional)
+          if (row.colLabels && row.colLabels.length) {
+            const cl = document.createElement('div'); cl.className = 'row-col-labels';
+            row.colLabels.forEach((label) => {
+              const s = document.createElement('span'); s.textContent = label; cl.appendChild(s);
+            });
+            rowBody.appendChild(cl);
+          }
           const cellsWrap = document.createElement('div'); cellsWrap.className = 'cells';
+          // Center-align cells in the row (default: true)
+          if (cfg.centerCells !== false) cellsWrap.style.justifyContent = 'center';
           const rowCells = [];
           row.cells.forEach((cell) => {
             const cellEl = document.createElement('div'); cellEl.className = 'detail-cell';
-            cellEl.appendChild(buildCellMedia(cell));
+            const mediaEl = buildCellMedia(cell);
+            cellEl.appendChild(mediaEl);
+            // If the media was constrained by maxWidth/maxHeight, shrink the cell too
+            if (mediaEl.dataset.constrained === 'true') cellEl.style.flex = 'none';
             if (cell.caption) {
               const cap = document.createElement('div'); cap.className = 'caption';
               cap.textContent = cell.caption;
@@ -552,7 +696,8 @@
             cellNodes.push(cellEl);
             rowCells.push(cellEl);
           });
-          rowEl.appendChild(cellsWrap);
+          rowBody.appendChild(cellsWrap);
+          rowEl.appendChild(rowBody);
           detailGrid.appendChild(rowEl);
           rowsAsCells.push(rowCells);
         });
@@ -589,7 +734,7 @@
         if (t) activate(+t.dataset.thumbIdx);
       });
       activate(0);
-    });
+    }
   }
 
   /* ============================================================
@@ -634,6 +779,26 @@
         setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('is-ok'); }, 1500);
       });
       block.appendChild(btn);
+
+      // Apply highlight.js syntax highlighting to the <pre> inside.
+      if (typeof hljs !== 'undefined') {
+        const pre = block.querySelector('pre');
+        if (pre) {
+          // If there's no <code> child, wrap the text in one.
+          let code = pre.querySelector('code');
+          if (!code) {
+            code = document.createElement('code');
+            code.textContent = pre.textContent;
+            pre.textContent = '';
+            pre.appendChild(code);
+          }
+          // Set language from data-lang if available
+          if (block.dataset.lang && block.dataset.lang !== 'BibTeX') {
+            code.classList.add('language-' + block.dataset.lang.toLowerCase());
+          }
+          try { hljs.highlightElement(code); } catch (e) { /* ignore */ }
+        }
+      }
     });
   }
 
@@ -783,6 +948,7 @@
     initCodeBlocks();
     initCompareSliders();
     initVideoPlayers();
+    if (typeof initMarkdown === 'function') initMarkdown();
   }
 
   if (document.readyState === 'loading') {
@@ -796,5 +962,6 @@
     initReveal, initAnnotations, initTooltips, initHero, initScrolly,
     initEmblas, initSvgFlows, initExternalSvgs, initExplorers,
     initCodeBlocks, initCompareSliders, initVideoPlayers,
+    initMarkdown: typeof initMarkdown === 'function' ? initMarkdown : null,
   };
 })();

@@ -4,34 +4,34 @@
    Pairs with paper.js. Each section below is a self-contained
    component; markup uses simple class names and data-* attributes
    (paper.js auto-discovers everything on DOMContentLoaded).
+
+   THEMING — All themeable colours use CSS custom properties
+   defined in themes.css.  The three built-in themes are:
+     light (default) · dark · paper
+   Switch via `data-theme` on <html> or PaperThemes.set('…').
    ============================================================ */
 
-:root {
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --bg: #ffffff;
-  --bg-soft: #f7f7f8;
-  --accent-1: #ef4444;
-  --accent-2: #3b82f6;
-  --accent-3: #10b981;
-  --accent-4: #f59e0b;
-  --rule: #e5e7eb;
-}
+/* Component-local knobs (not themable — layout / sizing only) */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body);
   color: var(--fg);
   background: var(--bg);
   line-height: 1.65;
   font-size: 17px;
 }
-h1, h2, h3 { font-family: 'Source Serif Pro', Georgia, serif; line-height: 1.2; letter-spacing: -0.01em; }
+h1, h2, h3 { font-family: var(--font-heading); line-height: 1.2; letter-spacing: -0.01em; }
 h1 { font-size: 48px; margin: 0 0 16px; }
 h2 { font-size: 32px; margin: 0 0 24px; }
 h3 { font-size: 22px; margin: 0 0 12px; }
 p  { margin: 0 0 18px; }
+
+::selection {
+  background: var(--selection-bg, var(--accent-2));
+  color: var(--selection-fg, #ffffff);
+}
 
 .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
 .narrow    { max-width: 720px; }
@@ -215,7 +215,7 @@ section.alt  { background: var(--bg-soft); }
   font-size: var(--card-font-size);
   line-height: var(--card-line-height);
   text-align: left;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+  box-shadow: var(--card-shadow);
   opacity: 0;
 }
 .side-card .kicker {
@@ -223,7 +223,7 @@ section.alt  { background: var(--bg-soft); }
   letter-spacing: 0.06em; text-transform: uppercase;
   margin-bottom: 6px;
 }
-.side-card .body  { color: #374151; margin: 0; font-size: var(--body-font-size); }
+.side-card .body  { color: var(--card-body-fg); margin: 0; font-size: var(--body-font-size); }
 .side-card .body p { margin: 0 0 8px; }
 .side-card .body p:last-child { margin: 0; }
 .side-card .swatch {
@@ -244,18 +244,16 @@ section.alt  { background: var(--bg-soft); }
 }
 
 /* ---------------- Annotations ---------------- */
-.annot { cursor: help; }
+.annot { cursor: help; transition: background-color .25s ease; border-radius: 3px; padding: 0 2px; }
 .annot.is-active {
-  background-color: rgba(255, 235, 59, 0.45);
-  border-radius: 3px;
-  transition: background-color .25s ease;
+  background-color: var(--annot-bg, var(--annotation-highlight));
 }
 
 /* ---------------- Scrollytelling ---------------- */
 .scrolly { position: relative; }
 .scrolly .stage {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.35fr 1fr;
   gap: 48px;
   align-items: center;
   min-height: 100vh;
@@ -266,15 +264,61 @@ section.alt  { background: var(--bg-soft); }
   overflow: hidden;
   padding: 0 8px;
 }
-.scrolly .text-col p { margin-bottom: 22px; opacity: 0.55; transition: opacity .35s ease; }
-.scrolly .text-col p.is-active-para { opacity: 1; }
-.scrolly .text-col p[data-slide] {
+.scrolly .text-col p { margin-bottom: 22px; transition: color .15s ease; }
+.scrolly .text-col [data-slide] {
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 6px;
-  transition: background-color .25s ease;
+  color: color-mix(in srgb, var(--muted) 45%, transparent);
+  transition: background-color .12s ease, color .15s ease;
 }
-.scrolly .text-col p[data-slide]:hover { background-color: rgba(0,0,0,0.03); }
+.scrolly .text-col [data-slide]:hover { background-color: var(--hover-bg); }
+.scrolly .text-col .is-active-para {
+  color: var(--fg);
+  background-color: var(--hover-bg);
+  font-weight: 500;
+}
+.scrolly .text-col .is-active-para strong { color: var(--accent, #3b82f6); }
+.scrolly .text-col [data-slide].is-skip {
+  cursor: default;
+  font-style: italic;
+}
+.scrolly .text-col [data-slide].is-skip:hover { background-color: transparent; }
+/* Prevent italic from inheriting into nested (non-skip) child items */
+.scrolly .text-col [data-slide].is-skip [data-slide] { font-style: normal; }
+
+/* Nested-list scrolly text. Authors can use a real <ol>/<ul> tree:
+     <ol class="scrolly-list">
+       <li data-slide="1">…<ul><li data-slide="1.1">…</li></ul></li>
+     </ol>
+   The list-style is suppressed because the <strong>1.</strong> markers in
+   the source already act as visible numbering, but you can re-enable
+   list-style on .scrolly-list to use native bullets/numbers. */
+.scrolly .text-col ol,
+.scrolly .text-col ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.scrolly .text-col li { margin: 0 0 10px; }
+.scrolly .text-col li > ol,
+.scrolly .text-col li > ul {
+  /* Collapsed by default; the JS adds .is-open to the parent <li> when
+     the active step is itself or one of its descendants. */
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding-left: 1.4em;
+  border-left: 2px solid var(--rule);
+  transition: max-height 0.4s ease, margin-top 0.4s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+.scrolly .text-col li.is-open > ol,
+.scrolly .text-col li.is-open > ul {
+  max-height: 600px;  /* tall enough for any nested list */
+  margin-top: 8px;
+  opacity: 1;
+}
 
 .scrolly .figure-col {
   height: 100vh;
@@ -287,7 +331,12 @@ section.alt  { background: var(--bg-soft); }
   border: 1px solid var(--rule);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(0,0,0,.05);
+  box-shadow: var(--figure-shadow);
+}
+.figure-frame.flat {
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 .figure-slide {
   position: absolute; inset: 0;
@@ -297,6 +346,12 @@ section.alt  { background: var(--bg-soft); }
   transition: opacity .5s ease, transform .5s ease;
 }
 .figure-slide.is-active { opacity: 1; transform: scale(1); }
+.figcaption {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  margin-top: 1em;
+}
 .figure-slide .placeholder {
   width: 100%; height: 100%;
   border-radius: 8px;
@@ -354,7 +409,7 @@ section.alt  { background: var(--bg-soft); }
 .demo .panel {
   padding: 24px; min-height: 180px;
   background: var(--bg-soft); border-radius: 8px;
-  font-family: ui-monospace, monospace; font-size: 14px; white-space: pre-wrap;
+  font-family: var(--font-mono); font-size: 14px; white-space: pre-wrap;
 }
 
 /* ---------------- Inline SVG diagram ---------------- */
@@ -363,7 +418,7 @@ section.alt  { background: var(--bg-soft); }
   display: block;
 }
 .svg-diagram .node       { fill: var(--bg); stroke: var(--fg); stroke-width: 1.5; }
-.svg-diagram .node-label { font-family: 'Inter', sans-serif; font-size: 13px; fill: var(--fg); }
+.svg-diagram .node-label { font-family: var(--font-body); font-size: 13px; fill: var(--fg); }
 .svg-diagram .flow {
   fill: none; stroke: var(--accent-2); stroke-width: 2;
   stroke-linecap: round;
@@ -395,6 +450,7 @@ section.alt  { background: var(--bg-soft); }
 }
 .thumb:hover     { transform: translateY(-2px); }
 .thumb.is-active { border-color: var(--fg); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 32px; height: 32px; border-radius: 999px;
@@ -414,6 +470,7 @@ section.alt  { background: var(--bg-soft); }
 .detail .detail-title { font-weight: 600; margin-bottom: 14px; }
 .detail-grid { display: flex; flex-direction: column; gap: 12px; }
 .detail-row  { display: flex; align-items: stretch; gap: 8px; }
+.detail-row .row-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .detail-row .row-label {
   flex: 0 0 80px;
   display: flex; align-items: center; justify-content: flex-end;
@@ -454,6 +511,11 @@ section.alt  { background: var(--bg-soft); }
   color: var(--muted); font-size: 12px;
 }
 .col-labels span { flex: 1 1 0; text-align: center; }
+.row-col-labels {
+  display: flex; gap: 8px;
+  color: var(--muted); font-size: 12px;
+}
+.row-col-labels span { flex: 1 1 0; text-align: center; }
 
 /* ---------------- Author list + affiliations ---------------- */
 .author-list {
@@ -475,7 +537,7 @@ section.alt  { background: var(--bg-soft); }
   display: flex; flex-wrap: wrap; justify-content: center;
   align-items: center;
   gap: 6px 22px; margin: 6px auto 6px;
-  font-size: 14.5px; color: #4b5563;
+  font-size: 14.5px; color: var(--affiliations-fg);
 }
 .affiliations span {
   display: inline-flex; align-items: center; gap: 6px;
@@ -530,10 +592,15 @@ section.alt  { background: var(--bg-soft); }
 .split[data-layout="img-right"] .split-media { order: 2; }
 .split[data-layout="img-right"] .split-text  { order: 1; }
 .split-media img,
-.split-media video {
+.split-media video,
+.split-media .svg-holder {
   width: 100%; height: auto; display: block;
   border-radius: 12px;
   border: 1px solid var(--rule);
+}
+.split-media .svg-holder svg {
+  display: block;
+  border-radius: 12px;
 }
 .split-media .placeholder {
   aspect-ratio: 4/3; border-radius: 12px;
@@ -591,17 +658,17 @@ section.alt  { background: var(--bg-soft); }
 }
 .compare .compare-handle {
   position: absolute; top: 0; bottom: 0; left: 50%;
-  width: 2px; background: white;
+  width: 2px; background: var(--compare-handle-bg);
   transform: translateX(-50%);
   pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+  box-shadow: var(--compare-handle-shadow);
 }
 .compare .compare-handle::before {
   content: ''; position: absolute; top: 50%; left: 50%;
   width: 36px; height: 36px;
   transform: translate(-50%, -50%);
-  background: white; border-radius: 999px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.28);
+  background: var(--compare-knob-bg); border-radius: 999px;
+  box-shadow: var(--compare-knob-shadow);
 }
 .compare .compare-handle::after {
   content: '⇆';
@@ -613,7 +680,7 @@ section.alt  { background: var(--bg-soft); }
 .compare .compare-label {
   position: absolute; top: 12px;
   padding: 4px 10px; border-radius: 999px;
-  background: rgba(0,0,0,0.55); color: white;
+  background: var(--compare-label-bg); color: var(--compare-label-fg);
   font-size: 12px; font-weight: 600;
   pointer-events: none;
 }
@@ -623,8 +690,8 @@ section.alt  { background: var(--bg-soft); }
 /* ---------------- Code block (BibTeX, code samples) ---------------- */
 .code-block {
   position: relative;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--code-dark-bg);
+  color: var(--code-dark-fg);
   border-radius: 10px;
   margin: 24px 0;
   overflow: hidden;
@@ -633,7 +700,7 @@ section.alt  { background: var(--bg-soft); }
   margin: 0;
   padding: 20px 24px;
   overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 13px; line-height: 1.55;
   color: inherit;
   background: transparent;
@@ -642,21 +709,21 @@ section.alt  { background: var(--bg-soft); }
 .code-block .code-lang {
   position: absolute; top: 8px; left: 14px;
   font-size: 11px; letter-spacing: 0.08em;
-  color: #94a3b8; text-transform: uppercase;
+  color: var(--code-dark-muted); text-transform: uppercase;
   font-weight: 600;
   pointer-events: none;
 }
 .code-block .code-copy {
   position: absolute; top: 8px; right: 8px;
-  background: rgba(255,255,255,0.08); color: #e2e8f0;
-  border: 1px solid rgba(255,255,255,0.15);
+  background: var(--code-dark-btn-bg); color: var(--code-dark-fg);
+  border: 1px solid var(--code-dark-btn-border);
   border-radius: 6px;
   padding: 4px 10px;
   font: inherit; font-size: 12px;
   cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease;
 }
-.code-block .code-copy:hover { background: rgba(255,255,255,0.16); }
+.code-block .code-copy:hover { background: var(--code-dark-btn-hover); }
 .code-block .code-copy.is-ok {
   background: var(--accent-3); border-color: var(--accent-3); color: white;
 }
@@ -678,7 +745,7 @@ section.alt  { background: var(--bg-soft); }
   border-bottom: 2px solid var(--fg);
   background: var(--bg-soft);
 }
-.results-table tbody tr:hover { background: rgba(0,0,0,0.02); }
+.results-table tbody tr:hover { background: var(--table-hover-bg); }
 .results-table .num     { text-align: right; font-variant-numeric: tabular-nums; }
 .results-table .best    { font-weight: 700; color: var(--accent-1); }
 .results-table .second  { text-decoration: underline; text-underline-offset: 3px; }
@@ -716,7 +783,7 @@ section.alt  { background: var(--bg-soft); }
   overflow: hidden;
   background: var(--bg-soft);
   border: 1px solid var(--rule);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
 }
 .video-player video,
 .video-player iframe {
@@ -779,9 +846,10 @@ section.alt  { background: var(--bg-soft); }
     padding-top: 4px;
   }
   .scrolly .text-col p { opacity: 1; }
-  .scrolly .text-col p[data-slide] {
+  .scrolly .text-col [data-slide] {
     padding: 14px 8px;
     min-height: 22vh;
+    opacity: 1;
   }
 
   .embla__slide { padding: 12px; }

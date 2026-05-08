@@ -1,0 +1,24 @@
+[
+  {
+    "thumb": { "src": "https://picsum.photos/seed/thumb/120/80" },
+    "title": "Future Prediction",
+    "rowLabels": ["Input", "Ours"],
+    "animation": { "mode": "cell", "stagger": 0.08 },
+    "rows": [
+      { 
+        "cells": [
+        { "kind": "image", "src": "https://picsum.photos/seed/orig/300/300", "caption": "orig", "maxWidth": "160px" },
+        { "kind": "video", "src": "https://www.w3schools.com/html/mov_bbb.mp4", "caption": "mask", "maxWidth": "160px" }
+      ] },
+      { "colLabels": ["t=1", "t=2", "t=3", "t=4", "t=5", "t=6"],
+        "cells": [
+        { "kind": "image", "src": "https://picsum.photos/seed/pred1/300/300", "caption": "t=1" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred2/300/300", "caption": "t=2" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred3/300/300", "caption": "t=3" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred4/300/300", "caption": "t=4" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred5/300/300", "caption": "t=5" },
+        { "kind": "image", "src": "https://picsum.photos/seed/pred6/300/300", "caption": "t=6" }
+      ] }
+    ]
+  }
+]

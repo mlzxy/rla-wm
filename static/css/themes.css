@@ -1,0 +1,355 @@
+/* ============================================================
+   themes.css — Theme definitions for the paper-site library
+
+   Three built-in themes: light (default), dark, paper.
+
+   HOW IT WORKS
+   ────────────
+   The <html> element gets a `data-theme` attribute, e.g.:
+     <html data-theme="dark">
+   CSS custom properties cascade from :root → [data-theme] →
+   component-level overrides.
+
+   TO ADD YOUR OWN THEME
+   ─────────────────────
+   1. Add a new `[data-theme="your-name"]` block below.
+   2. Override the variables you want to change.
+   3. Add any component-specific overrides (e.g. for .code-block).
+   4. Register it in themes.js via `PaperThemes.register(name, label)`.
+
+   KEY VARIABLES (override these first)
+   ────────────────────────────────────
+   --fg, --muted               · text colors
+   --bg, --bg-soft             · backgrounds
+   --rule                      · border / divider color
+   --accent-1 … --accent-4     · accent palette
+   --font-body, --font-heading · font stacks
+   --font-mono                 · code font
+
+   ADVANCED VARIABLES (optional)
+   ─────────────────────────────
+   --card-body-fg, --card-shadow
+   --hover-bg, --table-hover-bg
+   --code-dark-bg, --code-dark-fg, --code-dark-muted
+   --code-dark-btn-bg, --code-dark-btn-border, --code-dark-btn-hover
+   --annotation-highlight
+   --compare-handle-bg, --compare-knob-bg, --compare-label-bg
+   --affiliations-fg
+   ============================================================ */
+
+/* ============================================================
+   LIGHT THEME (default — no [data-theme] or [data-theme="light"])
+   ============================================================ */
+:root {
+  /* Core */
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --rule: #e5e7eb;
+
+  /* Accent palette (shared across themes by default) */
+  --accent-1: #ef4444;
+  --accent-2: #3b82f6;
+  --accent-3: #10b981;
+  --accent-4: #f59e0b;
+
+  /* Cards */
+  --card-body-fg: #374151;
+  --card-shadow: 0 6px 24px rgba(0,0,0,0.06);
+
+  /* Scrolly / figure */
+  --figure-shadow: 0 6px 24px rgba(0,0,0,.05);
+
+  /* Hover / table */
+  --hover-bg: rgba(0,0,0,0.03);
+  --table-hover-bg: rgba(0,0,0,0.02);
+
+  /* Dark code blocks (.code-block, citation) */
+  --code-dark-bg: #0f172a;
+  --code-dark-fg: #e2e8f0;
+  --code-dark-muted: #94a3b8;
+  --code-dark-btn-bg: rgba(255,255,255,0.08);
+  --code-dark-btn-border: rgba(255,255,255,0.15);
+  --code-dark-btn-hover: rgba(255,255,255,0.16);
+
+  /* Compare slider */
+  --compare-handle-bg: white;
+  --compare-handle-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+  --compare-knob-bg: white;
+  --compare-knob-shadow: 0 2px 10px rgba(0,0,0,0.28);
+  --compare-label-bg: rgba(0,0,0,0.55);
+  --compare-label-fg: white;
+
+  /* Affiliations */
+  --affiliations-fg: #4b5563;
+
+  /* Annotation highlight */
+  --annotation-highlight: rgba(255, 235, 59, 0.45);
+
+  /* Fonts */
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Markdown code (light) */
+  --md-code-bg: #f6f8fa;
+  --md-code-border: #d0d7de;
+  --md-code-fg: #1f2328;
+
+  /* Selection */
+  --selection-bg: var(--accent-2);
+  --selection-fg: #ffffff;
+}
+
+/* ----------------------------------------------------------
+   Explicit light theme (same as :root, for script switching)
+   ---------------------------------------------------------- */
+[data-theme="light"] {
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --rule: #e5e7eb;
+  --accent-1: #ef4444;
+  --accent-2: #3b82f6;
+  --accent-3: #10b981;
+  --accent-4: #f59e0b;
+  --card-body-fg: #374151;
+  --card-shadow: 0 6px 24px rgba(0,0,0,0.06);
+  --figure-shadow: 0 6px 24px rgba(0,0,0,.05);
+  --hover-bg: rgba(0,0,0,0.03);
+  --table-hover-bg: rgba(0,0,0,0.02);
+  --code-dark-bg: #0f172a;
+  --code-dark-fg: #e2e8f0;
+  --code-dark-muted: #94a3b8;
+  --code-dark-btn-bg: rgba(255,255,255,0.08);
+  --code-dark-btn-border: rgba(255,255,255,0.15);
+  --code-dark-btn-hover: rgba(255,255,255,0.16);
+  --compare-handle-bg: white;
+  --compare-handle-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+  --compare-knob-bg: white;
+  --compare-knob-shadow: 0 2px 10px rgba(0,0,0,0.28);
+  --compare-label-bg: rgba(0,0,0,0.55);
+  --compare-label-fg: white;
+  --affiliations-fg: #4b5563;
+  --annotation-highlight: rgba(255, 235, 59, 0.45);
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  --md-code-bg: #f6f8fa;
+  --md-code-border: #d0d7de;
+  --md-code-fg: #1f2328;
+  --selection-bg: var(--accent-2);
+  --selection-fg: #ffffff;
+}
+
+/* ============================================================
+   DARK THEME
+   ============================================================ */
+[data-theme="dark"] {
+  --fg: #e2e8f0;
+  --muted: #94a3b8;
+  --bg: #0f172a;
+  --bg-soft: #1e293b;
+  --rule: #334155;
+
+  --card-body-fg: #cbd5e1;
+  --card-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  --figure-shadow: 0 6px 24px rgba(0,0,0,.25);
+  --hover-bg: rgba(255,255,255,0.05);
+  --table-hover-bg: rgba(255,255,255,0.03);
+
+  --code-dark-bg: #020617;
+  --code-dark-fg: #e2e8f0;
+  --code-dark-muted: #64748b;
+  --code-dark-btn-bg: rgba(255,255,255,0.06);
+  --code-dark-btn-border: rgba(255,255,255,0.1);
+  --code-dark-btn-hover: rgba(255,255,255,0.14);
+
+  --compare-handle-bg: #e2e8f0;
+  --compare-handle-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+  --compare-knob-bg: #e2e8f0;
+  --compare-knob-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  --compare-label-bg: rgba(255,255,255,0.12);
+  --compare-label-fg: #e2e8f0;
+
+  --affiliations-fg: #94a3b8;
+  --annotation-highlight: rgba(255, 235, 59, 0.18);
+
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  --md-code-bg: #1e293b;
+  --md-code-border: #334155;
+  --md-code-fg: #e2e8f0;
+
+  --selection-bg: var(--accent-2);
+  --selection-fg: #ffffff;
+}
+
+/* Dark theme — dim the hero background shapes */
+[data-theme="dark"] .hero-bg .shape {
+  opacity: calc(var(--shape-opacity, 0.18) * 0.5);
+}
+[data-theme="dark"] .hero-bg .shape-10 {
+  opacity: calc(var(--shape-opacity, 0.45) * 0.4);
+}
+
+/* ============================================================
+   PAPER THEME — LaTeX-inspired minimal academic look
+   ============================================================ */
+[data-theme="paper"] {
+  --fg: #2c1810;
+  --muted: #8b7355;
+  --bg: #faf8f5;
+  --bg-soft: #f3efe7;
+  --rule: #d4c5b2;
+
+  --accent-1: #b91c1c;
+  --accent-2: #1e40af;
+  --accent-3: #166534;
+  --accent-4: #b45309;
+
+  --card-body-fg: #4a3728;
+  --card-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  --figure-shadow: 0 1px 4px rgba(0,0,0,.03);
+  --hover-bg: rgba(0,0,0,0.02);
+  --table-hover-bg: rgba(0,0,0,0.015);
+
+  --code-dark-bg: #2c2416;
+  --code-dark-fg: #e8dcc8;
+  --code-dark-muted: #a09080;
+  --code-dark-btn-bg: rgba(255,255,255,0.06);
+  --code-dark-btn-border: rgba(255,255,255,0.1);
+  --code-dark-btn-hover: rgba(255,255,255,0.12);
+
+  --compare-handle-bg: #faf8f5;
+  --compare-handle-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+  --compare-knob-bg: #faf8f5;
+  --compare-knob-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  --compare-label-bg: rgba(44, 24, 16, 0.75);
+  --compare-label-fg: #faf8f5;
+
+  --affiliations-fg: #8b7355;
+  --annotation-highlight: rgba(200, 180, 140, 0.35);
+
+  /* LaTeX: all-serif, larger body text, generous spacing */
+  --font-body: 'Source Serif Pro', 'Charter', 'Georgia', 'Times New Roman', serif;
+  --font-heading: 'Source Serif Pro', 'Charter', 'Georgia', 'Times New Roman', serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+
+  --md-code-bg: #f0e8d8;
+  --md-code-border: #d4c5b2;
+  --md-code-fg: #2c1810;
+
+  --selection-bg: #2c1810;
+  --selection-fg: #faf8f5;
+}
+
+/* Paper: headings use Computer Modern weight (slightly lighter) */
+[data-theme="paper"] h1 { font-weight: 600; }
+[data-theme="paper"] h2 { font-weight: 600; }
+[data-theme="paper"] h3 { font-weight: 600; }
+
+/* Paper: hero background shapes are very subtle */
+[data-theme="paper"] .hero-bg .shape {
+  opacity: calc(var(--shape-opacity, 0.18) * 0.3);
+}
+[data-theme="paper"] .hero-bg .shape-10 {
+  opacity: calc(var(--shape-opacity, 0.45) * 0.2);
+}
+
+/* Paper: reduce section padding for a tighter academic feel */
+[data-theme="paper"] section      { padding: 64px 0; }
+[data-theme="paper"] section.alt  { padding: 64px 0; }
+
+/* Paper: thinner borders, lighter touch */
+[data-theme="paper"] .code-block {
+  border-radius: 4px;
+}
+[data-theme="paper"] .side-card,
+[data-theme="paper"] .figure-frame,
+[data-theme="paper"] .callout,
+[data-theme="paper"] .thumb-strip,
+[data-theme="paper"] .detail,
+[data-theme="paper"] .demo {
+  border-radius: 4px;
+}
+
+/* Paper: slight underline decoration on h2 */
+[data-theme="paper"] h2 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ============================================================
+   THEME SWITCHER — floating button component
+   Markup:
+     <button class="theme-switcher"
+             onclick="PaperThemes.next()"
+             title="Switch theme"
+             aria-label="Switch colour theme"></button>
+   The button shows the current theme name and cycles light→dark→paper.
+   ============================================================ */
+.theme-switcher {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  transition: background-color .2s ease, border-color .2s ease, transform .15s ease;
+  user-select: none;
+}
+.theme-switcher:hover {
+  background: var(--bg-soft);
+  transform: translateY(-1px);
+}
+.theme-switcher:active {
+  transform: scale(0.97);
+}
+
+/* Colour dot indicating current theme */
+.theme-switcher::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  flex-shrink: 0;
+  transition: background-color .3s ease;
+}
+[data-theme="dark"] .theme-switcher::before  { background: #818cf8; }
+[data-theme="paper"] .theme-switcher::before { background: #8b7355; }
+
+/* The label text — shows "Theme: <name>" */
+.theme-switcher .ts-label {
+  color: var(--muted);
+  font-weight: 400;
+}
+.theme-switcher .ts-name {
+  color: var(--fg);
+}
+
+/* Responsive: smaller on mobile */
+@media (max-width: 720px) {
+  .theme-switcher {
+    bottom: 16px;
+    right: 16px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
