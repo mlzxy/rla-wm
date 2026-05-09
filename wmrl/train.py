@@ -355,8 +355,11 @@ def evaluate(
 # ---------------------------------------------------------------------------
 
 
-def train(args: Args) -> None:
+def train(args: Args) -> list[float]:
+    """Run BC+RL training. Returns the list of eval success rates (initial first, then per-eval-iter)."""
     assert args.config_file, "train_wmrl requires --config-file <path> argument"
+
+    eval_success_rates: list[float] = []
 
     device = torch.device(args.device)
 
@@ -428,6 +431,7 @@ def train(args: Args) -> None:
                              deterministic=True)
         logger.scalars(init_eval, step=0)
         logger.log(f"initial eval: {init_eval}")
+        eval_success_rates.append(float(init_eval.get("success_rate", float("nan"))))
 
     env = _make_env(args, device)
 
@@ -505,6 +509,7 @@ def train(args: Args) -> None:
                                     video_path=_video_path(f"iter_{iteration:06d}"))
             logger.scalars(eval_metrics, step=iteration)
             logger.log(f"iter={iteration}  eval: {eval_metrics}", console=tqdm.write)
+            eval_success_rates.append(float(eval_metrics.get("success_rate", float("nan"))))
 
         if args.save_freq > 0 and iteration % args.save_freq == 0 and iteration > 0:
             ckpt_path = os.path.join(run_path, f"ckpt_{iteration}.pt")
@@ -519,6 +524,7 @@ def train(args: Args) -> None:
     if eval_env is not None:
         eval_env.close()
     logger.close()
+    return eval_success_rates
 
 
 if __name__ == "__main__":
