@@ -1,9 +1,6 @@
 # Learning Visual Feature-Based World Models via Residual Latent Action
 
-[Arxiv](https://arxiv.org/abs/XXXX.XXXXX) &nbsp; [Project page](http://mlzxy.github.io/rla-wm) 
-
-
-Please check out the [<img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb)!
+[Arxiv](https://arxiv.org/abs/XXXX.XXXXX) &nbsp;|&nbsp; [Project page](http://mlzxy.github.io/rla-wm) &nbsp;|&nbsp; [<img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb)
 
 
 
@@ -27,7 +24,7 @@ source .venv/bin/activate
 export PYTHONPATH=.:./third_party/diffusion_policy
 ```
 
-`PYTHONPATH` must include the repo root **and** [third_party/diffusion_policy/](third_party/diffusion_policy/). The shipped wrappers ([policies/train.sh](policies/train.sh), [wmrl/train.sh](wmrl/train.sh)) export it for you; for ad-hoc invocations export it yourself.
+`PYTHONPATH` needs to include the repo root **and** [third_party/diffusion_policy/](third_party/diffusion_policy/). 
 
 <details>
 <summary>Troubleshooting</summary>
@@ -41,12 +38,8 @@ export PYTHONPATH=.:./third_party/diffusion_policy
 
 ## 2. Datasets and pretrained weights
 
-We host both on Hugging Face under [xyzhang368/RLA-WM](https://huggingface.co/xyzhang368/RLA-WM) (model) and [xyzhang368/RLA-WM](https://huggingface.co/datasets/xyzhang368/RLA-WM) (dataset). Inspect with:
+We host both on Hugging Face under [xyzhang368/RLA-WM](https://huggingface.co/xyzhang368/RLA-WM) (model) and [xyzhang368/RLA-WM](https://huggingface.co/datasets/xyzhang368/RLA-WM) (dataset). 
 
-```bash
-hf models   info xyzhang368/RLA-WM
-hf datasets info xyzhang368/RLA-WM
-```
 
 ### 2.1 Pretrained weights → `runs/weights/`
 
@@ -80,7 +73,6 @@ The dataset repo has four splits. Download only what each recipe needs:
 
 
 
-
 ```bash
 mkdir -p data && cd data
 
@@ -104,7 +96,7 @@ cd ..
 ```
 
 <details>
-<summary>ManiSkill JPGs is optional</summary>
+<summary>ManiSkill JPGs is also optional</summary>
 
 Note that you can skip `data/maniskill_jpgs` by modifying the policy configs in `policies/config` to load directly from `data/maniskill`. The program will then decode frames from videos within the dataloader (higher CPU usage, but saves storage space and bandwidth).Note that you can skip the `data/maniskill_jpgs` by changing the policy configs at `policies/config` to load from `data/maniskill` directly. The program will decode frames from videos in dataloader, (higher CPU usage, but saving space and bandwidth).
 
@@ -114,23 +106,42 @@ Note that you can skip `data/maniskill_jpgs` by modifying the policy configs in 
 
 ## 3. Released checkpoints
 
-| Family | Local path under `runs/weights/` | Consumed by |
+#### RLA Encoders
+
+| Domain | Path | Consumed by |
 |---|---|---|
-| RLA · Maniskill (play+ppo) | `rla/maniskill/20260323_21-41-25` | [configs/rla/32x64.yaml](configs/rla/32x64.yaml), [configs/rla_wm/{panda,xarm,ur10e}.yaml](configs/rla_wm/), all `wmrl/configs/*.yaml` |
-| RLA · IWS (box + rope + sweep + grasp) | `rla/iws/20260403_13-27-02` | [configs/rla_wm/iws_box.yaml](configs/rla_wm/iws_box.yaml), [configs/rla_wm/iws_rope.yaml](configs/rla_wm/iws_rope.yaml) |
-| RLA · IWS PushT-only | `rla/iws_pusht/20260406_13-33-29` | [configs/rla_wm/iws_pusht.yaml](configs/rla_wm/iws_pusht.yaml) |
-| DINO→image UNet · Maniskill | `dino-to-image_unet/maniskill/20260404_22-53-36` | every Maniskill RLA / RLA-WM config |
-| DINO→image UNet · IWS | `dino-to-image_unet/iws/20260402_18-21-21` | every IWS RLA / RLA-WM config |
-| RLA-WM · Maniskill / Panda | `rla-wm/maniskill/panda/20260405_11-00-59` | [eval/run_eval.sh](eval/run_eval.sh) `panda`, [wmrl/configs/{pullcube,pullcubetool}.yaml](wmrl/configs/) |
-| RLA-WM · Maniskill / xArm | `rla-wm/maniskill/xarm/20260404_15-49-08` | [eval/run_eval.sh](eval/run_eval.sh) `xarm`, [wmrl/configs/pokecube.yaml](wmrl/configs/pokecube.yaml) |
-| RLA-WM · Maniskill / UR10e | `rla-wm/maniskill/ur10e/20260404_15-49-19` | [eval/run_eval.sh](eval/run_eval.sh) `ur10e`, [wmrl/configs/{pusht,rollball}.yaml](wmrl/configs/) |
-| RLA-WM · IWS / PushT | `rla-wm/iws/pusht/20260409_00-49-21` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `pusht` |
-| RLA-WM · IWS / Box | `rla-wm/iws/box/20260406_22-51-48` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `box` |
-| RLA-WM · IWS / Rope | `rla-wm/iws/rope/20260406_00-23-24` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `rope` |
-| WMRL BC starting points | `wmrl_checkpoints/{0,1,2,3,5}_bc_*_nstate/checkpoints/*.ckpt` | [wmrl/configs/*.yaml](wmrl/configs/) `pretrained_ckpt:` |
+| Maniskill (play+ppo) | `rla/maniskill/20260323_21-41-25` | [configs/rla/32x64.yaml](configs/rla/32x64.yaml), all [rla_wm](configs/rla_wm/) and [wmrl](wmrl/configs/) configs |
+| IWS (box+rope+sweep+grasp) | `rla/iws/20260403_13-27-02` | [configs/rla_wm/iws_box.yaml](configs/rla_wm/iws_box.yaml), [configs/rla_wm/iws_rope.yaml](configs/rla_wm/iws_rope.yaml) |
+| IWS PushT-only | `rla/iws_pusht/20260406_13-33-29` | [configs/rla_wm/iws_pusht.yaml](configs/rla_wm/iws_pusht.yaml) |
+
+#### DINO→Image UNet Decoders
+
+| Domain | Path | Consumed by |
+|---|---|---|
+| Maniskill | `dino-to-image_unet/maniskill/20260404_22-53-36` | every Maniskill RLA / RLA-WM config |
+| IWS | `dino-to-image_unet/iws/20260402_18-21-21` | every IWS RLA / RLA-WM config |
+
+#### RLA-WM (Flow World Models)
+
+| Robot / Scene | Path | Consumed by |
+|---|---|---|
+| Panda | `rla-wm/maniskill/panda/20260405_11-00-59` | [eval/run_eval.sh](eval/run_eval.sh) `panda`, [wmrl/configs/{pullcube,pullcubetool}.yaml](wmrl/configs/) |
+| xArm | `rla-wm/maniskill/xarm/20260404_15-49-08` | [eval/run_eval.sh](eval/run_eval.sh) `xarm`, [wmrl/configs/pokecube.yaml](wmrl/configs/pokecube.yaml) |
+| UR10e | `rla-wm/maniskill/ur10e/20260404_15-49-19` | [eval/run_eval.sh](eval/run_eval.sh) `ur10e`, [wmrl/configs/{pusht,rollball}.yaml](wmrl/configs/) |
+| IWS PushT | `rla-wm/iws/pusht/20260409_00-49-21` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `pusht` |
+| IWS Box | `rla-wm/iws/box/20260406_22-51-48` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `box` |
+| IWS Rope | `rla-wm/iws/rope/20260406_00-23-24` | [eval/run_eval_iws.sh](eval/run_eval_iws.sh) `rope` |
+
+#### WMRL BC Starting Points
+
+| Path | Consumed by |
+|---|---|
+| `wmrl_checkpoints/{0,1,2,3,5}_bc_*_nstate/checkpoints/*.ckpt` | [wmrl/configs/*.yaml](wmrl/configs/) `pretrained_ckpt:` |
+
+
 
 <details>
-<summary>Why a separate RLA for IWS PushT?</summary>
+<summary>❓ Why a separate RLA for IWS PushT?</summary>
 
 We notice that the background motion in PushT is much stronger than the motion of the T object itself (the T remains quite static across many frames). This may cause the RLA to misinterpret object motion as background motion, making the world model learning difficult (despite the RLA reconstruction still shows good quality).
 
