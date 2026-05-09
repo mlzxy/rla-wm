@@ -1,19 +1,23 @@
 # Learning Visual Feature-Based World Models via Residual Latent Action
 
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX) &nbsp; [Project page](http://mlzxy.github.io/rla-wm)
+[Arxiv](https://arxiv.org/abs/XXXX.XXXXX) &nbsp; [Project page](http://mlzxy.github.io/rla-wm) 
+
+
+Please check out the [<img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb)!
+
+
 
 This repository contains the implementation, configs, and training/evaluation entry points for the models described in the paper:
 
 - **RLA** — Residual Latent-Action autoencoder over DINOv3 patch tokens.
-- **RLA-WM** — Flow-matching world model that predicts future RLA latents conditioned on the current frame, robot proprioception, and a horizon target.
+- **RLA-WM** — Flow-matching world model that predicts future RLA latents conditioned on the current frame and robot actions.
 - **BC / BC-RLA** — Learning-from-Actionless-Video policies, optionally augmented with the RLA latent objective on videos-only data.
 - **WMRL** — On-policy Visual RL inside the RLA-WM environment.
 
 
-We also provide a Maniskill3DWorld Dataset (`maniskill_full`), which includes RGB from 7 cameras, robot and foreground masks, depth, robot actions, and point clouds with voxelization. We initially attempted to build a world model from 3D representations, but ultimately did not use the full dataset. Nonetheless, feel free to use it if it suits your needs! Visualization code and an example are provided below in [§10](#10-3d--multi-view-visualization-optional).
+> We also provide a Maniskill3DWorld Dataset (`maniskill_full`), which includes RGB from 7 cameras, robot and foreground masks, depth, robot actions, and point clouds with voxelization. We initially attempted to build a world model from 3D representations, but ultimately did not use the full dataset. Nonetheless, feel free to use it if it suits your needs! Visualization code and an example are provided below in [§10](#10-3d--multi-view-visualization-optional).
 
 
----
 
 ## 1. Setup
 
@@ -34,7 +38,6 @@ export PYTHONPATH=.:./third_party/diffusion_policy
 - All entry points must be invoked from the repo root (some inject the repo into `sys.path`).
 </details>
 
----
 
 ## 2. Datasets and pretrained weights
 
@@ -75,7 +78,6 @@ The dataset repo has four splits. Download only what each recipe needs:
 | `data/maniskill_full` | **Optional** — only for [§10](#10-3d--multi-view-visualization-optional) 3D + multi-view rerun visualization | ≈ 130 GB | `maniskill_full/data.tar.part_a{a..m}` |
 
 
-Note that you can skip `data/maniskill_jpgs` by modifying the policy configs in `policies/config` to load directly from `data/maniskill`. The program will then decode frames from videos within the dataloader (higher CPU usage, but saves storage space and bandwidth).Note that you can skip the `data/maniskill_jpgs` by changing the policy configs at `policies/config` to load from `data/maniskill` directly. The program will decode frames from videos in dataloader, (higher CPU usage, but saving space and bandwidth).
 
 
 
@@ -102,12 +104,13 @@ cd ..
 ```
 
 <details>
-<summary>Concatenated multi-part archive note</summary>
+<summary>ManiSkill JPGs is optional</summary>
 
-`maniskill_jpgs` and `maniskill_full` are split because Hugging Face caps per-file LFS uploads. Each `.tar.part_aa`, `.tar.part_ab`, … is one slice of a single tar; concatenate before extracting.
+Note that you can skip `data/maniskill_jpgs` by modifying the policy configs in `policies/config` to load directly from `data/maniskill`. The program will then decode frames from videos within the dataloader (higher CPU usage, but saves storage space and bandwidth).Note that you can skip the `data/maniskill_jpgs` by changing the policy configs at `policies/config` to load from `data/maniskill` directly. The program will decode frames from videos in dataloader, (higher CPU usage, but saving space and bandwidth).
+
 </details>
 
----
+
 
 ## 3. Released checkpoints
 
@@ -135,7 +138,6 @@ To address this, we train a PushT‑only RLA ([configs/rla/32x64_iws_pusht_only.
 
 </details>
 
----
 
 ## 4. UNet (DINO → image) decoder training
 
@@ -146,7 +148,6 @@ To address this, we train a PushT‑only RLA ([configs/rla/32x64_iws_pusht_only.
 
 Outputs land under `runs/<config_name>/<timestamp>/`. The shipped checkpoints under `runs/weights/dino-to-image_unet/` are the result of these recipes.
 
----
 
 ## 5. RLA training
 
@@ -162,7 +163,6 @@ Outputs land under `runs/<config_name>/<timestamp>/`. The shipped checkpoints un
 | [configs/rla/32x64_iws_pusht_only.yaml](configs/rla/32x64_iws_pusht_only.yaml) | IWS PushT only (see [§3](#3-released-checkpoints) note) |
 | [configs/rla/8x8.yaml](configs/rla/8x8.yaml) | Small-codebook ablation (8 latent tokens × 8 dim) |
 
----
 
 ## 6. RLA-WM training
 
@@ -181,7 +181,6 @@ Same entry point. Each config pins its own frozen RLA encoder and DINO→image d
 | [configs/rla_wm/iws_box.yaml](configs/rla_wm/iws_box.yaml) | IWS Box |
 | [configs/rla_wm/iws_rope.yaml](configs/rla_wm/iws_rope.yaml) | IWS Rope |
 
----
 
 ## 7. RLA-WM evaluation
 
@@ -194,7 +193,6 @@ bash eval/run_eval_iws.sh {pusht|box|rope}     # IWS
 
 Outputs land at `runs/eval_output/<robot>/` or `runs/eval_output/iws_<scene>/` with `eval_summary.{json,md}`, per-handle metrics, and rollout videos. Internals: [eval/eval_wrapper.py](eval/eval_wrapper.py) loads the cached handles, spawns workers, and dispatches each sample to the predictor module ([eval/predictors/rla_wm_predictor.py](eval/predictors/rla_wm_predictor.py) for Maniskill, [eval/predictors/rla_wm_predictor_iws.py](eval/predictors/rla_wm_predictor_iws.py) for IWS).
 
----
 
 ## 8. BC / BC-RLA (Learning from Actionless Video)
 
@@ -220,11 +218,8 @@ bash policies/train.sh fs_bc_rla  setting=1 n_shots=50
 
 For PushT (setting=0), please use `n_shots=150`. Note that we exclude the insertion task (setting=4), as it is difficult to learn side insertion using only a front-view camera.
 
----
 
-## 9. WMRL (RL inside the imagined world)
-
-PPO with a critic and policy LoRA, BC distillation off:
+## 9. WMRL (Visual RL inside the world model)
 
 ```bash
 # bash wmrl/train.sh <task> <reward_mode> <seed1> [seed2 ...]
@@ -239,11 +234,12 @@ bash wmrl/train.sh pusht corresponding 6 7
 | [wmrl/configs/pullcubetool.yaml](wmrl/configs/pullcubetool.yaml) | PullCubeTool-v1 | panda | `3_bc_s2r_nstate` |
 | [wmrl/configs/pokecube.yaml](wmrl/configs/pokecube.yaml) | PokeCube-v2 | xarm6_robotiq | `5_bc_s2r_nstate` |
 
-`reward_mode` is forwarded into the world-model env. Supported values: `goal`, `corresponding` (see [wmrl/world_model_env.py](wmrl/world_model_env.py)). PokeCube uses `goal`, all other tasks use `corresponding`.
+PokeCube uses reward mode `goal`, all other tasks use `corresponding`.
 
-All seed 1–15 runs with eval results: <https://wandb.ai/ryx/wmrl_final?nw=nwuserryx>.
+All seeds 1–15 runs with eval results on wandb: https://wandb.ai/ryx/wmrl_final?nw=nwuserryx.
 
----
+> Note: In those runs, we do not control the flow matching seeds. The code now seeds the process as in [`_sample_flow_noise`](wmrl/world_model_env.py). Running with the same seed could yield a different result, but the overall conclusion remains valid.
+
 
 ## 10. 3D + multi-view visualization (optional)
 
@@ -258,15 +254,9 @@ rerun runs/viz/0.rrd
 
 Replace the dataset path / `traj_id` as needed. Run `python -m datalib.traj2rdd --help` for the full flag list (`--limit`, `--img-size`, `--resolution`, `--vis-masks`, …).
 
----
 
-## 11. Inference notebook
 
-[notebooks/inference_demo.ipynb](notebooks/inference_demo.ipynb) — load a trained RLA + RLA-WM pair, run reconstruction and horizon-conditioned future-frame rollouts on one trajectory. Edit the config block at the top to switch (robot, scene, checkpoint).
-
----
-
-## 12. Repository layout
+## 11. Repository layout
 
 | Path | Purpose |
 |---|---|
