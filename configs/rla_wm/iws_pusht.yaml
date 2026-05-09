@@ -1,0 +1,199 @@
+vars:
+  debug: false
+  img_size: 512
+  dino_channels: 1024
+  model_channels: ${vars.dino_channels}
+  flow_model_channels: 1024
+  num_heads: 16
+
+  # Encoder/decoder arch (frozen)
+  enc_num_blocks: 12
+  latent_num_tokens: 32
+  token_dim: 64
+
+  # Flow model arch
+  num_cond_blocks: 12
+  num_flow_blocks: 12
+
+  horizon: 15
+  num_frames: 2
+  max_horizon: ${vars.horizon}
+
+wandb:
+  enabled: true
+  project: "rla-wm"
+  entity: "xz653"
+  name: ""
+  tags: []
+  notes: ""
+
+
+models:
+  # ── Frozen encoder (loaded from checkpoint) ──
+  encoder:
+    name: SimpleTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.token_dim}
+      num_blocks: ${vars.enc_num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+
+  # ── Frozen decoder (loaded from checkpoint) ──
+  decoder:
+    name: SimpleTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.dino_channels}
+      token_channels: ${vars.token_dim}
+      num_blocks: ${vars.enc_num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+      zero_init: true
+
+  # ── Frozen image decoder ──
+  image_decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+
+  # ── Trainable flow model ──
+  flow_model:
+    name: RLAWM
+    args:
+      model_channels: ${vars.model_channels}
+      token_dim: ${vars.token_dim}
+      dino_channels: ${vars.dino_channels}
+      num_cond_blocks: ${vars.num_cond_blocks}
+      num_flow_blocks: ${vars.num_flow_blocks}
+      flow_model_channels: ${vars.flow_model_channels}
+      num_heads: ${vars.num_heads}
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tasks: 8
+      max_horizon: ${vars.max_horizon}
+      robot_qpos_dims:
+        "0": 4    # default robot id is 0
+        # "1": 12   # xarm6_robotiq
+        # "2": 6    # ur10e_stick
+      qpos_frame_channels: 64
+      centroid_path: null
+      use_task_horizon_embedding: false
+
+
+
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/iws_converted
+    configs:
+      pusht:
+        paths: ["pusht"]
+        w: 1.0
+      
+    max_num_cameras: 1
+    start_traj_id: 10
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    horizon: 
+      - 2
+      - ${vars.horizon}
+    manual_limit: 1000000
+
+    read_optional_streams: False
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["camera_0"]
+    trajectory_info_cache_file: runs/cache/dataset_idx/32x64_iws.pusht.latent-action-flow-train.num_frames${vars.num_frames}_h${vars.num_frames}-${vars.horizon}.json
+    nonlinear_sampling: false
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/iws_converted
+    configs:
+      pusht:
+        paths: ["pusht"]
+        w: 1.0
+      
+    read_optional_streams: False
+    max_num_cameras: 1
+    start_traj_id: 0
+    end_traj_id: 9
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    manual_limit: 1000000
+
+    horizon: 
+      - 10
+      - ${vars.horizon}
+
+    cameras: ["camera_0"]
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: runs/cache/dataset_idx/32x64_iws.pusht.val.num_frames${vars.num_frames}_h10-${vars.horizon}.json
+    nonlinear_sampling: false
+
+trainer:
+  name: RLAWMTrainer
+  args:
+    max_steps: 1000000
+    batch_size: 64 # 64
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 0.0001
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 2500
+    save_latest_only: true
+    num_workers: 5
+    num_samples: 8
+    load_dir: null
+    skip_load_misc: true
+    debug: ${vars.debug}
+
+    # Flow matching
+    sigma_min: 1.0e-5
+    t_schedule:
+      name: logitNormal
+      args:
+        mean: 0.0
+        std: 1.0
+
+    # Losses
+    lambda_mse: 1.0
+    lambda_l1: 1.0
+
+    # DINO
+    dino_channels: ${vars.dino_channels}
+
+    # Frozen model checkpoints
+    freeze_models: ["encoder", "decoder", "image_decoder"]
+    encoder_ckpt: "runs/weights/rla/iws_pusht/20260406_13-33-29"
+    image_decoder_ckpt: "runs/weights/dino-to-image_unet/iws/20260402_18-21-21"
+
+    # Snapshot
+    snapshot_eval_samples: 200
+    snapshot_eval_seed: 2026
+    skip_initial_snapshot: false
+    use_centroid_per_dim_normalization: false
+    directly_use_target_qpos: true

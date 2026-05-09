@@ -1,0 +1,176 @@
+vars:
+  debug: false
+  img_size: 512
+  dino_channels: 1024 # 786 # 1024 # large
+  model_channels: ${vars.dino_channels}
+  num_heads: 16
+  num_blocks: 12
+
+  latent_num_tokens: 32
+  token_dim: 64
+
+  horizon: 100
+  num_frames: 2
+
+wandb: 
+  enabled: true
+  project: "rla-wm"
+  entity: "xz653"
+  name: ""
+  tags: []
+  notes: ""
+
+
+models:
+  encoder:
+    name: SimpleTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.token_dim}
+      num_blocks: ${vars.num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+      norm_output_tokens: false
+
+  decoder:
+    name: SimpleTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.dino_channels}
+      token_channels: ${vars.token_dim}
+      num_blocks: ${vars.num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+      zero_init: true
+
+  image_decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+  
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/maniskill
+    configs:
+      play_panda:
+        paths: ["play/panda/TableOnly-v2/*"]
+        w: 0.5 # from 0.1
+        min_start_frame: 25
+      play_xarm:
+        paths: ["play/xarm6_robotiq/TableOnly-v2/*"]
+        w: 0.5 # from 0.1
+        min_start_frame: 25
+      play_ur10:
+        paths: ["play/ur10e_stick/TableOnly-v2/*"]
+        w: 0.5 # from 0.1
+        min_start_frame: 25
+      
+    max_num_cameras: 7
+    start_traj_id: 0
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    horizon: 
+      - ${vars.num_frames}
+      - ${vars.horizon}
+    manual_limit: 1000000
+
+    read_optional_streams: False
+    interaction_prob: 0.9
+    interaction_detect:
+      dist_threshold: 0.25
+      movement_threshold: 0.002
+      buffer_window: 3
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["front_lower_camera"]
+    trajectory_info_cache_file: runs/cache/dataset_idx/mar23.pretrain-play.num_frames${vars.num_frames}_h${vars.num_frames}-${vars.horizon}.simple.all.json
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/maniskill
+    configs:
+      ppo_ur10:
+        paths: ["ppo/ur10e_stick/PushT-v2/*", "ppo/ur10e_stick/RollBall-v1/*"]
+        w: 1.0
+      ppo_xarm:
+        paths: ["ppo/xarm6_robotiq/PegInsertionSide-v1/*", "ppo/xarm6_robotiq/PokeCube-v2/*"]
+        w: 1.0
+      ppo_panda:
+        paths: ["ppo/panda/PullCube-v2/*", "ppo/panda/PullCubeTool-v1/*"]
+        w: 1.0
+      
+    read_optional_streams: False
+    start_traj_id: 0
+    end_traj_id: 9
+    max_num_cameras: 7
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    manual_limit: 1000000
+
+    horizon: 
+      - 10
+      - ${vars.horizon}
+
+    interaction_prob: 0.9
+    interaction_detect:
+      dist_threshold: 0.25
+      movement_threshold: 0.002
+      buffer_window: 3
+
+    cameras: ["front_lower_camera"]
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: null
+
+
+
+trainer:
+  name: RlaAutoencoderTrainer
+  args:
+    max_steps: 1000000
+    # batch_size_per_gpu: 32 # 4 GPU machine
+    batch_size: 128
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 0.0001
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 2500
+    save_latest_only: true
+    num_workers: 5
+    num_samples: 8
+    load_dir: null
+    skip_load_misc: true
+    debug: ${vars.debug}
+
+    lambda_l1: 1.0
+    lambda_mse: 1.0
+
+    dino_channels: ${vars.dino_channels}
+    freeze_models: ["image_decoder"]
+    image_decoder_ckpt: "runs/weights/dino-to-image_unet/maniskill/20260404_22-53-36"
+
+    snapshot_eval_samples: 200
+    snapshot_eval_seed: 2026
+    skip_initial_snapshot: true

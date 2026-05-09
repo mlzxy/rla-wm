@@ -1,0 +1,195 @@
+# -------------------------------------------------------------------
+# Hydra config for BC S2R Policy training on v4world ManiSkill
+# -------------------------------------------------------------------
+#
+# BC policy with frozen DINO encode→decode image preprocessing
+# to bridge domain gap between world-model images and real simulator images.
+#
+# Usage:
+#   python policies/train_policy.py --config-name=bc_s2r
+#
+# Override examples:
+#   python policies/train_policy.py --config-name=bc_s2r task=PullCube-v2 robot=panda
+#   python policies/train_policy.py --config-name=bc_s2r training.debug=true
+
+hydra:
+  run:
+    dir: ${eval:'"runs/policy_outputs/debug" if ${training.debug} else "runs/policy_outputs"'}/${setting}_${hydra:job.config_name}
+
+_target_: policies.workspace.train_vla_bc_workspace.TrainVLABCWorkspace
+
+# ---- Task / Robot ----
+# 0: PushT-v2, ur10e_stick
+# 1: RollBall-v1, ur10e_stick
+# 2: PullCube-v2, panda
+# 3: PullCubeTool-v1, panda
+# 4: PegInsertionSide-v1, xarm6_robotiq
+# 5: PokeCube-v2, xarm6_robotiq
+setting: 0 # 0-5
+task: ${eval:'["PushT-v2","RollBall-v1","PullCube-v2","PullCubeTool-v1","PegInsertionSide-v1","PokeCube-v2"][${setting}]'}
+robot: ${eval:'["ur10e_stick","ur10e_stick","panda","panda","xarm6_robotiq","xarm6_robotiq"][${setting}]'}
+control_mode: pd_joint_pos
+
+# ---- Horizon ----
+horizon: 12
+n_obs_steps: 1
+n_action_steps: 8
+
+# ---- Image ----
+img_size: 512
+policy_img_size: 128
+num_cameras: 1
+cameras:
+  - front_lower_camera
+
+# ---- Dimensions (resolved from robot) ----
+action_dim: ${eval:'5 if "${robot}" == "ur10e_stick" else 8 if "${robot}" == "panda" else 7 if "${robot}" == "xarm6_robotiq" else -1'}
+state_dim: ${eval:'6 if "${robot}" == "ur10e_stick" else 9 if "${robot}" == "panda" else 12 if "${robot}" == "xarm6_robotiq" else -1'}
+
+# ---- DINO image preprocessing ----
+dino_channels: 1024
+image_decoder_work_dir: runs/weights/dino-to-image_unet/maniskill/20260404_22-53-36
+
+# ---- Policy ----
+policy:
+  _target_: policies.policy.vla_bc_s2r_policy.VLABCS2RPolicy
+  action_dim: ${action_dim}
+  state_dim: ${state_dim}
+  num_cameras: ${num_cameras}
+  horizon: ${horizon}
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${n_action_steps}
+  per_camera_dim: 512
+  use_group_norm: true
+  share_backbone: false
+  img_size: ${img_size}
+  resize_shape:
+    - ${policy_img_size}
+    - ${policy_img_size}
+  crop_shape: null
+  random_crop: true
+  imagenet_norm: false
+  state_hidden_dim: 256
+  state_output_dim: 256
+  # MLP decoder
+  mlp_hidden_dims: [1024, 512, 256]
+  mlp_dropout: 0.1
+  # Loss
+  loss_type: mse
+  # DINO preprocessing
+  dino_channels: ${dino_channels}
+  image_decoder_work_dir: ${image_decoder_work_dir}
+  # RL head hyperparams (used by setup_critic_tuning / setup_rl_tuning)
+  critic_latent_dim: 2048
+  value_hidden_dims: [1024, 512, 256]
+  residual_hidden_dims: [512, 256]
+  residual_mean_scale: 0.05
+  residual_std_scale: 0.03
+  use_state: false
+
+# ---- Dataset (ManiSkillSequenceDataset — diffusion-policy style) ----
+dataset:
+  dataset_dir: data/maniskill_jpgs/ppo/${robot}/${task}/success
+  cameras: ${cameras}
+  horizon: ${horizon}
+  pad_before: 0    # n_obs_steps - 1
+  pad_after: 7     # n_action_steps - 1
+  img_size: ${img_size}
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: 990
+  max_val_episodes: 5
+  start_traj_id: 0
+  end_traj_id: 999
+  use_foreground_mask: true
+  min_episode_length: 5
+
+# ---- DataLoader ----
+dataloader:
+  batch_size: 32
+  num_workers: 6
+  pin_memory: false
+  persistent_workers: true
+
+# ---- Optimizer ----
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3.0e-4
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-4
+
+# ---- Training ----
+training:
+  device: "cuda:0"
+  seed: 42
+  num_epochs: 40
+  use_ema: true
+  freeze_encoder: false
+  lr_scheduler: cosine
+  lr_warmup_steps: 500
+  gradient_accumulate_every: 1
+  rollout_every: 1
+  checkpoint_every: 1
+  val_every: 1
+  sample_every: 1
+  max_train_steps: null
+  max_val_steps: null
+  tqdm_interval_sec: 1.0
+  resume: true
+  debug: false
+
+# ---- EMA ----
+ema:
+  _target_: diffusion_policy.model.diffusion.ema_model.EMAModel
+  update_after_step: 0
+  inv_gamma: 1.0
+  power: 0.75
+  min_value: 0.0
+  max_value: 0.9999
+
+# ---- Eval ----
+eval:
+  num_episodes: 50
+  max_episode_steps: 100
+  save_video: true
+  n_vis: 3
+  video_dir: videos
+  sim_freq: 1
+  cpu: true
+
+env:
+  num_envs: 1
+  shader_dir: rt-clean
+  camera_width: ${img_size}
+  camera_height: ${img_size}
+  cameras: ${cameras}
+
+# ---- Logging (wandb) ----
+logging:
+  project: rla-policy
+  group: null
+  name: ${setting}_${hydra:job.config_name}/${now:%Y.%m.%d}_${now:%H.%M.%S}
+  enable: true
+  resume: true
+  mode: online
+  id: null
+  tags:
+    - vla_bc_s2r
+    - ${task}
+    - ${robot}
+    - v2
+
+# ---- Checkpoints ----
+checkpoint:
+  topk:
+    monitor_key: eval_success_rate
+    mode: max
+    k: 5
+    format_str: "epoch={epoch:04d}-success={eval_success_rate:.3f}.ckpt"
+  save_last_ckpt: true
+  save_last_snapshot: false
+
+multi_run:
+  run_dir: runs/policy_outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_vla_bc_s2r_${task}_${robot}
+  wandb_name_base: ${now:%Y.%m.%d-%H.%M.%S}_vla_bc_s2r

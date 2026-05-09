@@ -1,0 +1,120 @@
+task: PullCubeTool-v1
+robot: panda
+run_id: 0
+control_mode: pd_joint_pos
+
+seed: 42
+use_wandb: true
+disp_freq: 5
+eval_freq: 25
+save_freq: 25
+total_timesteps: 2000000
+total_iterations: 100
+eval_num_episodes: 50
+num_envs: 64
+num_steps: 4
+mini_batch_size: 256
+update_epochs: 4
+learning_rate: 0.0001
+gamma: 0.9
+clip_coef: 0.2
+ent_coef: 0.0
+target_kl: 0.1
+reward_scale: 5.0
+reward_shaping: none
+reward_norm_ema_decay: 0.95
+n_obs_steps: 1
+action_chunk_size: 8
+
+camera_height: 512
+camera_width: 512
+
+bc_batch_size: 64
+bc_loss_weight: 0.0
+bc_minibatches_per_update: 4
+
+world_model_gpu_ids: [0, 1, 2, 3]
+
+use_critic: true
+vf_coef: 0.5
+gae_lambda: 0.95
+value_lr: 0.0001
+value_hidden_dims: [256, 128]
+
+pretrained_ckpt: runs/weights/wmrl_checkpoints/3_bc_s2r_nstate/checkpoints/epoch=0011-success=0.420.ckpt
+resume_ckpt: null
+
+policy_cls: policies.policy.vla_bc_s2r_policy.VLABCS2RPolicy
+policy_kwargs:
+  action_dim: 8
+  state_dim: 9
+  num_cameras: 1
+  horizon: 12
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${action_chunk_size}
+  img_size: 512
+  resize_shape:
+    - 128
+    - 128
+  use_state: false
+  skip_dino_preprocess: true
+  dino_channels: 1024
+  image_decoder_work_dir: runs/weights/dino-to-image_unet/maniskill/20260404_22-53-36
+  residual_hidden_dims: [512, 256]
+  residual_mean_scale: 0.1
+  residual_std_scale: 0.1
+  per_camera_dim: 512
+  use_group_norm: true
+  share_backbone: false
+  crop_shape: null
+  random_crop: false
+  imagenet_norm: false
+  state_hidden_dim: 256
+  state_output_dim: 256
+  mlp_hidden_dims:
+  - 1024
+  - 512
+  - 256
+  mlp_dropout: 0.0
+  loss_type: mse
+  enable_rl_lora: false
+
+bc_dataset_cfg:
+  dataset_dir: data/maniskill/ppo/panda/PullCubeTool-v1/success
+  cameras:
+    - front_lower_camera
+  horizon: 12
+  pad_before: 0
+  pad_after: 7
+  img_size: 512
+  seed: 42
+  val_ratio: 0.02
+  start_traj_id: 0
+  end_traj_id: 999
+  max_train_episodes: 990
+  use_foreground_mask: true
+  min_episode_length: 5
+
+env_kwargs:
+  dataset_dir: data/maniskill/ppo/panda/PullCubeTool-v1/success
+  cameras:
+    - front_lower_camera
+  img_size: 512
+  use_foreground_mask: true
+  flow_model_work_dir: runs/weights/rla-wm/maniskill/panda/20260405_11-00-59
+  image_decoder_work_dir: runs/weights/dino-to-image_unet/maniskill/20260404_22-53-36
+  encoder_work_dir: runs/weights/rla/maniskill/20260323_21-41-25
+  p_initial_frame: 0.5
+  max_chunk_steps: 6
+  euler_steps: 30
+  robot_uid: panda
+  control_mode: pd_joint_pos
+  task_ind: 5
+  reward_token_metric: l1
+  success_token_threshold: 0.032
+  terminal_success_bonus: 0.5
+  dino_channels: 1024
+  reward_mode: corresponding
+
+run_dir: runs/wmrl_critic
+run_initial_eval: true

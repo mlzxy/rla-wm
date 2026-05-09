@@ -1,0 +1,157 @@
+vars:
+  debug: false
+  use_amp: false
+  img_size: 512
+  resolution: 128
+  granularity: 0.02
+  dino_channels: 1024
+  model_channels: 1024
+  horizon: 15
+
+wandb: 
+  enabled: true
+  project: "rla-wm"
+  entity: "xz653"
+  name: ""
+  tags: []
+  notes: ""
+
+
+models:
+  decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+
+
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/maniskill
+    configs:
+      play_panda:
+        paths: ["play/panda/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      play_xarm:
+        paths: ["play/xarm6_robotiq/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      play_ur10:
+        paths: ["play/ur10e_stick/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      ppo_ur10:
+        paths: ["ppo/ur10e_stick/PushT-v2/*", "ppo/ur10e_stick/RollBall-v1/*"]
+        w: 1.0
+      ppo_xarm:
+        paths: ["ppo/xarm6_robotiq/PegInsertionSide-v1/*", "ppo/xarm6_robotiq/PokeCube-v2/*"]
+        w: 1.0
+      ppo_panda:
+        paths: ["ppo/panda/PullCube-v2/*", "ppo/panda/PullCubeTool-v1/*"]
+        w: 1.0
+      
+    max_num_cameras: 7
+    start_traj_id: 10
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    read_optional_streams: False
+    interaction_prob: 0.9
+    interaction_detect:
+      dist_threshold: 0.25
+      movement_threshold: 0.002
+      buffer_window: 3
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["front_lower_camera"] # "front_left_camera", "rear_right_camera"
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image.v2.train.h${vars.horizon}.json
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/maniskill
+    configs:
+      play_panda:
+        paths: ["play/panda/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      play_xarm:
+        paths: ["play/xarm6_robotiq/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      play_ur10:
+        paths: ["play/ur10e_stick/TableOnly-v2/*"]
+        w: 0.0
+        min_start_frame: 25
+      ppo_ur10:
+        paths: ["ppo/ur10e_stick/PushT-v2/*", "ppo/ur10e_stick/RollBall-v1/*"]
+        w: 1.0
+      ppo_xarm:
+        paths: ["ppo/xarm6_robotiq/PegInsertionSide-v1/*", "ppo/xarm6_robotiq/PokeCube-v2/*"]
+        w: 1.0
+      ppo_panda:
+        paths: ["ppo/panda/PullCube-v2/*", "ppo/panda/PullCubeTool-v1/*"]
+        w: 1.0
+      
+    read_optional_streams: False
+    max_num_cameras: 7
+    start_traj_id: 0
+    end_traj_id: 9
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    interaction_prob: 0.9
+    interaction_detect:
+      dist_threshold: 0.25
+      movement_threshold: 0.002
+      buffer_window: 3
+
+    cameras: ["front_lower_camera"] # , "front_left_camera", "rear_right_camera"
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image.v2.val.h${vars.horizon}.json
+
+
+
+trainer:
+  name: DinoToImageTrainerV1
+  args:
+    load_dir: null
+    max_steps: 1000000
+    batch_size: 32
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 1e-5
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 5000
+    save_latest_only: false
+    num_workers: 4
+    num_samples: 16
+    debug: ${vars.debug}
+
+    # Image reconstruction losses
+    lambda_l1: 1.0
+    lambda_ssim: 0.2
+    lambda_lpips: 0.2
+
+    # DINO parameters
+    extractor_type: "dino"  # Set to "jepa" to use V-JEPA 2.1 ViT-L/16 (384)
+    dino_channels: ${vars.dino_channels}
+    rgb_key: "rgbs"
