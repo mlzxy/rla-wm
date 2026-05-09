@@ -266,6 +266,10 @@ rerun runs/viz/0.rrd
 Replace the dataset path / `traj_id` as needed. Run `python -m datalib.traj2rdd --help` for the full flag list (`--limit`, `--img-size`, `--resolution`, `--vis-masks`, …).
 
 
+https://github.com/user-attachments/assets/b0aac57c-7352-4ad7-a99a-c071ed9668df
+
+preview of our 3d dataset 
+
 
 ## 11. Repository layout
 
