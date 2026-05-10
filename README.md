@@ -1,6 +1,6 @@
 # Learning Visual Feature-Based World Models via Residual Latent Action
 
-[Arxiv](https://arxiv.org/abs/XXXX.XXXXX) &nbsp;|&nbsp; [Project page](http://mlzxy.github.io/rla-wm) &nbsp;|&nbsp; [<img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb)
+<a href="https://arxiv.org/abs/XXXX.XXXXX" target="_blank" rel="noopener noreferrer">Arxiv</a> &nbsp;|&nbsp; <a href="http://mlzxy.github.io/rla-wm" target="_blank" rel="noopener noreferrer">Project page</a> &nbsp;|&nbsp; <a href="https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb" target="_blank" rel="noopener noreferrer"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo</a>
 
 Code for the paper. Four artifacts in this repo:
 
@@ -13,7 +13,7 @@ Plus **Maniskill3DWorld** — multi-modal ManiSkill trajectories (7-camera RGB, 
 
 ## Quickstart
 
-**Easiest path — try in Colab.** The [Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb) runs a pretrained PushT RLA-WM rollout and trains 50 WMRL iterations on a free T4. No local setup.
+**Easiest path — try in Colab.** The [Colab demo](https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb) runs a pretrained PushT RLA-WM rollout and trains 50 WMRL iterations (400 updates) on a free T4. No local setup.
 
 **RLA-WM inference demo:**
 
