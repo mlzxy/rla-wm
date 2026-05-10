@@ -35,7 +35,6 @@ dependencies = [
     "pudb>=2025.1.5",
     "pymeshfix>=0.17.2",
     "pytorch-kinematics>=0.7.6",
-    "pytorch-volumetric>=0.5.3",
     "rembg>=2.0.69",
     "rerun-sdk>=0.27.2",
     "roma>=1.5.4",
@@ -55,14 +54,9 @@ dependencies = [
     "utils3d",
     "wandb>=0.23.1",
     "xatlas>=0.0.11",
-    "xformers>=0.0.32.post2",
     "gsplat>=1.5.3",
     "albumentations>=2.0.8",
-    "redis>=7.1.0",
     "lz4>=4.4.5",
-    "pytorch3d",
-    "pykeops>=2.3",
-    "geomloss>=0.2.6",
     "k3d>=2.17.0",
     "pyinstrument>=5.1.2",
     "scalene>=2.0.1",
@@ -102,7 +96,6 @@ no-build-isolation-package = [
     "nvdiffrast",
     "torch-scatter",
     "torch-cluster",
-    "pytorch3d",
 ]
 required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
@@ -112,7 +105,6 @@ required-environments = [
 utils3d = { git = "https://github.com/EasternJournalist/utils3d.git", rev = "9a4eb15e4021b67b12c460c7057d642626897ec8" }
 diff-gaussian-rasterization = { git = "https://github.com/autonomousvision/mip-splatting.git", subdirectory = "submodules/diff-gaussian-rasterization" }
 nvdiffrast = { git = "https://github.com/NVlabs/nvdiffrast.git" }
-pytorch3d = { git = "https://github.com/facebookresearch/pytorch3d.git" }
 torch-cluster = { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_cluster-1.6.3%2Bpt28cu128-cp310-cp310-linux_x86_64.whl" }
 torch-scatter = { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp310-cp310-linux_x86_64.whl" }
 

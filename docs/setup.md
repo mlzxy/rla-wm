@@ -4,8 +4,7 @@
 
 - **Python** 3.10
 - **CUDA** 12.8 (`nvcc --version`)
-- **gcc** 15.2 (`gcc --version`) — needed to build `gsplat` and a few other CUDA extensions
-- ~256 GB RAM recommended for training (less for inference / eval)
+- ~200 GB RAM recommended for training (less for inference / eval)
 
 ## Install
 
@@ -56,7 +55,7 @@ WANDB_MODE=offline .venv/bin/python train.py --config <cfg> ...
 
 ## Troubleshooting
 
-- **`uv sync` fails compiling `gsplat` (or another CUDA extension)** — verify CUDA 12.8 and gcc 15.2; lower `MAX_JOBS` if RAM-bound.
+- **`uv sync` fails compiling `gsplat` (or another CUDA extension)** — verify CUDA 12.8 and gcc 15.2 (recommended); lower `MAX_JOBS` if RAM-bound.
 - **`ModuleNotFoundError: diffusion_policy`** — `PYTHONPATH` is missing `./third_party/diffusion_policy`.
 - **DINOv3 download fails** — check `HF_TOKEN` is set and you have access to the gated DINOv3 repo.
 - **Entry point can't find a module** — make sure you ran it from the repo root (some scripts inject the repo into `sys.path`).
