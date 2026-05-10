@@ -4,7 +4,7 @@
 
 
 
-This repository contains the implementation, configs, and training/evaluation entry points for the models described in the paper:
+This repository contains the implementation for the models described in the paper:
 
 - **RLA** — Residual Latent-Action autoencoder over DINOv3 patch tokens.
 - **RLA-WM** — Flow-matching world model that predicts future RLA latents conditioned on the current frame and robot actions.
