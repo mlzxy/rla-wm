@@ -450,7 +450,7 @@ def train(args: Args) -> list[float]:
     if args.reward_shaping == "running_norm":
         reward_normalizer = RunningRewardNormalizer(ema_decay=args.reward_norm_ema_decay)
 
-    logger.log("=== wmrl BC+RL (REINFORCE-clip) ===")
+    logger.log("=== wmrl ===")
     logger.log(f"env_cls={args.env_cls}  agent_cls={args.agent_cls}")
     logger.log(
         f"num_envs={args.num_envs} seed={args.seed}  "
