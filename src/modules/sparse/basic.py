@@ -16,9 +16,11 @@ __all__ = [
 ]
 
 if BACKEND == "torchsparse":
-    SparseTensorData = importlib.import_module("torchsparse").SparseTensor
+    # SparseTensorData = importlib.import_module("torchsparse").SparseTensor
+    pass
 elif BACKEND == "spconv":
-    SparseTensorData = importlib.import_module("spconv.pytorch").SparseConvTensor
+    # SparseTensorData = importlib.import_module("spconv.pytorch").SparseConvTensor
+    pass
 
 
 class SparseTensor:

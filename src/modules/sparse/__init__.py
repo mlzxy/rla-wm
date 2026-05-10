@@ -29,7 +29,7 @@ def __from_env():
     if env_sparse_attn is not None and env_sparse_attn in ["xformers", "flash_attn"]:
         ATTN = env_sparse_attn
 
-    print(f"[SPARSE] Backend: {BACKEND}, Attention: {ATTN}")
+    # print(f"[SPARSE] Backend: {BACKEND}, Attention: {ATTN}")
 
 
 __from_env()

@@ -2,7 +2,7 @@ from typing import *
 import torch
 import torch.nn as nn
 from . import SparseTensor
-import spconv.pytorch as spconv
+# import spconv.pytorch as spconv
 
 __all__ = ["SparseDownsample", "SparseUpsample", "SparseSubdivide"]
 

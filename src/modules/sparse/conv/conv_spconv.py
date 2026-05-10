@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
-import spconv.pytorch as spconv
+try:
+    pass
+    # import spconv.pytorch as spconv
+except ImportError:
+    print("[SPARSE][CONV] spconv not found, SparseConv3d and SparseMaxPool")
 from .. import SparseTensor
 from .. import DEBUG
 from . import SPCONV_ALGO
