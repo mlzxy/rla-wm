@@ -54,6 +54,12 @@ All seeds 1–15 with eval results on wandb: <https://wandb.ai/ryx/wmrl_final?nw
 
 Alongside the trimmed `maniskill` split used for RLA / RLA-WM, we release **Maniskill3DWorld** (`data/maniskill_full/`) — a richer, multi-modal version of the same trajectories: RGB from 7 cameras, robot and foreground masks, depth maps, animated robot meshes, and voxelized point clouds. It's the dataset we built while exploring 3D world models. The paper ended up using a 2D feature-space approach, so the full 3D bundle didn't make it into our final pipeline, but it's a standalone resource that may be useful for 3D / multi-view research and we're shipping it as-is.
 
+The viz tool needs `open3d`, which is not in the base environment (it's only used here). Install it once:
+
+```bash
+uv pip install open3d
+```
+
 Render a trajectory to a `.rrd` file viewable in [Rerun](https://rerun.io/):
 
 ```bash

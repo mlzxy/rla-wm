@@ -22,15 +22,12 @@ dependencies = [
     "imageio-ffmpeg>=0.6.0",
     "jaxtyping>=0.3.4",
     "jstyleson>=0.0.2",
-    "kaolin==0.18.0",
     "lpips>=0.1.4",
     "mani-skill==3.0.0b22",
-    "mediapipe==0.10.32",
     "ninja>=1.13.0",
     #"nvdiffrast",
     "onnxruntime>=1.23.2",
     "open-clip-torch>=3.2.0",
-    "open3d>=0.19.0",
     "opencv-python-headless>=4.12.0.88",
     "pandas>=2.3.3",
     "peft>=0.19.0",
@@ -67,7 +64,6 @@ dependencies = [
     "pykeops>=2.3",
     "geomloss>=0.2.6",
     "k3d>=2.17.0",
-    "flex-gemm",
     "pyinstrument>=5.1.2",
     "scalene>=2.0.1",
     "bokeh>=3.8.2",
@@ -99,7 +95,6 @@ classifiers = [
 
 [tool.uv]
 find-links = [
-    "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.8.0_cu128.html",
     "https://data.pyg.org/whl/torch-2.8.0+cu128.html",
 ]
 no-build-isolation-package = [
@@ -108,7 +103,6 @@ no-build-isolation-package = [
     "torch-scatter",
     "torch-cluster",
     "pytorch3d",
-    "flex-gemm",
 ]
 required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
@@ -121,7 +115,6 @@ nvdiffrast = { git = "https://github.com/NVlabs/nvdiffrast.git" }
 pytorch3d = { git = "https://github.com/facebookresearch/pytorch3d.git" }
 torch-cluster = { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_cluster-1.6.3%2Bpt28cu128-cp310-cp310-linux_x86_64.whl" }
 torch-scatter = { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu128/torch_scatter-2.1.2%2Bpt28cu128-cp310-cp310-linux_x86_64.whl" }
-flex-gemm = { git = "https://github.com/JeffreyXiang/FlexGEMM.git" }
 
 [tool.ruff.lint]
 ignore = ['F722']
