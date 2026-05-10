@@ -36,13 +36,22 @@
      ============================================================ */
   function initReveal() {
     $$('.reveal').forEach((el) => {
+      // Skip elements inside a scrolly — the scrolly's own pinned
+      // ScrollTrigger manages visibility of .figure-slide children.
+      // Set them immediately to visible so the CSS .reveal {opacity:0}
+      // default doesn't hide them.
+      if (el.closest('.scrolly')) {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+        return;
+      }
       gsap.to(el, {
         opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
         scrollTrigger: {
           trigger: el,
           start: 'top 85%',
           end: 'bottom 15%',
-          toggleActions: 'play none none reverse',
+          toggleActions: 'play none play reverse',
         },
       });
     });
@@ -357,6 +366,7 @@
           window.addEventListener('mousemove', onMove);
 
           const handlers = [];
+          const skipHandlers = [];
           textParagraphs.forEach((p, i) => {
             let retryTimer = 0;
             const targetY = () =>
@@ -403,12 +413,55 @@
             p.addEventListener('click', click);
             handlers.push([p, enter, leave, click]);
           });
+
+          // Skip-item hover redirect: when a scrolly-list item with
+          // [data-skip] or [data-disabled] is hovered, redirect to its
+          // first non-skipped child slide so the parent acts as a
+          // hoverable section header on desktop.
+          const skipItems = $$('.text-col [data-slide][data-skip], .text-col [data-slide][data-disabled]', scrolly);
+          skipItems.forEach((el) => {
+            const firstChild = el.querySelector('[data-slide]:not([data-skip]):not([data-disabled])');
+            if (!firstChild) return;
+            const childId = firstChild.dataset.slide;
+            if (!childId) return;
+            const childIdx = textParagraphs.findIndex((p) => p.dataset.slide === childId);
+            if (childIdx < 0) return;
+            const childTargetY = () =>
+              trig.start + ((childIdx + 0.5) / NUM_SLIDES) * (trig.end - trig.start);
+            let skipRetryTimer = 0;
+            const trySkipJump = () => {
+              if (firstChild.classList.contains('is-active-para')) return true;
+              if (scrollingNow) return false;
+              if (performance.now() - lastMouseMoveAt > 120) return false;
+              if (hoveredEl && hoveredEl.closest &&
+                  hoveredEl.closest('[data-slide]') !== el) return false;
+              if (lenis) lenis.scrollTo(childTargetY(), { duration: 0.25 });
+              else window.scrollTo({ top: childTargetY(), behavior: 'smooth' });
+              return true;
+            };
+            const onSkipEnter = () => {
+              if (trySkipJump()) return;
+              clearInterval(skipRetryTimer);
+              skipRetryTimer = setInterval(() => {
+                if (trySkipJump()) clearInterval(skipRetryTimer);
+              }, 120);
+            };
+            const onSkipLeave = () => { clearInterval(skipRetryTimer); skipRetryTimer = 0; };
+            el.addEventListener('mouseenter', onSkipEnter);
+            el.addEventListener('mouseleave', onSkipLeave);
+            skipHandlers.push([el, onSkipEnter, onSkipLeave]);
+          });
+
           return () => {
             window.removeEventListener('mousemove', onMove);
             handlers.forEach(([p, enter, leave, click]) => {
               p.removeEventListener('mouseenter', enter);
               p.removeEventListener('mouseleave', leave);
               p.removeEventListener('click', click);
+            });
+            skipHandlers.forEach(([el, enter, leave]) => {
+              el.removeEventListener('mouseenter', enter);
+              el.removeEventListener('mouseleave', leave);
             });
           };
         }
@@ -584,6 +637,9 @@
         onEnter: () => {
           gsap.to(flows, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', stagger: 0.15 });
         },
+        onEnterBack: () => {
+          gsap.to(flows, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', stagger: 0.15 });
+        },
         onLeaveBack: () => {
           flows.forEach((p) => gsap.set(p, { strokeDashoffset: p.getTotalLength() }));
         },
@@ -600,7 +656,11 @@
      Falls back to <img> if fetch fails (e.g. file:// CORS).
      ============================================================ */
   function initExternalSvgs() {
-    $$('.svg-holder[data-svg-src]').forEach((holder) => {
+    const holders = $$('.svg-holder[data-svg-src]');
+    if (!holders.length) return;
+    let loadedCount = 0;
+
+    holders.forEach((holder) => {
       const url     = holder.dataset.svgSrc;
       const stagger = num(holder.dataset.svgStagger, 0.025);
       const fade    = num(holder.dataset.svgFade,    0.6);
@@ -610,15 +670,26 @@
       fetch(url).then((r) => r.text()).then((text) => {
         holder.innerHTML = text;
         const svg = holder.querySelector('svg');
-        if (!svg) return;
+        if (!svg) { loadedCount++; return; }
         animate(svg);
+        loadedCount++;
+        // All SVGs loaded — refresh ScrollTrigger positions. SVG injection
+        // changes holder heights, and holders inside pinned containers
+        // (e.g. scrolly) need recalculation after the pin is engaged.
+        if (loadedCount === holders.length) {
+          requestAnimationFrame(() => ScrollTrigger.refresh());
+        }
       }).catch((err) => {
+        loadedCount++;
         console.warn('[paper.js] external SVG fetch failed (' + err.message +
           '). Falling back to <img>. Run a local server (e.g. `python3 -m http.server`) for the animated version.');
         holder.innerHTML =
           '<img src="' + url + '" style="width:100%;height:auto;display:block;" alt="">' +
           '<p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:8px;">' +
           '(static fallback — animation requires HTTP, not <code>file://</code>.)</p>';
+        if (loadedCount === holders.length) {
+          requestAnimationFrame(() => ScrollTrigger.refresh());
+        }
       });
 
       function animate(svg) {
@@ -649,23 +720,14 @@
           });
         });
 
-        // Fade children in on scroll via a GSAP timeline + embedded ScrollTrigger.
-        // Using fromTo with immediateRender:false ensures the initial opacity:0 is
-        // only applied when the animation actually starts — if the trigger is beyond
-        // the scrollable range the children stay at their natural CSS opacity (1).
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: holder,
-            start,
-            toggleActions: 'play none none reverse',
-            onLeaveBack: () => {
-              drawables.forEach(({ p, len }) => gsap.set(p, { strokeDashoffset: len }));
-            },
-          },
-        });
-        tl.fromTo(children, { opacity: 0 }, { opacity: 1, duration: fade, stagger, ease: 'power2.out', immediateRender: false });
+        // Fade+draw children in immediately.  The holder's .reveal ScrollTrigger
+        // (created by initReveal) already correctly gates show/hide on scroll,
+        // including when the page loads mid-page.  A separate ScrollTrigger on
+        // the same element inside a pinned container (scrolly) can get wildly
+        // wrong positions when created after the pin is engaged.
+        gsap.fromTo(children, { opacity: 0 }, { opacity: 1, duration: fade, stagger, ease: 'power2.out' });
         if (drawables.length) {
-          tl.to(drawables.map((d) => d.p), { strokeDashoffset: 0, duration: draw, stagger, ease: 'power2.out' }, 0);
+          gsap.to(drawables.map((d) => d.p), { strokeDashoffset: 0, duration: draw, stagger, ease: 'power2.out' });
         }
       }
     });
@@ -791,6 +853,23 @@
     });
 
     function buildExplorer(root, configs) {
+      // Apply grid-gap from HTML attribute (e.g. data-grid-gap="6").
+      // Sets CSS custom properties that .detail-grid / .detail-row read.
+      if (root.dataset.gridGap != null) {
+        const g = parseFloat(root.dataset.gridGap);
+        if (!isNaN(g) && g >= 0) {
+          root.style.setProperty('--explorer-cell-gap', g + 'px');
+          root.style.setProperty('--explorer-row-gap',  (g * 2) + 'px');
+        }
+      }
+      // Apply border-radius from HTML attribute (e.g. data-grid-radius="8").
+      if (root.dataset.gridRadius != null) {
+        const r = parseFloat(root.dataset.gridRadius);
+        if (!isNaN(r) && r >= 0) {
+          root.style.setProperty('--explorer-radius', r + 'px');
+        }
+      }
+
       // Build skeleton.
       root.innerHTML = `
         <div class="thumb-strip embla" data-lenis-prevent>
@@ -815,7 +894,7 @@
       const detailGrid     = $('.detail-grid',  root);
       const colLabelsEl    = $('.col-labels-host', root);
       const animToggleBtn  = $('.anim-toggle', root);
-      let activeIdx = 0;
+      let activeIdx = -1;
       let explorerAnimToggle = false;
 
       configs.forEach((cfg, i) => {
@@ -867,6 +946,21 @@
       }
 
       function buildCellMedia(cell) {
+        const isWeChat = /MicroMessenger/i.test(navigator.userAgent || '');
+
+        // Helper: show fallback text when a media element fails to load.
+        function showMediaError(container, kind) {
+          container.innerHTML = '';
+          const msg = document.createElement('div');
+          msg.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:16px;text-align:center;font-size:13px;color:var(--muted);background:var(--bg-soft);';
+          let text = kind === 'video' ? 'Video not rendered' : 'Image not rendered';
+          if (isWeChat && kind === 'video') {
+            text = 'WeChat cannot play this video, please open in browser';
+          }
+          msg.innerHTML = text;
+          container.appendChild(msg);
+        }
+
         const media = document.createElement('div');
         media.className = 'media';
         if (cell.kind === 'color') {
@@ -875,12 +969,39 @@
         } else if (cell.kind === 'image') {
           const img = document.createElement('img');
           img.src = cell.src; img.alt = cell.label || '';
+          media.classList.add('is-loading');
+          img.addEventListener('load',  () => media.classList.remove('is-loading'), { once: true });
+          img.addEventListener('error', () => { media.classList.remove('is-loading'); showMediaError(media, 'image'); }, { once: true });
           media.appendChild(img);
           applyMaxSize(media, img, cell);
         } else if (cell.kind === 'video') {
           const v = document.createElement('video');
-          v.src = cell.src; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+          v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+          v.setAttribute('playsinline', '');
+          v.setAttribute('webkit-playsinline', '');
+          v.setAttribute('x5-video-player-type', 'h5');
+          v.setAttribute('x5-video-player-fullscreen', 'true');
+          v.setAttribute('preload', 'auto');
+          v.setAttribute('disableRemotePlayback', '');
+          media.classList.add('is-loading');
+          const hideLoader = () => { media.classList.remove('is-loading'); };
+          // Set src AFTER x5 attrs so X5 browser (Android WeChat) picks them up.
+          v.src = cell.src;
           media.appendChild(v);
+          // WeChat can't play inline video — show error immediately.
+          if (isWeChat) {
+            hideLoader();
+            showMediaError(media, 'video');
+          } else {
+            let errorShown = false;
+            const fail = () => { if (!errorShown) { errorShown = true; hideLoader(); showMediaError(media, 'video'); } };
+            v.addEventListener('error', fail, { once: true });
+            v.addEventListener('loadedmetadata', hideLoader, { once: true });
+            const tryPlay = () => { v.play().catch(fail); };
+            if (v.readyState >= 1) { hideLoader(); tryPlay(); } else { v.addEventListener('loadedmetadata', tryPlay, { once: true }); }
+            // Timeout fallback — if video still hasn't started after 4s, show error.
+            setTimeout(() => { if (!errorShown && v.paused && v.currentTime === 0) fail(); }, 4000);
+          }
           applyMaxSize(media, v, cell);
         } else if (cell.kind === 'sequence') {
           // Stack all frames as layered, pre-loaded children of `media` and
@@ -900,6 +1021,7 @@
               layer.alt     = '';
               layer.decoding = 'async';
               layer.loading = i === 0 ? 'eager' : 'lazy';
+              layer.addEventListener('error', () => showMediaError(media, 'image'), { once: true });
             } else {
               layer = document.createElement('div');
               layer.style.background = fr.color || '#000';
@@ -1022,7 +1144,13 @@
           const seqCells = [];
           for (let c = 0; c < colCount; c++) {
             const seqCell = buildColumnSequenceCell(c);
-            if (seqCell) seqCells.push(seqCell);
+            if (seqCell) {
+              // Embed column label as a per-cell caption (desktop only; mobile uses 'columns').
+              if (colLabels && colLabels[c]) {
+                seqCell.caption = flattenLabel(colLabels[c]);
+              }
+              seqCells.push(seqCell);
+            }
           }
           const newRows = [];
           const newRowLabels = [];
@@ -1033,7 +1161,7 @@
             }
           });
           if (seqCells.length) {
-            newRows.push({ cells: seqCells, colLabels });
+            newRows.push({ cells: seqCells });
             newRowLabels.push(animCfg.mergedRowLabel || 'Predictions');
           }
           return Object.assign({}, cfg, {
@@ -1142,6 +1270,7 @@
       }
 
       function activate(idx) {
+        if (idx === activeIdx) return;
         activeIdx = idx;
         $$('.thumb', root).forEach((t) => t.classList.toggle('is-active', +t.dataset.thumbIdx === idx));
         renderDetail(configs[idx]);
@@ -1388,6 +1517,9 @@
     initTooltips();
     initHero();
     initScrolly();
+    // Refresh after scrolly pinning — pin-spacer changes the layout, so
+    // ScrollTrigger positions created before the pin need recalculation.
+    ScrollTrigger.refresh();
     initEmblas();
     initSvgFlows();
     initExternalSvgs();

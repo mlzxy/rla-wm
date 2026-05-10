@@ -1,9 +1,9 @@
 [
   {
     "thumb": {
-      "src": "static/explorer/maniskill/ur10e/000095/step000_gt.png"
+      "src": "static/explorer/maniskill/ur10e/000095/step000_gt.jpg"
     },
-    "title": "PushT-v2 (UR10e) \u2014 ManiSkill",
+    "title": "PushT-v2 (UR10e) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -21,14 +21,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step000_gt.png",
+            "src": "static/explorer/maniskill/ur10e/000095/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/ur10e/000095/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -36,7 +36,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -45,27 +45,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -73,27 +73,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -101,27 +101,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000095/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000095/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -129,9 +129,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/pusht/000084/step000_gt.png"
+      "src": "static/explorer/iws/pusht/000084/step000_gt.jpg"
     },
-    "title": "PushT \u2014 IWS",
+    "title": "PushT — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -150,14 +150,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step000_gt.png",
+            "src": "static/explorer/iws/pusht/000084/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/pusht/000084/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -165,7 +165,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -174,27 +174,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_gt.png"
+            "src": "static/explorer/iws/pusht/000084/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_rla.png"
+            "src": "static/explorer/iws/pusht/000084/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_vid2world.png"
+            "src": "static/explorer/iws/pusht/000084/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_dinowm.png"
+            "src": "static/explorer/iws/pusht/000084/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_rae.png"
+            "src": "static/explorer/iws/pusht/000084/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000084/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -202,27 +202,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_gt.png"
+            "src": "static/explorer/iws/pusht/000084/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_rla.png"
+            "src": "static/explorer/iws/pusht/000084/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_vid2world.png"
+            "src": "static/explorer/iws/pusht/000084/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_dinowm.png"
+            "src": "static/explorer/iws/pusht/000084/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_rae.png"
+            "src": "static/explorer/iws/pusht/000084/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000084/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -230,27 +230,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_gt.png"
+            "src": "static/explorer/iws/pusht/000084/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_rla.png"
+            "src": "static/explorer/iws/pusht/000084/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_vid2world.png"
+            "src": "static/explorer/iws/pusht/000084/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_dinowm.png"
+            "src": "static/explorer/iws/pusht/000084/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_rae.png"
+            "src": "static/explorer/iws/pusht/000084/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000084/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -258,27 +258,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_gt.png"
+            "src": "static/explorer/iws/pusht/000084/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_rla.png"
+            "src": "static/explorer/iws/pusht/000084/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_vid2world.png"
+            "src": "static/explorer/iws/pusht/000084/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_dinowm.png"
+            "src": "static/explorer/iws/pusht/000084/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_rae.png"
+            "src": "static/explorer/iws/pusht/000084/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000084/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000084/step060_schrod-bridge.jpg"
           }
         ]
       }
@@ -286,9 +286,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/maniskill/xarm/000032/step000_gt.png"
+      "src": "static/explorer/maniskill/xarm/000032/step000_gt.jpg"
     },
-    "title": "PokeCube-v2 (XArm) \u2014 ManiSkill",
+    "title": "PokeCube-v2 (XArm) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -306,14 +306,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step000_gt.png",
+            "src": "static/explorer/maniskill/xarm/000032/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/xarm/000032/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -321,7 +321,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -330,27 +330,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_gt.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_rla.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_vid2world.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_dinowm.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_rae.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/xarm/000032/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -358,27 +358,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_gt.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_rla.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_vid2world.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_dinowm.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_rae.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/xarm/000032/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -386,27 +386,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_gt.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_rla.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_vid2world.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_dinowm.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_rae.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/xarm/000032/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/xarm/000032/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -414,9 +414,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/rope/000095/step000_gt.png"
+      "src": "static/explorer/iws/rope/000095/step000_gt.jpg"
     },
-    "title": "Rope \u2014 IWS",
+    "title": "Rope — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -435,14 +435,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step000_gt.png",
+            "src": "static/explorer/iws/rope/000095/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/rope/000095/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -450,7 +450,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -459,27 +459,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_gt.png"
+            "src": "static/explorer/iws/rope/000095/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_rla.png"
+            "src": "static/explorer/iws/rope/000095/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_vid2world.png"
+            "src": "static/explorer/iws/rope/000095/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_dinowm.png"
+            "src": "static/explorer/iws/rope/000095/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_rae.png"
+            "src": "static/explorer/iws/rope/000095/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000095/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -487,27 +487,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_gt.png"
+            "src": "static/explorer/iws/rope/000095/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_rla.png"
+            "src": "static/explorer/iws/rope/000095/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_vid2world.png"
+            "src": "static/explorer/iws/rope/000095/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_dinowm.png"
+            "src": "static/explorer/iws/rope/000095/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_rae.png"
+            "src": "static/explorer/iws/rope/000095/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000095/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -515,27 +515,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_gt.png"
+            "src": "static/explorer/iws/rope/000095/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_rla.png"
+            "src": "static/explorer/iws/rope/000095/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_vid2world.png"
+            "src": "static/explorer/iws/rope/000095/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_dinowm.png"
+            "src": "static/explorer/iws/rope/000095/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_rae.png"
+            "src": "static/explorer/iws/rope/000095/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000095/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -543,27 +543,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_gt.png"
+            "src": "static/explorer/iws/rope/000095/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_rla.png"
+            "src": "static/explorer/iws/rope/000095/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_vid2world.png"
+            "src": "static/explorer/iws/rope/000095/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_dinowm.png"
+            "src": "static/explorer/iws/rope/000095/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_rae.png"
+            "src": "static/explorer/iws/rope/000095/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000095/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000095/step060_schrod-bridge.jpg"
           }
         ]
       }
@@ -571,9 +571,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/maniskill/panda/000034/step000_gt.png"
+      "src": "static/explorer/maniskill/panda/000034/step000_gt.jpg"
     },
-    "title": "PullCubeTool-v1 (Panda) \u2014 ManiSkill",
+    "title": "PullCubeTool-v1 (Panda) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -591,14 +591,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step000_gt.png",
+            "src": "static/explorer/maniskill/panda/000034/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/panda/000034/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -606,7 +606,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -615,27 +615,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_gt.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_rla.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_rae.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000034/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -643,27 +643,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_gt.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_rla.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_rae.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000034/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -671,27 +671,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_gt.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_rla.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_rae.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000034/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000034/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -699,9 +699,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/box/000063/step000_gt.png"
+      "src": "static/explorer/iws/box/000063/step000_gt.jpg"
     },
-    "title": "Box \u2014 IWS",
+    "title": "Box — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -720,14 +720,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step000_gt.png",
+            "src": "static/explorer/iws/box/000063/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/box/000063/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -735,7 +735,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -744,27 +744,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_gt.png"
+            "src": "static/explorer/iws/box/000063/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_rla.png"
+            "src": "static/explorer/iws/box/000063/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_vid2world.png"
+            "src": "static/explorer/iws/box/000063/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_dinowm.png"
+            "src": "static/explorer/iws/box/000063/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_rae.png"
+            "src": "static/explorer/iws/box/000063/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/box/000063/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -772,27 +772,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_gt.png"
+            "src": "static/explorer/iws/box/000063/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_rla.png"
+            "src": "static/explorer/iws/box/000063/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_vid2world.png"
+            "src": "static/explorer/iws/box/000063/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_dinowm.png"
+            "src": "static/explorer/iws/box/000063/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_rae.png"
+            "src": "static/explorer/iws/box/000063/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/box/000063/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -800,27 +800,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_gt.png"
+            "src": "static/explorer/iws/box/000063/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_rla.png"
+            "src": "static/explorer/iws/box/000063/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_vid2world.png"
+            "src": "static/explorer/iws/box/000063/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_dinowm.png"
+            "src": "static/explorer/iws/box/000063/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_rae.png"
+            "src": "static/explorer/iws/box/000063/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/box/000063/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -828,27 +828,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_gt.png"
+            "src": "static/explorer/iws/box/000063/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_rla.png"
+            "src": "static/explorer/iws/box/000063/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_vid2world.png"
+            "src": "static/explorer/iws/box/000063/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_dinowm.png"
+            "src": "static/explorer/iws/box/000063/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_rae.png"
+            "src": "static/explorer/iws/box/000063/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/box/000063/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/box/000063/step060_schrod-bridge.jpg"
           }
         ]
       }
@@ -856,9 +856,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/maniskill/ur10e/000020/step000_gt.png"
+      "src": "static/explorer/maniskill/ur10e/000020/step000_gt.jpg"
     },
-    "title": "RollBall-v1 (UR10e) \u2014 ManiSkill",
+    "title": "RollBall-v1 (UR10e) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -876,14 +876,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step000_gt.png",
+            "src": "static/explorer/maniskill/ur10e/000020/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/ur10e/000020/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -891,7 +891,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -900,27 +900,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -928,27 +928,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -956,27 +956,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000020/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000020/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -984,9 +984,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/rope/000107/step000_gt.png"
+      "src": "static/explorer/iws/rope/000107/step000_gt.jpg"
     },
-    "title": "Rope \u2014 IWS",
+    "title": "Rope — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -1005,14 +1005,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step000_gt.png",
+            "src": "static/explorer/iws/rope/000107/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/rope/000107/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -1020,7 +1020,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -1029,27 +1029,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_gt.png"
+            "src": "static/explorer/iws/rope/000107/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_rla.png"
+            "src": "static/explorer/iws/rope/000107/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_vid2world.png"
+            "src": "static/explorer/iws/rope/000107/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_dinowm.png"
+            "src": "static/explorer/iws/rope/000107/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_rae.png"
+            "src": "static/explorer/iws/rope/000107/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000107/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -1057,27 +1057,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_gt.png"
+            "src": "static/explorer/iws/rope/000107/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_rla.png"
+            "src": "static/explorer/iws/rope/000107/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_vid2world.png"
+            "src": "static/explorer/iws/rope/000107/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_dinowm.png"
+            "src": "static/explorer/iws/rope/000107/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_rae.png"
+            "src": "static/explorer/iws/rope/000107/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000107/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -1085,27 +1085,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_gt.png"
+            "src": "static/explorer/iws/rope/000107/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_rla.png"
+            "src": "static/explorer/iws/rope/000107/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_vid2world.png"
+            "src": "static/explorer/iws/rope/000107/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_dinowm.png"
+            "src": "static/explorer/iws/rope/000107/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_rae.png"
+            "src": "static/explorer/iws/rope/000107/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000107/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -1113,27 +1113,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_gt.png"
+            "src": "static/explorer/iws/rope/000107/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_rla.png"
+            "src": "static/explorer/iws/rope/000107/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_vid2world.png"
+            "src": "static/explorer/iws/rope/000107/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_dinowm.png"
+            "src": "static/explorer/iws/rope/000107/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_rae.png"
+            "src": "static/explorer/iws/rope/000107/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000107/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000107/step060_schrod-bridge.jpg"
           }
         ]
       }
@@ -1141,9 +1141,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/maniskill/ur10e/000094/step000_gt.png"
+      "src": "static/explorer/maniskill/ur10e/000094/step000_gt.jpg"
     },
-    "title": "PushT-v2 (UR10e) \u2014 ManiSkill",
+    "title": "PushT-v2 (UR10e) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -1161,14 +1161,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step000_gt.png",
+            "src": "static/explorer/maniskill/ur10e/000094/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/ur10e/000094/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -1176,7 +1176,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -1185,27 +1185,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -1213,27 +1213,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -1241,27 +1241,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_gt.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_rla.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_vid2world.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_dinowm.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_rae.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/ur10e/000094/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/ur10e/000094/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -1269,9 +1269,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/pusht/000051/step000_gt.png"
+      "src": "static/explorer/iws/pusht/000051/step000_gt.jpg"
     },
-    "title": "PushT \u2014 IWS",
+    "title": "PushT — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -1290,14 +1290,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step000_gt.png",
+            "src": "static/explorer/iws/pusht/000051/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/pusht/000051/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -1305,7 +1305,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -1314,27 +1314,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_gt.png"
+            "src": "static/explorer/iws/pusht/000051/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_rla.png"
+            "src": "static/explorer/iws/pusht/000051/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_vid2world.png"
+            "src": "static/explorer/iws/pusht/000051/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_dinowm.png"
+            "src": "static/explorer/iws/pusht/000051/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_rae.png"
+            "src": "static/explorer/iws/pusht/000051/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000051/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -1342,27 +1342,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_gt.png"
+            "src": "static/explorer/iws/pusht/000051/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_rla.png"
+            "src": "static/explorer/iws/pusht/000051/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_vid2world.png"
+            "src": "static/explorer/iws/pusht/000051/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_dinowm.png"
+            "src": "static/explorer/iws/pusht/000051/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_rae.png"
+            "src": "static/explorer/iws/pusht/000051/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000051/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -1370,27 +1370,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_gt.png"
+            "src": "static/explorer/iws/pusht/000051/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_rla.png"
+            "src": "static/explorer/iws/pusht/000051/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_vid2world.png"
+            "src": "static/explorer/iws/pusht/000051/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_dinowm.png"
+            "src": "static/explorer/iws/pusht/000051/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_rae.png"
+            "src": "static/explorer/iws/pusht/000051/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000051/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -1398,27 +1398,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_gt.png"
+            "src": "static/explorer/iws/pusht/000051/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_rla.png"
+            "src": "static/explorer/iws/pusht/000051/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_vid2world.png"
+            "src": "static/explorer/iws/pusht/000051/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_dinowm.png"
+            "src": "static/explorer/iws/pusht/000051/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_rae.png"
+            "src": "static/explorer/iws/pusht/000051/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/pusht/000051/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/pusht/000051/step060_schrod-bridge.jpg"
           }
         ]
       }
@@ -1426,9 +1426,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/maniskill/panda/000020/step000_gt.png"
+      "src": "static/explorer/maniskill/panda/000020/step000_gt.jpg"
     },
-    "title": "PullCube-v2 (Panda) \u2014 ManiSkill",
+    "title": "PullCube-v2 (Panda) — ManiSkill",
     "rowLabels": [
       "Input",
       "Output <br> (t = 10)",
@@ -1446,14 +1446,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step000_gt.png",
+            "src": "static/explorer/maniskill/panda/000020/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/maniskill/panda/000020/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201330)",
+            "caption": "Robot Actions (t = 0–30)",
             "maxWidth": "160px"
           }
         ]
@@ -1461,7 +1461,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -1470,27 +1470,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_gt.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_rla.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_rae.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step010_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000020/step010_schrod-bridge.jpg"
           }
         ]
       },
@@ -1498,27 +1498,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_gt.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_rla.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_rae.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step020_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000020/step020_schrod-bridge.jpg"
           }
         ]
       },
@@ -1526,27 +1526,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_gt.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_rla.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_vid2world.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_dinowm.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_rae.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/maniskill/panda/000020/step030_schrod-bridge.png"
+            "src": "static/explorer/maniskill/panda/000020/step030_schrod-bridge.jpg"
           }
         ]
       }
@@ -1554,9 +1554,9 @@
   },
   {
     "thumb": {
-      "src": "static/explorer/iws/rope/000127/step000_gt.png"
+      "src": "static/explorer/iws/rope/000127/step000_gt.jpg"
     },
-    "title": "Rope \u2014 IWS",
+    "title": "Rope — IWS",
     "rowLabels": [
       "Input",
       "Output <br> (t = 15)",
@@ -1575,14 +1575,14 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step000_gt.png",
+            "src": "static/explorer/iws/rope/000127/step000_gt.jpg",
             "caption": "Input Frame (t = 0)",
             "maxWidth": "160px"
           },
           {
             "kind": "video",
             "src": "static/explorer/iws/rope/000127/gt_rollout.mp4",
-            "caption": "Robot Actions (t = 0\u201360)",
+            "caption": "Robot Actions (t = 0–60)",
             "maxWidth": "160px"
           }
         ]
@@ -1590,7 +1590,7 @@
       {
         "colLabels": [
           "Ground-Truth",
-          "<strong>RLA-WM (Ours)  \u2705</strong>",
+          "<strong>RLA-WM (Ours)  ✅</strong>",
           "Vid2World",
           "DINO-WM",
           "RAE",
@@ -1599,27 +1599,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_gt.png"
+            "src": "static/explorer/iws/rope/000127/step015_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_rla.png"
+            "src": "static/explorer/iws/rope/000127/step015_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_vid2world.png"
+            "src": "static/explorer/iws/rope/000127/step015_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_dinowm.png"
+            "src": "static/explorer/iws/rope/000127/step015_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_rae.png"
+            "src": "static/explorer/iws/rope/000127/step015_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step015_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000127/step015_schrod-bridge.jpg"
           }
         ]
       },
@@ -1627,27 +1627,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_gt.png"
+            "src": "static/explorer/iws/rope/000127/step030_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_rla.png"
+            "src": "static/explorer/iws/rope/000127/step030_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_vid2world.png"
+            "src": "static/explorer/iws/rope/000127/step030_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_dinowm.png"
+            "src": "static/explorer/iws/rope/000127/step030_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_rae.png"
+            "src": "static/explorer/iws/rope/000127/step030_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step030_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000127/step030_schrod-bridge.jpg"
           }
         ]
       },
@@ -1655,27 +1655,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_gt.png"
+            "src": "static/explorer/iws/rope/000127/step045_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_rla.png"
+            "src": "static/explorer/iws/rope/000127/step045_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_vid2world.png"
+            "src": "static/explorer/iws/rope/000127/step045_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_dinowm.png"
+            "src": "static/explorer/iws/rope/000127/step045_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_rae.png"
+            "src": "static/explorer/iws/rope/000127/step045_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step045_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000127/step045_schrod-bridge.jpg"
           }
         ]
       },
@@ -1683,27 +1683,27 @@
         "cells": [
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_gt.png"
+            "src": "static/explorer/iws/rope/000127/step060_gt.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_rla.png"
+            "src": "static/explorer/iws/rope/000127/step060_rla.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_vid2world.png"
+            "src": "static/explorer/iws/rope/000127/step060_vid2world.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_dinowm.png"
+            "src": "static/explorer/iws/rope/000127/step060_dinowm.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_rae.png"
+            "src": "static/explorer/iws/rope/000127/step060_rae.jpg"
           },
           {
             "kind": "image",
-            "src": "static/explorer/iws/rope/000127/step060_schrod-bridge.png"
+            "src": "static/explorer/iws/rope/000127/step060_schrod-bridge.jpg"
           }
         ]
       }

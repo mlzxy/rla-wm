@@ -310,10 +310,9 @@ section.alt  { background: var(--bg-soft); }
 }
 .scrolly .text-col .is-active-para strong { color: var(--accent, #3b82f6); }
 .scrolly .text-col [data-slide].is-skip {
-  cursor: default;
+  cursor: pointer;
   font-style: italic;
 }
-.scrolly .text-col [data-slide].is-skip:hover { background-color: transparent; }
 /* Prevent italic from inheriting into nested (non-skip) child items */
 .scrolly .text-col [data-slide].is-skip [data-slide] { font-style: normal; }
 
@@ -603,6 +602,18 @@ section.alt  { background: var(--bg-soft); }
   width: 100%; max-width: 100%;
 }
 
+/* In "rows" animation mode (desktop toggle), embed labels as captions, one row. */
+.explorer[data-anim-mode="rows"] .detail-cell .media {
+  aspect-ratio: 1 / 1;
+}
+.explorer[data-anim-mode="rows"] .detail-cell .caption {
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 4px;
+  color: var(--fg);
+}
+
 /* On desktop, keep animation rows compact so images stay in proportion */
 @media (min-width: 721px) {
   .explorer[data-anim-mode="columns"] .detail-row .cells {
@@ -612,19 +623,27 @@ section.alt  { background: var(--bg-soft); }
     flex: 0 0 140px;
   }
 }
-.detail-grid { display: flex; flex-direction: column; gap: 12px; }
-.detail-row  { display: flex; align-items: stretch; gap: 8px; }
-.detail-row .row-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+/* Explorer grid-gap. Controlled by --explorer-cell-gap / --explorer-row-gap.
+   Set via the `data-grid-gap` attribute on .explorer (e.g. data-grid-gap="6").
+   Defaults: 4px cell gap, 8px row gap. */
+.explorer {
+  --explorer-cell-gap: 4px;
+  --explorer-row-gap: 8px;
+  --explorer-radius: 0px;
+}
+.detail-grid { display: flex; flex-direction: column; gap: var(--explorer-row-gap, 8px); }
+.detail-row  { display: flex; align-items: stretch; gap: var(--explorer-cell-gap, 4px); }
+.detail-row .row-body { flex: 1; display: flex; flex-direction: column; gap: calc(var(--explorer-cell-gap, 4px) - 1px); }
 .detail-row .row-label {
   flex: 0 0 80px;
   display: flex; align-items: center; justify-content: flex-end;
   padding: 0 8px 0 4px; color: var(--muted); font-size: 13px;
   text-align: right;
 }
-.detail-row .cells { display: flex; gap: 8px; flex: 1; }
+.detail-row .cells { display: flex; gap: var(--explorer-cell-gap, 4px); flex: 1; }
 .detail-cell {
   flex: 1 1 0; min-width: 0; max-width: 100%;
-  border-radius: 8px;
+  border-radius: var(--explorer-radius, 0px);
   overflow: hidden;
   background: var(--bg);
   border: 1px solid var(--rule);
@@ -640,11 +659,26 @@ section.alt  { background: var(--bg-soft); }
   display: flex; align-items: center; justify-content: center;
   color: white; font-weight: 700; font-size: 18px;
   background: var(--bg-soft);
+  position: relative;
 }
 .detail-cell .media img,
 .detail-cell .media video {
   width: 100%; height: 100%; object-fit: cover; display: block;
 }
+
+/* Loading spinner shown on .media.is-loading for image/video cells.
+   Hidden automatically when the media fires its load / loadedmetadata event. */
+.detail-cell .media.is-loading::after {
+  content: '';
+  position: absolute; inset: 0;
+  margin: auto;
+  width: 28px; height: 28px;
+  border: 3px solid var(--rule);
+  border-top-color: var(--fg);
+  border-radius: 50%;
+  animation: media-spin .6s linear infinite;
+}
+@keyframes media-spin { to { transform: rotate(360deg); } }
 
 /* Sequence cell: layered, pre-loaded frames cycle via opacity (not src swap)
    so the cell stays its own — no white-flash, no decode jitter, the rest of
@@ -1108,6 +1142,7 @@ section.alt  { background: var(--bg-soft); }
   .detail-row .row-label  { flex: 0 0 48px; font-size: 11px; padding: 0 6px 0 2px; }
   .detail-row .cells      { gap: 4px; justify-content: flex-start; }
   .detail-cell .caption   { font-size: 11px; padding: 4px 6px; }
+  .explorer               { --explorer-radius: 8px !important; }
   /* On mobile, un-constrain maxWidth-limited static cells so all images are uniform size */
   .detail-cell .media[data-constrained] {
     aspect-ratio: auto !important;
