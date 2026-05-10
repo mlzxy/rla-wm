@@ -221,13 +221,13 @@ data
 scalene-profile.json
 datalib/v2/robots/ur10e_allegro/meshes_allegro
 .DS_Store
-*.obj
+# *.obj
 *.task
 *.txt
 tmp/
 tmp*
 torchinductor*
-*.glb
+# *.glb
 tests/**/*.png
 *.html
 tests/output
@@ -254,3 +254,4 @@ AGENTS.md
 CLAUDE.md
 .vscode
 .github
+

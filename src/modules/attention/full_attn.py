@@ -6,7 +6,8 @@ from . import DEBUG, BACKEND
 if BACKEND == "xformers":
     import xformers.ops as xops
 elif BACKEND == "flash_attn":
-    import flash_attn
+    pass
+    # import flash_attn
 elif BACKEND == "sdpa":
     from torch.nn.functional import scaled_dot_product_attention as sdpa
 elif BACKEND == "naive":

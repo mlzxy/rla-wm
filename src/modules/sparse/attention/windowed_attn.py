@@ -10,7 +10,8 @@ SparseTensor = SparseTensorVanilla | SparseTensorExt
 if ATTN == "xformers":
     import xformers.ops as xops
 elif ATTN == "flash_attn":
-    import flash_attn
+    pass
+    # import flash_attn
 else:
     raise ValueError(f"Unknown attention module: {ATTN}")
 
