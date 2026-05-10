@@ -12,7 +12,7 @@ This repository contains the implementation, configs, and training/evaluation en
 - **WMRL** — On-policy Visual RL inside the RLA-WM environment.
 
 
-> We also provide a Maniskill3DWorld Dataset (`maniskill_full`), which includes RGB from 7 cameras, robot and foreground masks, depth, robot actions, and point clouds with voxelization. We initially attempted to build a world model from 3D representations, but ultimately did not use the full dataset. Nonetheless, feel free to use it if it suits your needs! Visualization code and an example are provided below in [§10](#10-3d--multi-view-visualization-optional).
+> We also provide a Maniskill3DWorld Dataset (`maniskill_full`), which includes RGB from 7 cameras, robot and foreground masks, depth, animated robot meshes, and point clouds with voxelization. We initially attempted to build a world model from 3D representations, but ultimately did not use the full dataset. Nonetheless, feel free to use it if it suits your needs! Visualization code and an example are provided below in [§10](#10-3d--multi-view-visualization-optional).
 
 
 
