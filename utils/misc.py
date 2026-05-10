@@ -475,7 +475,9 @@ def dict_to_dataclass(cls, d: dict):
 def pretty_print_config(config):
     yaml_cfg = OmegaConf.to_yaml(OmegaConf.create(config))
     console = Console()
-    syntax = Syntax(yaml_cfg, "yaml", theme="monokai", line_numbers=True)
+    in_colab = "google.colab" in sys.modules
+    theme = "github" if in_colab else "monokai"
+    syntax = Syntax(yaml_cfg, "yaml", theme=theme, line_numbers=True)
     console.print(syntax)
 
 
