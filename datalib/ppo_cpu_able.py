@@ -1,6 +1,5 @@
 import os
 
-os.environ["TMPDIR"] = "/filer/tmp1/xz653/tmp"
 
 from collections import defaultdict
 import sys
