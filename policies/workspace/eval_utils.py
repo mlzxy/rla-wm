@@ -229,8 +229,8 @@ def evaluate_policy_in_sim_env(
     metrics = {
         "success_rate": float(np.mean(successes)) if successes else 0.0,
         "avg_reward": float(np.mean(episode_rewards)) if episode_rewards else 0.0,
-        "per_episode_success": [float(s) for s in successes],
-        "per_episode_reward": [float(r) for r in episode_rewards],
-        "seeds": [int(s) for s in eval_seeds],
+        # "per_episode_success": [float(s) for s in successes],
+        # "per_episode_reward": [float(r) for r in episode_rewards],
+        # "seeds": [int(s) for s in eval_seeds],
     }
     return metrics, all_ep_frames
