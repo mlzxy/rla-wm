@@ -426,6 +426,7 @@ def train(args: Args) -> list[float]:
 
     # --- Initial evaluation ---
     if eval_env is not None and args.run_initial_eval:
+        print("[blue]Running initial evaluation...[/blue]")
         init_eval = evaluate(eval_env, agent, args, eval_seeds, eval_cameras,
                              video_path=_video_path("init_eval"),
                              deterministic=True)
@@ -505,6 +506,7 @@ def train(args: Args) -> list[float]:
         )
 
         if eval_env is not None and (iteration % args.eval_freq == 0 or iteration == num_iterations - 1) and agent.phase == 'joint' and iteration > 0:
+            print(f"[blue]Running evaluation at iteration {iteration}...[/blue]")
             eval_metrics = evaluate(eval_env, agent, args, eval_seeds, eval_cameras,
                                     video_path=_video_path(f"iter_{iteration:06d}"))
             logger.scalars(eval_metrics, step=iteration)
