@@ -73,6 +73,9 @@ class Args:
     policy_cls: str = "policies.policy.vla_bc_policy.VLABCPolicy"
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
     pretrained_ckpt: Optional[str] = None
+    # Which weight set to take out of a BC workspace ckpt: 'ema' (ema_model,
+    # falling back to model) or 'model'. Offline ckpt selection scores 'model'.
+    pretrained_weights: str = "ema"
 
     eval_freq: int = 25
     eval_num_episodes: int = 16
@@ -169,6 +172,7 @@ def _make_agent(args: Args, device: torch.device):
         policy_cls=args.policy_cls,
         policy_kwargs=args.policy_kwargs,
         pretrained_ckpt=args.pretrained_ckpt,
+        pretrained_weights=args.pretrained_weights,
         bc_dataset_cfg=args.bc_dataset_cfg,
         bc_batch_size=args.bc_batch_size,
         bc_num_workers=args.bc_num_workers,

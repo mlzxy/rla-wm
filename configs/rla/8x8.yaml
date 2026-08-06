@@ -15,7 +15,6 @@ vars:
 wandb: 
   enabled: true
   project: "rla-wm"
-  entity: "xz653"
   name: ""
   tags: []
   notes: ""

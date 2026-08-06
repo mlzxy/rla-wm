@@ -60,6 +60,7 @@ class WMRLAgent:
         policy_cls: str = "policies.policy.vla_bc_policy.VLABCPolicy",
         policy_kwargs: Optional[Dict[str, Any]] = None,
         pretrained_ckpt: Optional[str] = None,
+        pretrained_weights: str = "ema",
         bc_dataset_cfg: Optional[Dict[str, Any]] = None,
         bc_batch_size: int = 64,
         bc_num_workers: int = 4,
@@ -79,6 +80,11 @@ class WMRLAgent:
         self.bc_loss_weight = float(bc_loss_weight)
         self.bc_minibatches_per_update = int(bc_minibatches_per_update)
         self._last_bc_loss = 0.0
+        if pretrained_weights not in ("ema", "model"):
+            raise ValueError(
+                f"pretrained_weights must be 'ema' or 'model', got {pretrained_weights!r}"
+            )
+        self.pretrained_weights = pretrained_weights
 
         policy_kwargs = dict(policy_kwargs or {})
         policy_kwargs["enable_rl_heads"] = True
@@ -146,6 +152,12 @@ class WMRLAgent:
 
     def _extract_policy_state(self, state: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         if 'state_dicts' in state:
+            # BC workspace ckpts store both 'model' and 'ema_model'. Offline
+            # checkpoint selection scores 'model' (see notebooks/eval_ckpts.py),
+            # so pretrained_weights='model' makes RL start from exactly the
+            # weights that were ranked.
+            if self.pretrained_weights == 'model':
+                return state['state_dicts']['model']
             return state['state_dicts'].get('ema_model', state['state_dicts']['model'])
         if "policy" in state and isinstance(state["policy"], dict):
             return state["policy"]

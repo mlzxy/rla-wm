@@ -110,7 +110,15 @@ def evaluate_policy_in_sim_env(
     video_max_steps: int = 0,
     progress_desc: str = "Eval",
     reset_policy_fn: Callable[[], None] | None = None,
+    return_per_episode: bool = False,
 ) -> tuple[dict[str, Any], list[list[np.ndarray] | None]]:
+    """Roll out `policy` for one episode per entry of `eval_seeds`.
+
+    `return_per_episode` adds a `per_episode` entry to `metrics`. It is opt-in because
+    several callers treat every metric value as a scalar -- `wmrl/train.py` forwards the
+    dict to `logger.scalars` (TensorBoard) and `policies/train_loop.py:print_eval_table`
+    formats each value with `:.4f`; a list would break both.
+    """
     if len(eval_seeds) == 0:
         raise ValueError("eval_seeds must be non-empty")
     if max_episode_steps <= 0:
@@ -118,6 +126,8 @@ def evaluate_policy_in_sim_env(
 
     episode_rewards: list[float] = []
     successes: list[float] = []
+    episode_lengths: list[int] = []
+    episode_terminated: list[bool] = []
     max_video_steps = video_max_steps if video_max_steps > 0 else max_episode_steps
     all_ep_frames: list[list[np.ndarray] | None] = [None] * len(eval_seeds)
     was_training = bool(getattr(policy, "training", False))
@@ -217,6 +227,11 @@ def evaluate_policy_in_sim_env(
             success = _to_float_scalar(info.get("success") if info is not None else None)
             successes.append(success)
             episode_rewards.append(ep_reward)
+            # `step` is the number of control steps actually executed. The env sets
+            # terminated = success (no task here emits "fail"), and the loop breaks on it,
+            # so this is steps-until-first-success, or max_episode_steps if never.
+            episode_lengths.append(int(step))
+            episode_terminated.append(bool(terminated))
             pbar.set_postfix(ep=ep, reward=f"{ep_reward:.2f}", succ=success)
 
             if record_this_ep and ep_frames:
@@ -226,11 +241,16 @@ def evaluate_policy_in_sim_env(
         if was_training and hasattr(policy, "train"):
             policy.train()
 
-    metrics = {
+    metrics: dict[str, Any] = {
         "success_rate": float(np.mean(successes)) if successes else 0.0,
         "avg_reward": float(np.mean(episode_rewards)) if episode_rewards else 0.0,
-        # "per_episode_success": [float(s) for s in successes],
-        # "per_episode_reward": [float(r) for r in episode_rewards],
-        # "seeds": [int(s) for s in eval_seeds],
     }
+    if return_per_episode:
+        metrics["per_episode"] = {
+            "seed": [int(s) for s in eval_seeds],
+            "success": [int(s > 0.5) for s in successes],
+            "length": list(episode_lengths),
+            "terminated": [int(t) for t in episode_terminated],
+            "reward": [round(float(r), 6) for r in episode_rewards],
+        }
     return metrics, all_ep_frames

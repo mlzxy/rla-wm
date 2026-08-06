@@ -45,6 +45,7 @@ This setup covers RLA-WM inference only. For training, evaluation, BC/BC-RLA, or
 | Train RLA / RLA-WM / decoder | [docs/training.md](docs/training.md) |
 | RLA-WM Evaluation | [docs/evaluation.md](docs/evaluation.md) |
 | Learn from Actionless Videos, WMRL | [docs/applications.md](docs/applications.md) |
+| Rebuttal experiments (WMRL v2, VLA-Adapter on LIBERO, world-model data diversity, real robot) | [rebuttal/README.md](rebuttal/README.md) |
 
 ## Repository layout
 
@@ -57,6 +58,7 @@ This setup covers RLA-WM inference only. For training, evaluation, BC/BC-RLA, or
 | [eval/](eval/) | RLA-WM evaluation wrapper and predictor modules |
 | [datalib/](datalib/) | Trajectory readers, augmentation, Rerun export |
 | [src/](src/) | Models, datasets, trainers shared across entry points |
+| [rebuttal/](rebuttal/) | Rebuttal-period experiments, self-contained (see [rebuttal/README.md](rebuttal/README.md)) |
 | [third_party/diffusion_policy/](third_party/diffusion_policy/) | Vendored diffusion-policy code; required on `PYTHONPATH` |
 | `data/` | Datasets (gitignored, populated per [docs/data-and-checkpoints.md](docs/data-and-checkpoints.md)) |
 | `runs/weights/` | Pretrained checkpoints (gitignored, populated per [docs/data-and-checkpoints.md](docs/data-and-checkpoints.md)) |

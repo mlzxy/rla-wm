@@ -21,9 +21,15 @@ __attributes = {
     "RLAWMTrainer": "rla_wm_trainer",
 }
 
+# Trainers that live outside this package, keyed by fully-qualified module path.
+# Added during the rebuttal (see rebuttal/MAIN_TREE_CHANGES.md).
+__external = {
+    "RlaAutoencoderMultiViewTrainer": "rebuttal.src.trainers.rla_autoencoder_multiview_trainer",
+}
+
 __submodules = []
 
-__all__ = list(__attributes.keys()) + __submodules
+__all__ = list(__attributes.keys()) + list(__external.keys()) + __submodules
 
 
 def __getattr__(name):
@@ -31,6 +37,9 @@ def __getattr__(name):
         if name in __attributes:
             module_name = __attributes[name]
             module = importlib.import_module(f".{module_name}", __name__)
+            globals()[name] = getattr(module, name)
+        elif name in __external:
+            module = importlib.import_module(__external[name])
             globals()[name] = getattr(module, name)
         elif name in __submodules:
             module = importlib.import_module(f".{name}", __name__)

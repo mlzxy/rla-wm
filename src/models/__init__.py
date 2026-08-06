@@ -20,9 +20,18 @@ __attributes = {
     "RLAWM": "rla_wm",
 }
 
+# Models that live outside this package, keyed by fully-qualified module path.
+# Added during the rebuttal (see rebuttal/MAIN_TREE_CHANGES.md). Config files name
+# models as a bare string, and saved run directories keep that string in their own
+# config.yaml, so anything that rebuilds a model from a run dir has to be able to
+# resolve these names too -- hence a registry entry rather than a launcher flag.
+__external = {
+    "MultiViewTokenTransformer": "rebuttal.src.models.multiview_token_transformer",
+}
+
 __submodules = []
 
-__all__ = list(__attributes.keys()) + __submodules
+__all__ = list(__attributes.keys()) + list(__external.keys()) + __submodules
 
 
 def __getattr__(name):
@@ -33,6 +42,9 @@ def __getattr__(name):
             globals()[name] = getattr(
                 module, name
             )  # NOTE: this is the key line to load the actual model
+        elif name in __external:
+            module = importlib.import_module(__external[name])
+            globals()[name] = getattr(module, name)
         elif name in __submodules:
             module = importlib.import_module(f".{name}", __name__)
             globals()[name] = module
