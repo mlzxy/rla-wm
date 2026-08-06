@@ -1,0 +1,228 @@
+# -------------------------------------------------------------------
+# SO-101 vanilla BC - 100% of the data (no few-shot, no RLA)
+# -------------------------------------------------------------------
+# Baseline: the same unified spatial-attention trunk as the BC-RLA runs, with the latent
+# head disabled, trained on every success trajectory. Independent of the UNet and RLA stages, so
+# this can start as soon as the dataset is converted.
+#
+# Launch (PYTHONPATH must include the repo root and third_party/diffusion_policy):
+#   PYTHONPATH=.:./third_party/diffusion_policy CUDA_VISIBLE_DEVICES=2 \
+#   .venv/bin/python policies/train_policy.py \
+#     --config-dir=rebuttal/exp4_so101/configs/policy --config-name=bc_so101_100
+#
+# Dataset: data/realworld/so101_converted, 120 success trajectories of "stack the black cup",
+# 30 fps, front + wrist cameras, 6-DoF normalized joint targets.
+# Action loss on all 120 trajectories (traj_000000..traj_000119).
+#
+# Always trained FROM SCRATCH: no pretrained policy weights, and `training.resume: false` so a
+# re-run never silently continues an earlier checkpoint. Flip resume to true only to pick up an
+# interrupted run.
+#
+# NO SIMULATOR EXISTS for this dataset, so:
+#   * training.rollout_every is set past num_epochs -- TrainVLABCWorkspace._evaluate calls
+#     create_eval_env() -> gym.make(cfg.task) unconditionally, and there is no enable flag.
+#   * checkpoint.enable_topk is false -- TopKCheckpointManager does a bare lookup of
+#     `eval_success_rate`, which never exists without a rollout, and would KeyError.
+#   * model selection is the held-out BC loss (val_ratio 0.05); real success rate comes from the
+#     robot-side eval tool, which is not part of this release.
+
+hydra:
+  run:
+    dir: ${eval:'"runs/policy_outputs/debug" if ${training.debug} else "runs/policy_outputs/final_realworld"'}/bc_so101_100
+
+# TrainSO101Workspace, not the stock workspace: the observation history, the precomputed RLA
+# targets and the photometric augmentation all live in SO101SequenceDataset, and the stock run()
+# hard-codes its dataset class. See rebuttal/exp4_so101/workspace.py.
+_target_: rebuttal.exp4_so101.workspace.TrainSO101Workspace
+
+# ---- Data selection ----
+dataset_root: data/realworld/so101_converted
+n_train_traj: 120          # trajectories used for the ACTION loss (100% of 120)
+
+# ---- Task / Robot (inert: kept only so the ${eval:...} interpolations below resolve) ----
+task: SO101-StackBlackCup
+robot: so101_follower
+control_mode: pd_joint_pos
+
+# ---- Horizon (30 fps) ----
+horizon: 32           # predict 32 steps = 1.07 s
+n_obs_steps: 2        # [t - n_action_steps, t]: the previous replan's frame + now
+n_action_steps: 16    # execute 16 steps = 0.53 s open loop, then replan
+
+# ---- Image ----
+# img_size is the resolution frames are DECODED at. policy_img_size is the resize inside
+# MultiCameraEncoder. With precomputed RLA targets these no longer have to match the RLA's
+# img_size -- the RLA never sees the policy's pixels.
+img_size: 320
+policy_img_size: 320
+num_cameras: 2
+cameras:
+  - front_camera
+  - wrist_camera
+
+# ---- Colour / lighting augmentation ----
+# The deployment workspace is lit through a window, so appearance drifts between the recording
+# session and eval: overall level, daylight colour temperature, and a directional sun gradient
+# that rotates through the day. Sound ONLY because the RLA targets are precomputed from clean
+# frames -- otherwise augmenting the policy input would also corrupt the latent target.
+# Automatically disabled on the validation split.
+augment: true
+augment_kwargs:
+  brightness: 0.35            # cloud cover / time of day
+  contrast: 0.3
+  saturation: 0.3
+  hue: 0.03
+  color_temp: 0.12            # warm <-> cool daylight (per-channel R/B gain)
+  illumination_gradient: 0.25 # directional sun across the frame, random direction
+  noise: 0.01                 # sensor gain in low light
+  gray_prob: 0.0
+
+# ---- Dimensions (SO-101: 5 arm joints + gripper) ----
+action_dim: 6
+state_dim: 6
+
+# ---- Policy (unified spatial-attention trunk, latent head OFF) ----
+policy:
+  _target_: policies.policy.vla_bc_policy_rla_unified.VLABCPolicyRLAUnified
+  action_dim: ${action_dim}
+  state_dim: ${state_dim}
+  num_cameras: ${num_cameras}
+  horizon: ${horizon}
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${n_action_steps}
+  per_camera_dim: 512
+  use_group_norm: true
+  share_backbone: false          # front and wrist see very different content -> separate ResNet18s
+  img_size: ${img_size}
+  resize_shape:
+    - ${policy_img_size}
+    - ${policy_img_size}
+  crop_shape: null               # no random crop: keeps deploy preprocessing a single resize
+  random_crop: true
+  imagenet_norm: false
+  state_hidden_dim: 256
+  state_output_dim: 256
+  # spatial attention trunk
+  spatial_hidden_dim: 256
+  spatial_num_blocks: 6
+  spatial_num_heads: 8
+  spatial_mlp_ratio: 4.0
+  # output queries & shared MLP
+  num_output_queries: 16
+  shared_mlp_dim: 2048
+  mlp_dropout: 0.1
+  loss_type: mse
+  use_latent_head: false
+
+# ---- Dataset (SO101SequenceDataset: robot data only) ----
+dataset:
+  dataset_dir: ${dataset_root}
+  cameras: ${cameras}
+  horizon: ${horizon}
+  pad_before: 1          # = n_obs_steps - 1
+  pad_after: 15          # = n_action_steps - 1
+  img_size: ${img_size}
+  seed: 42
+  val_ratio: 0.05
+  max_train_episodes: null
+  max_val_episodes: null
+  use_foreground_mask: false     # converter writes constant-255 masks; reading them is pure I/O
+  min_episode_length: 40
+  first_frame_only: true
+  n_obs_steps: ${n_obs_steps}
+  obs_history_stride: ${n_action_steps}   # history slot = the previous replan's observation
+  load_extra_frame: 0            # no look-ahead frame needed: the RLA target is precomputed
+  augment: ${augment}
+  augment_kwargs: ${augment_kwargs}
+  start_traj_id: 0
+  end_traj_id: ${eval:'${n_train_traj} - 1'}
+
+# ---- DataLoader ----
+dataloader:
+  batch_size: 64
+  num_workers: 8                 # augmentation runs on the CPU workers
+  pin_memory: true
+  persistent_workers: true
+
+# ---- Optimizer ----
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3.0e-4
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-4
+
+# ---- Training ----
+# ~41k samples/epoch at batch 64 -> ~590 steps/epoch, ~24k steps total.
+training:
+  device: "cuda:0"
+  seed: 42
+  num_epochs: 40
+  use_ema: true
+  freeze_encoder: false
+  lr_scheduler: cosine
+  lr_warmup_steps: 500
+  gradient_accumulate_every: 1
+  rollout_every: 999999          # no simulator -- never call create_eval_env()
+  checkpoint_every: 2
+  val_every: 2
+  skip_validation: false         # held-out BC loss is the only model-selection signal
+  sample_every: 999999
+  max_train_steps: null
+  max_val_steps: null
+  tqdm_interval_sec: 1.0
+  resume: false                  # always from scratch; set true only to continue an interrupted run
+  debug: false
+
+# ---- EMA ----
+ema:
+  _target_: diffusion_policy.model.diffusion.ema_model.EMAModel
+  update_after_step: 0
+  inv_gamma: 1.0
+  power: 0.75
+  min_value: 0.0
+  max_value: 0.9999
+
+# ---- Eval (unused: rollout_every > num_epochs) ----
+eval:
+  num_episodes: 1
+  max_episode_steps: 100
+  save_video: false
+  n_vis: 1
+  video_dir: videos
+  sim_freq: 1
+  cpu: true
+
+env:
+  num_envs: 1
+  shader_dir: rt-clean
+  camera_width: ${img_size}
+  camera_height: ${img_size}
+  cameras: ${cameras}
+
+# ---- Logging (wandb) ----
+logging:
+  project: rla-policy
+  group: so101
+  name: bc_so101_100/${now:%Y.%m.%d}_${now:%H.%M.%S}
+  enable: true
+  resume: true
+  mode: online
+  id: null
+  tags:
+    - so101
+    - bc
+    - 100pct
+    - no_rla
+
+# ---- Checkpoints ----
+checkpoint:
+  keep_last: 6                   # prune older latest_epoch*.ckpt (~0.3 GB each)
+  enable_topk: false             # monitor_key eval_success_rate never exists without a simulator
+  topk:
+    monitor_key: val_loss
+    mode: min
+    k: 5
+    format_str: "epoch={epoch:04d}-val={val_loss:.4f}.ckpt"
+  save_last_ckpt: true
+  save_last_snapshot: false

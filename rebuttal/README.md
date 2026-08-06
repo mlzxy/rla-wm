@@ -14,7 +14,7 @@ The headline claims of the paper are in the main [README](../README.md) and the
 | [exp-1 · WMRL v2](exp1_wmrl_v2/) | Does WMRL still help once the BC initializer is picked honestly and everything is scored on a large offline evaluation set instead of the noisy in-training one? | Partly. It helps on 2 of 5 tasks (split-half honest Δ over 15 seeds: PokeCube +0.042, PushT +0.013), hurts on 2, and is a wash on the fifth. It also makes successful episodes measurably shorter even where success rate is flat. |
 | [exp-2 · VLA-Adapter](exp2_vla_adapter/) | Does the RLA latent objective help a real VLA on LIBERO? | Yes on two suites. Adding RLA as an auxiliary objective improves LIBERO-Object (97.4 → 99.2) and LIBERO-Spatial (97.0 → 97.6); Goal and Long are unchanged. |
 | [exp-3 · World-model data diversity](exp3_data_diversity/) | Does training the world model on far more diverse data improve the downstream RL? | Yes, modestly. WMRL on the diverse-data world model scores 0.1851 against 0.1732 for the old one (best-per-seed over 15 seeds; 0.1390 vs 0.1362 on the unselected ladder mean). |
-| [exp-4 · Real-world SO-101](exp4_so101/) | Does BC-RLA help on a real arm? | **Untested.** The data, the RLA autoencoder and six trained policies exist and load. No robot evaluation was ever run. |
+| [exp-4 · Real-world SO-101](exp4_so101/) | Does BC-RLA help on a real arm? | **Untested.** The data, the RLA autoencoder and a matched BC / BC-RLA pair exist and load. No robot evaluation was ever run. |
 
 One convention we hold to everywhere in this folder, because mixing them is what made these
 numbers confusing in the first place: **every table says how it aggregates** — best-per-seed,
@@ -28,7 +28,7 @@ comparable to a single-run number.
 | [exp1_wmrl_v2/](exp1_wmrl_v2/) | v2 configs, launcher, the sweep tables |
 | [exp2_vla_adapter/](exp2_vla_adapter/) | The `rla/` overlay, the one-script VLA-Adapter setup, the RLA sidecar, configs, results |
 | [exp3_data_diversity/](exp3_data_diversity/) | The autoencoder / world-model / WMRL configs for the diverse Push-T data, and the sweep results |
-| [exp4_so101/](exp4_so101/) | The SO-101 policy and dataset code, the RLA latent precompute, the configs |
+| [exp4_so101/](exp4_so101/) | The SO-101 policy and dataset code, the RLA latent precompute, and the matched BC / BC-RLA configs |
 | [src/](src/) | Two models and one trainer used by exp-2 and exp-4, registered into `src.models` / `src.trainers` |
 | [tools/](tools/) | The offline checkpoint scorer, the analysis that turns its output into tables, and a local runner for the Colab demo |
 | [config.sh](config.sh), [tools/paths.py](tools/paths.py) | The only two places any path is resolved. Everything else derives from them. |

@@ -18,9 +18,9 @@ Same Hugging Face dataset repo as the main release, `xyzhang368/RLA-WM`.
 | `rebuttal_ckpt_exp1_wmrl_v2.tar` | `runs/weights/wmrl_init_v2/` | exp-1 | 946 MB |
 | `rebuttal_ckpt_exp2_libero_rla.tar` | `runs/{16x64_libero,dino_to_image_v1_libero}/` | exp-2 | 1.4 GB |
 | `rebuttal_ckpt_exp3_pusht_diverse.tar` | `runs/pusht_diverse/frozen/` | exp-3 | 2.7 GB |
-| `rebuttal_ckpt_exp4_so101/data.tar.part_*` | `runs/{so101,policy_outputs}/` | exp-4 | 5.1 GB (2 parts) |
+| `rebuttal_ckpt_exp4_so101.tar` | `runs/{so101,policy_outputs}/` | exp-4 | 2.6 GB |
 
-Data comes to about 18 GB, checkpoints to about 10 GB. Nothing here is required to read the
+Data comes to about 18 GB, checkpoints to about 7.6 GB. Nothing here is required to read the
 code or the results — the numbers are already in each experiment's `results/` directory.
 
 ### You also need two things from the base release
@@ -56,7 +56,7 @@ hf download xyzhang368/RLA-WM --repo-type dataset --include "rebuttal_ckpt_*" --
 tar -xf rebuttal_ckpt_exp1_wmrl_v2.tar
 tar -xf rebuttal_ckpt_exp2_libero_rla.tar
 tar -xf rebuttal_ckpt_exp3_pusht_diverse.tar
-cat rebuttal_ckpt_exp4_so101/data.tar.part_* | tar -xvf -
+tar -xf rebuttal_ckpt_exp4_so101.tar
 ```
 
 ## What each archive actually contains

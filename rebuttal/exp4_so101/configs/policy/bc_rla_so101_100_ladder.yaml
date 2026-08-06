@@ -1,0 +1,311 @@
+# -------------------------------------------------------------------
+# SO-101 BC + RLA - 100% of the data (no few-shot)
+# -------------------------------------------------------------------
+# Every trajectory carries BOTH losses: action regression and latent-action regression against
+# the precomputed RLA targets. The flat dataset emits no `has_robot_data` key, so compute_loss takes
+# its all-robot branch -- which is exactly what '100%, no few-shot' means.
+#
+# Launch (PYTHONPATH must include the repo root and third_party/diffusion_policy):
+#   PYTHONPATH=.:./third_party/diffusion_policy CUDA_VISIBLE_DEVICES=4 \
+#   .venv/bin/python policies/train_policy.py \
+#     --config-dir=rebuttal/exp4_so101/configs/policy --config-name=bc_rla_so101_100_ladder
+#
+# Dataset: data/realworld/so101_converted, 120 success trajectories of "stack the black cup",
+# 30 fps, front + wrist cameras, 6-DoF normalized joint targets.
+# Both losses on all 120 trajectories.
+#
+# Always trained FROM SCRATCH: no pretrained policy weights, and `training.resume: false` so a
+# re-run never silently continues an earlier checkpoint. Flip resume to true only to pick up an
+# interrupted run.
+#
+# NO SIMULATOR EXISTS for this dataset, so:
+#   * training.rollout_every is set past num_epochs -- TrainVLABCWorkspace._evaluate calls
+#     create_eval_env() -> gym.make(cfg.task) unconditionally, and there is no enable flag.
+#   * checkpoint.enable_topk is false -- TopKCheckpointManager does a bare lookup of
+#     `eval_success_rate`, which never exists without a rollout, and would KeyError.
+#   * model selection is the held-out BC loss (val_ratio 0.05); real success rate comes from the
+#     robot-side eval tool, which is not part of this release.
+
+hydra:
+  run:
+    dir: ${eval:'"runs/policy_outputs/debug" if ${training.debug} else "runs/policy_outputs/final_realworld"'}/bc_rla_so101_100_ladder
+
+# TrainSO101Workspace, not the stock workspace: the observation history, the precomputed RLA
+# targets and the photometric augmentation all live in SO101SequenceDataset, and the stock run()
+# hard-codes its dataset class. See rebuttal/exp4_so101/workspace.py.
+_target_: rebuttal.exp4_so101.workspace.TrainSO101Workspace
+
+# ---- Data selection ----
+dataset_root: data/realworld/so101_converted
+n_train_traj: 120          # trajectories used for the ACTION loss (100% of 120)
+
+# ---- Task / Robot (inert: kept only so the ${eval:...} interpolations below resolve) ----
+task: SO101-StackBlackCup
+robot: so101_follower
+control_mode: pd_joint_pos
+
+# ---- Horizon (30 fps) ----
+horizon: 32           # predict 32 steps = 1.07 s
+n_obs_steps: 2        # [t - n_action_steps, t]: the previous replan's frame + now
+n_action_steps: 16    # execute 16 steps = 0.53 s open loop, then replan
+
+# ---- Image ----
+# img_size is the resolution frames are DECODED at. policy_img_size is the resize inside
+# MultiCameraEncoder. With precomputed RLA targets these no longer have to match the RLA's
+# img_size -- the RLA never sees the policy's pixels.
+img_size: 320
+policy_img_size: 320
+num_cameras: 2
+cameras:
+  - front_camera
+  - wrist_camera
+
+# ---- Colour / lighting augmentation ----
+# The deployment workspace is lit through a window, so appearance drifts between the recording
+# session and eval: overall level, daylight colour temperature, and a directional sun gradient
+# that rotates through the day. Sound ONLY because the RLA targets are precomputed from clean
+# frames -- otherwise augmenting the policy input would also corrupt the latent target.
+# Automatically disabled on the validation split.
+augment: true
+augment_kwargs:
+  brightness: 0.35            # cloud cover / time of day
+  contrast: 0.3
+  saturation: 0.3
+  hue: 0.03
+  color_temp: 0.12            # warm <-> cool daylight (per-channel R/B gain)
+  illumination_gradient: 0.25 # directional sun across the frame, random direction
+  noise: 0.01                 # sensor gain in low light
+  gray_prob: 0.0
+
+# ---- Dimensions (SO-101: 5 arm joints + gripper) ----
+action_dim: 6
+state_dim: 6
+
+# ---- RLA latent-action targets (PRECOMPUTED) ----
+# All three below are MANDATORY placeholders (`???`). Leaving any unset aborts the run at startup
+# with instructions -- a BC-RLA run must never silently fall back to "no latent loss", because that
+# would train a plain BC policy under a BC-RLA name and the loss curve would look perfectly healthy.
+# Fill them from the output of rebuttal/exp4_so101/precompute_rla_latents.py.
+latent_encoder_work_dir: ???   # <<< stage-2 RLA run dir
+# The sidecar tag printed by precompute_rla_latents.py. ANY name works -- it is only the directory
+# under ${dataset_root}/rla_latents/. The default encodes the RLA checkpoint step
+# (`<run>__step0020000`) so sidecars from different checkpoints never collide, but identity is
+# carried by the sidecar's manifest.json, not by this string, so a custom tag is equally safe.
+rla_latent_tag: ???            # <<< tag printed by precompute_rla_latents.py
+rla_latent_dir: ${dataset_root}/rla_latents/${rla_latent_tag}
+# Pin the RLA checkpoint these targets came from, as a step TOKEN. It fails loudly if the tag points
+# at a sidecar built from a different checkpoint, and it is carried into the deploy bundle, where
+# the exporter refuses to ship an RLA decoder from a different step.
+#   20000  |  "0020000"           the milestone encoder_step0020000.pt   (padding is ignored)
+#   "0020000.snapshot"            the resumable encoder_step0020000.snapshot.pt beside it
+# QUOTE anything padded or suffixed: YAML reads a bare 0020000 as OCTAL (= 8192).
+rla_latent_step: ???           # <<< RLA checkpoint that tag was built from
+
+# ---- Latent-action supervision: "ladder" ----
+# The latent action spans the action chunk the policy PREDICTS, i.e. `horizon` (32 frames, 1.07 s)
+# -- not n_action_steps (16), which is only how much of it executes before the next replan.
+#   latent_gaps = [4, 8, 12, 16, 20, 24, 28, 32]  -- the chunk sampled evenly, 8 rungs.
+#   The latent head reads the OUTPUT QUERY TOKENS, one contiguous group per gap:
+#       output queries (B, 16, 256)
+#           | split into 8 groups of 16/8 = 2 queries
+#       (B, 8, 512) -> Linear(512, 256) - GELU - Linear(256, 16*16) -> (B, 8, 16, 16)
+#   Query pair 0 predicts the t+4 latent, pair 1 the t+8 latent, and so on, so each gap gets its
+#   own slice of attention capacity. The head is ~21x smaller than a flat Linear(2048, 8*16*16).
+#   num_output_queries (16) must stay divisible by the rung count (8).
+latent_ladder_steps: 8
+latent_mode: ladder
+# Filled in by TrainSO101Workspace from latent_mode (it cannot be an ${eval:...} interpolation:
+# hydra's OmegaConf.resolve rejects a resolver that returns a list).
+latent_gaps: null
+
+# ---- Policy (unified spatial-attention trunk + RLA latent head) ----
+# VLABCPolicyRLAUnifiedMV, not the stock class: the stock loader hardcodes SimpleTokenTransformer
+# and cannot read a MultiViewTokenTransformer RLA; and with latent_source=precomputed it builds no
+# DINO and no RLA encoder at all, so training is pure regression against the stored targets.
+policy:
+  _target_: rebuttal.exp4_so101.policy.rla_unified_mv.VLABCPolicyRLAUnifiedMV
+  action_dim: ${action_dim}
+  state_dim: ${state_dim}
+  num_cameras: ${num_cameras}
+  horizon: ${horizon}
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${n_action_steps}
+  per_camera_dim: 512
+  use_group_norm: true
+  share_backbone: false          # front and wrist see very different content -> separate ResNet18s
+  img_size: ${img_size}
+  resize_shape:
+    - ${policy_img_size}
+    - ${policy_img_size}
+  crop_shape: null               # no random crop: keeps deploy preprocessing a single resize
+  random_crop: true
+  imagenet_norm: false
+  state_hidden_dim: 256
+  state_output_dim: 256
+  # spatial attention trunk
+  spatial_hidden_dim: 256
+  spatial_num_blocks: 6
+  spatial_num_heads: 8
+  spatial_mlp_ratio: 4.0
+  # output queries & shared MLP
+  num_output_queries: 16
+  shared_mlp_dim: 2048
+  mlp_dropout: 0.1
+  loss_type: mse
+  use_latent_head: true
+  latent_encoder_work_dir: ${latent_encoder_work_dir}   # read for the latent SHAPE only; no weights
+  latent_num_views: ${num_cameras}
+  latent_source: precomputed
+  latent_gaps: null   # filled from latent_mode
+  # Where the latent head reads from. null = automatic, which is what you want:
+  #   "final"  (1 gap)  -> the shared MLP output, exactly as the stock policy does.
+  #   "ladder" (K gaps) -> the output query tokens directly, split into K contiguous groups of
+  #                        num_output_queries/K queries (16/8 = 2 here), through one small MLP
+  #                        shared across groups. Each gap gets its own slice of attention capacity,
+  #                        and the head is ~21x smaller than the flat Linear(2048, K*N*D).
+  #                        num_output_queries must be divisible by K.
+  latent_head_from_queries: null
+  latent_head_hidden: 256          # width of that small per-group MLP (ladder only)
+  # ---- Loss balance: raw actions must dominate ----
+  # The BC objective is what drives the robot; the latent action is an AUXILIARY signal. Err on the
+  # side of too little latent weight rather than too much -- but not so little that it stops
+  # teaching anything.
+  #
+  # 0.25 / 0.25 is the conservative heuristic default, but it is NOT a fixed ratio: what it buys
+  # depends on how large the RLA's latents are, which differs per RLA checkpoint. The target is
+  # `encoder output / 10`, so the sidecar's own `manifest["value_stats"]["mean_abs"]` predicts it:
+  #     mean|z| ~1.9  ->  0.25/0.25 realises ~6:1 (ladder) to ~8:1 (final)   [an early checkpoint]
+  #     mean|z| ~6.7  ->  0.25/0.25 realises ~1:1  -- the latent term is at PARITY, over the ceiling
+  # MEASURE IT before the real run, against the sidecar you will actually train on:
+  #     CUDA_VISIBLE_DEVICES=0 .venv/bin/python rebuttal/exp4_so101/calibrate_loss_weights.py \
+  #       --config-name <this config> --ratio 2.0 <your rla_latent_* overrides>
+  # and paste the lambdas it prints. 2:1 is the CEILING, not a target -- lower is safer than higher.
+  #
+  # Nominal weights alone do NOT set the realised ratio: the action loss is an MSE on actions in
+  # [-1,1] while the latent loss is L1/MSE on RLA tokens divided by 10, so the two live on very
+  # different scales. To hit an exact ratio, measure it:
+  #   CUDA_VISIBLE_DEVICES=0 .venv/bin/python rebuttal/exp4_so101/calibrate_loss_weights.py \
+  #     --config-name <this config> --ratio 2.0 <your rla_latent_* overrides>
+  # and paste the lambdas it prints. Either way compute_loss logs `train_latent_loss_frac` and
+  # `train_action_over_latent` every step -- if latent_loss_frac ever climbs past ~0.33, the
+  # auxiliary signal is taking over and the lambdas want lowering.
+  lambda_action: 1.0
+  lambda_latent_l1: 0.25
+  lambda_latent_mse: 0.25
+
+# ---- Dataset (SO101SequenceDataset: robot data only) ----
+dataset:
+  dataset_dir: ${dataset_root}
+  cameras: ${cameras}
+  horizon: ${horizon}
+  pad_before: 1          # = n_obs_steps - 1
+  pad_after: 15          # = n_action_steps - 1
+  img_size: ${img_size}
+  seed: 42
+  val_ratio: 0.05
+  max_train_episodes: null
+  max_val_episodes: null
+  use_foreground_mask: false     # converter writes constant-255 masks; reading them is pure I/O
+  min_episode_length: 40
+  first_frame_only: true
+  n_obs_steps: ${n_obs_steps}
+  obs_history_stride: ${n_action_steps}   # history slot = the previous replan's observation
+  load_extra_frame: 0            # no look-ahead frame needed: the RLA target is precomputed
+  augment: ${augment}
+  augment_kwargs: ${augment_kwargs}
+  rla_latent_dir: ${rla_latent_dir}
+  rla_gaps: null   # filled from latent_mode
+  rla_latent_step: ${rla_latent_step}
+  start_traj_id: 0
+  end_traj_id: ${eval:'${n_train_traj} - 1'}
+
+# ---- DataLoader ----
+dataloader:
+  batch_size: 64
+  num_workers: 8                 # augmentation runs on the CPU workers
+  pin_memory: true
+  persistent_workers: true
+
+# ---- Optimizer ----
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3.0e-4
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-4
+
+# ---- Training ----
+# ~41k samples/epoch at batch 64 -> ~590 steps/epoch, ~24k steps total. No DINO in
+# the loop any more, so this costs barely more than the vanilla run.
+training:
+  device: "cuda:0"
+  seed: 42
+  num_epochs: 40
+  use_ema: true
+  freeze_encoder: false
+  lr_scheduler: cosine
+  lr_warmup_steps: 500
+  gradient_accumulate_every: 1
+  rollout_every: 999999          # no simulator -- never call create_eval_env()
+  checkpoint_every: 2
+  val_every: 2
+  skip_validation: false         # held-out BC loss is the only model-selection signal
+  sample_every: 999999
+  max_train_steps: null
+  max_val_steps: null
+  tqdm_interval_sec: 1.0
+  resume: false                  # always from scratch; set true only to continue an interrupted run
+  debug: false
+
+# ---- EMA ----
+ema:
+  _target_: diffusion_policy.model.diffusion.ema_model.EMAModel
+  update_after_step: 0
+  inv_gamma: 1.0
+  power: 0.75
+  min_value: 0.0
+  max_value: 0.9999
+
+# ---- Eval (unused: rollout_every > num_epochs) ----
+eval:
+  num_episodes: 1
+  max_episode_steps: 100
+  save_video: false
+  n_vis: 1
+  video_dir: videos
+  sim_freq: 1
+  cpu: true
+
+env:
+  num_envs: 1
+  shader_dir: rt-clean
+  camera_width: ${img_size}
+  camera_height: ${img_size}
+  cameras: ${cameras}
+
+# ---- Logging (wandb) ----
+logging:
+  project: rla-policy
+  group: so101
+  name: bc_rla_so101_100_ladder/${now:%Y.%m.%d}_${now:%H.%M.%S}
+  enable: true
+  resume: true
+  mode: online
+  id: null
+  tags:
+    - so101
+    - bc_rla
+    - 100pct
+    - ladder
+
+# ---- Checkpoints ----
+checkpoint:
+  keep_last: 6                   # prune older latest_epoch*.ckpt (~0.3 GB each)
+  enable_topk: false             # monitor_key eval_success_rate never exists without a simulator
+  topk:
+    monitor_key: val_loss
+    mode: min
+    k: 5
+    format_str: "epoch={epoch:04d}-val={val_loss:.4f}.ckpt"
+  save_last_ckpt: true
+  save_last_snapshot: false

@@ -1,0 +1,150 @@
+# -------------------------------------------------------------------
+# Stage 1 - DINO -> RGB decoder for the SO-101 real-world dataset
+# -------------------------------------------------------------------
+# Trains DinoToImageDecoderV1 to invert frozen DINOv3 patch tokens back into pixels. Two consumers
+# need it:
+#   * the RLA autoencoder (stage 2) loads it FROZEN as `image_decoder_ckpt` to render snapshots;
+#     RlaAutoencoderTrainer.__init__ loads it with strict=True, so this run MUST finish first.
+#   * the robot-side eval tool renders the policy's predicted latent action into an actual future
+#     frame ("world action model" visualisation).
+#
+# Trained from scratch at 320px (DinoToImageDecoderV1 is fully convolutional, so it is resolution
+# agnostic and the LIBERO 224px decoder would still load -- set trainer.args.load_dir back to
+# runs/dino_to_image_v1_libero/20260724_11-59-08 with skip_load_misc: true if you want that warm
+# start). Watch `l1` / `lpips` in wandb and stop once the snapshot images are legible.
+#
+#   .venv/bin/python train.py \
+#     --config rebuttal/exp4_so101/configs/unet/dino_to_image_so101.yaml \
+#     --output_dir runs/so101 --num_gpus 1
+#
+# Output: runs/so101/dino_to_image_so101/<timestamp>/   <- paste this into the RLA config.
+
+vars:
+  debug: false
+  use_amp: false
+  # 320/16 = 20x20 = 400 DINOv3 patches per view; 2 views -> 800 tokens.
+  # Source frames are 640x480; TrajectoryDataset resizes to a SQUARE img_size, i.e. an anisotropic
+  # stretch (the same thing data/iws_converted does for its 640x480 frames). The deployment
+  # any robot-side preprocessing must reproduce exactly this stretch.
+  img_size: 320
+  resolution: 128
+  granularity: 0.02
+  dino_channels: 1024
+  model_channels: 1024
+  horizon: 64
+
+wandb:
+  enabled: true
+  project: "rla-wm"
+  name: ""
+  tags: ["so101", "realworld", "dino_to_image"]
+  notes: "SO-101 aug2-dual-camera, front+wrist, 320px, from scratch"
+
+
+models:
+  decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+
+
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/realworld/so101_converted
+    configs:
+      so101_cup:
+        paths: ["."]
+        w: 1.0
+
+    max_num_cameras: 2
+    # traj_000000..000109 train / 000110..000119 val. The converter shuffled lerobot episodes with
+    # seed 42, so this split is random w.r.t. recording order.
+    start_traj_id: "000000"
+    end_traj_id: "000119"
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    read_optional_streams: False
+    # No object poses in a real-world teleop log, so interaction detection cannot run.
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["front_camera", "wrist_camera"]
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image_so101.train120.h${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/realworld/so101_converted
+    configs:
+      so101_cup:
+        paths: ["."]
+        w: 1.0
+
+    read_optional_streams: False
+    max_num_cameras: 2
+    start_traj_id: "000110"
+    end_traj_id: "000119"
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    cameras: ["front_camera", "wrist_camera"]
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image_so101.val.h${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+trainer:
+  name: DinoToImageTrainerV1
+  args:
+    # From scratch. To warm-start instead, point load_dir at a prior DinoToImageDecoderV1 run
+    # (e.g. runs/dino_to_image_v1_libero/20260724_11-59-08) and set skip_load_misc: true so the
+    # step counter and optimizer reset.
+    load_dir: null
+    skip_load_misc: false
+    max_steps: 1000000
+    batch_size: 64
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 1e-5 # same as the LIBERO run; lower it to ~5e-6 if you warm-start instead
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 2500
+    save_latest_only: false
+    num_workers: 6
+    num_samples: 16
+    debug: ${vars.debug}
+
+    # Image reconstruction losses
+    lambda_l1: 1.0
+    lambda_ssim: 0.2
+    lambda_lpips: 0.2
+
+    # DINO parameters
+    extractor_type: "dino"
+    dino_channels: ${vars.dino_channels}
+    rgb_key: "rgbs"
