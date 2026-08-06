@@ -1,0 +1,143 @@
+diff --git a/scripts/run_libero_eval.sh b/scripts/run_libero_eval.sh
+index a06a936..821e604 100755
+--- a/scripts/run_libero_eval.sh
++++ b/scripts/run_libero_eval.sh
+@@ -18,6 +18,12 @@
+ #   NUM_TRIALS=n        trials per task
+ #   GPUS="0 1 2 3"      GPUs to spread the suites over in `full` mode
+ #   SAVE_VIDEOS=True    write an MP4 per episode (off by default -- 500 encodes/suite is slow)
++#   ARM=baseline|rla|dino|univla
++#                       must match the arm the checkpoint was TRAINED with. Resolved in
++#                       scripts/vla_adapter_env.sh into RLA_STEPS/RLA_QUERIES/RLA_DIM; the action
++#                       head is rebuilt from those and loaded strict, so a mismatch fails at load
++#                       rather than degrading silently. No RLA_SIDECAR needed here -- z is an
++#                       output, never an input. See docs/rla-vla-adapter-runbook.md.
+ #
+ # Output is namespaced per machine, because runs/ is an NFS symlink that several hosts share:
+ #   runs/vla-adapter-eval/$EVAL_TAG/logs/             stdout + the eval's own EVAL-*.txt
+diff --git a/scripts/train_libero.sh b/scripts/train_libero.sh
+index 4d12218..f5b1b41 100755
+--- a/scripts/train_libero.sh
++++ b/scripts/train_libero.sh
+@@ -36,6 +36,12 @@
+ #   NCCL_FAST=0/1    enable InfiniBand + GPU P2P for DDP all-reduce (default 1). Forces
+ #                    NCCL_IB_DISABLE=0, NCCL_P2P_DISABLE=0, NCCL_SOCKET_IFNAME=ib0.
+ #   IB_IFNAME        InfiniBand interface for NCCL_SOCKET_IFNAME (default ib0)
++#   ARM              ablation arm: baseline (default, vanilla VLA-Adapter) | rla | dino | univla.
++#                    Anything but baseline needs RLA_SIDECAR=<dir from
++#                    scripts/extract_rla_latents.py> and appends the RLA output-query tokens to the
++#                    policy head. Resolved in scripts/vla_adapter_env.sh so eval matches. See
++#                    docs/rla-vla-adapter-runbook.md.
++#   LAMBDA_RLA       weight on the auxiliary RLA loss (default 1.0; ignored when ARM=baseline)
+ #
+ # Effective batch = GPU_BATCH * (#GPUs) * grad_accum. The faithful Pro recipe is eff batch 64,
+ # 100k steps, LoRA rank 64, lr 2e-4 (4xH100, batch 16). We hold eff batch 64 across GPU counts by
+@@ -86,8 +92,21 @@ case "$PRESET" in
+     *) echo "usage: $0 <smoke|fast|med|pro> <spatial|object|goal|long|all>" >&2; exit 2 ;;
+ esac
+ : "${LR:=2e-4}" "${LORA_RANK:=64}" "${EVAL_AFTER:=1}" "${EVAL_TRIALS:=50}" "${SAVE_LATEST_ONLY:=0}"
++: "${LAMBDA_RLA:=1.0}"
+ save_latest="False"; [ "$SAVE_LATEST_ONLY" = "1" ] && save_latest="True"
+ 
++# ARM / RLA_* were resolved by vla_adapter_env.sh. Training (unlike eval) genuinely needs the
++# targets, so fail here rather than 200 steps in.
++if [ "${RLA_STEPS:-0}" != "0" ] && [ -z "${RLA_SIDECAR:-}" ]; then
++    echo "ARM=$ARM needs RLA_SIDECAR=<dir>. Build one with:" >&2
++    echo "  .venv/bin/python scripts/extract_rla_latents.py --rla-run <run> --out data/libero_rla/<tag>" >&2
++    exit 2
++fi
++if [ "${RLA_STEPS:-0}" != "0" ] && [ ! -f "${RLA_SIDECAR}/manifest.json" ]; then
++    echo "RLA_SIDECAR=$RLA_SIDECAR has no manifest.json -- not a sidecar directory" >&2
++    exit 2
++fi
++
+ # wandb: online sync by default for real runs; the smoke/debug preset stays offline. WANDB_MODE
+ # overrides either way. Entity is left to the environment (WANDB_ENTITY) / your wandb login -- we do
+ # not pass --wandb_entity, so finetune.py's placeholder resolves to None and wandb reads the env.
+@@ -121,12 +140,18 @@ train_suite() {
+     local suite="$1"
+     local dataset Suite eval_suite
+     read -r dataset Suite eval_suite <<<"$(suite_spec "$suite")"
++    # The arm goes in the run_id so the four ablation arms produce distinct checkpoint dirs and
++    # wandb runs instead of overwriting each other. baseline keeps the historical name.
+     local run_id="LIBERO-${Suite}-Pro-repro"
++    [ "$ARM" != "baseline" ] && run_id="LIBERO-${Suite}-Pro-${ARM}"
+     local stamp log
+     stamp="$(date +%Y%m%d_%H%M%S)"
+-    log="$LOG_DIR/${suite}--${PRESET}--${stamp}.log"
++    log="$LOG_DIR/${suite}--${ARM}--${PRESET}--${stamp}.log"
+ 
+-    echo "==> train [$suite] preset=$PRESET  GPUs=$GPU_CSV (x$NGPU)  gpu_batch=$GPU_BATCH x grad_accum=$grad_accum -> eff batch $actual_eff  steps=$MAX_STEPS"
++    echo "==> train [$suite] arm=$ARM preset=$PRESET  GPUs=$GPU_CSV (x$NGPU)  gpu_batch=$GPU_BATCH x grad_accum=$grad_accum -> eff batch $actual_eff  steps=$MAX_STEPS"
++    if [ "${RLA_STEPS:-0}" != "0" ]; then
++        echo "    rla: ${RLA_STEPS}x${RLA_QUERIES}x${RLA_DIM} tokens, lambda=$LAMBDA_RLA, sidecar=$RLA_SIDECAR"
++    fi
+     if [ "$actual_eff" -ne "$EFF_BATCH" ]; then
+         echo "    note: requested EFF_BATCH=$EFF_BATCH not divisible by GPU_BATCH*NGPU=$micro; using $actual_eff"
+     fi
+@@ -176,8 +201,9 @@ train_suite() {
+         --save_freq "$SAVE_FREQ" \
+         --save_latest_checkpoint_only "$save_latest" \
+         --merge_lora_during_training True \
++        --lambda_rla "$LAMBDA_RLA" \
+         --wandb_project "$WANDB_PROJECT" \
+-        --run_id_note "$PRESET-$TRAIN_TAG" \
++        --run_id_note "$ARM-$PRESET-$TRAIN_TAG" \
+         2>&1 | tee "$log"
+ 
+     # Locate the checkpoint to evaluate. --save_latest_checkpoint_only writes straight to run_dir;
+@@ -197,8 +223,10 @@ train_suite() {
+     echo "    final checkpoint: $(basename "$last_ckpt")"
+ 
+     if [ "$EVAL_AFTER" = "1" ]; then
+-        echo "==> eval [$suite] on $(basename "$last_ckpt")"
+-        USE_PRO_VERSION=True CKPT_NAME="$(basename "$last_ckpt")" EVAL_LABEL="repro-$PRESET" \
++        echo "==> eval [$suite] arm=$ARM on $(basename "$last_ckpt")"
++        # ARM is exported, so run_libero_eval.sh -> vla_adapter_env.sh resolves the same RLA_STEPS /
++        # RLA_QUERIES / RLA_DIM. It has to: get_action_head() rebuilds the head and loads it strict.
++        USE_PRO_VERSION=True CKPT_NAME="$(basename "$last_ckpt")" EVAL_LABEL="$ARM-$PRESET" \
+             NUM_TRIALS="$EVAL_TRIALS" GPUS="${gpu_arr[0]}" \
+             "$REPO_ROOT/scripts/run_libero_eval.sh" "$eval_suite"
+     fi
+diff --git a/scripts/vla_adapter_env.sh b/scripts/vla_adapter_env.sh
+index f0e2dee..6e1c6de 100755
+--- a/scripts/vla_adapter_env.sh
++++ b/scripts/vla_adapter_env.sh
+@@ -31,6 +31,37 @@ export LIBERO_CONFIG_PATH="$VLA_REPO_ROOT/third_party/LIBERO/.libero"
+ export MUJOCO_GL="${MUJOCO_GL:-egl}"
+ export PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM:-egl}"
+ 
++# RLA auxiliary latent-action target (docs/rla-vla-adapter.md). ARM picks an ablation arm and is
++# resolved *here*, in the file both scripts/train_libero.sh and scripts/run_libero_eval.sh source,
++# because training and evaluation must agree on the action head's shape: openvla_utils's
++# get_action_head() rebuilds the head from fixed kwargs and then load_state_dict(..., strict=True).
++# Disagreeing is a hard failure, which is what we want -- but only if both sides read the same
++# switch.
++#
++#   ARM=baseline            vanilla VLA-Adapter; the head is byte-identical to upstream
++#   ARM=rla|dino|univla     RLA output-query tokens on; the arm's identity is which sidecar you
++#                           point RLA_SIDECAR at. Training needs it; evaluation does not
++#                           (z is an output, never an input).
++#
++# RLA_STEPS/RLA_QUERIES/RLA_DIM can still be overridden individually, e.g. by the gates in
++# scripts/verify_rla_targets.py.
++: "${ARM:=baseline}"
++case "$ARM" in
++    baseline)
++        export RLA_STEPS="${RLA_STEPS:-0}"
++        ;;
++    rla|dino|univla)
++        export RLA_STEPS="${RLA_STEPS:-8}"          # must equal NUM_ACTIONS_CHUNK
++        export RLA_QUERIES="${RLA_QUERIES:-16}"     # configs/rla/16x64_libero.yaml latent_num_tokens
++        export RLA_DIM="${RLA_DIM:-64}"             # configs/rla/16x64_libero.yaml token_dim
++        export RLA_SIDECAR="${RLA_SIDECAR:-}"
++        ;;
++    *)
++        echo "vla_adapter_env.sh: unknown ARM='$ARM' (expected baseline|rla|dino|univla)" >&2
++        ;;
++esac
++export ARM
++
+ export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
+ # TensorFlow is only used for tf.image resize/crop in the eval preprocessing path; it is already
+ # pinned to CPU by prismatic/vla/datasets/rlds/dataset.py. Quiet its startup spam.

@@ -1,0 +1,21 @@
+# run_id=REF-Long suite=long steps=60000 batch=8 accum=2 eff_batch=64
+# lr=2e-4 lora_rank=64 shuffle_buffer=80000 gpus=0,1,2,3 host=gpu021
+# train_log=$REF/train_logs/long--20260726_093430.log
+# loss_curve=$REF/train_logs/long--20260726_093430-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+09:10:02	REF-Long--60000_chkpt	final	50	93.0	$REF/eval_out/long--REF-Long--60000_chkpt--final.log
+09:16:13	REF-Long--5000_chkpt	sweep	2	65.0	$REF/eval_out/long--REF-Long--5000_chkpt--sweep.log
+09:21:52	REF-Long--10000_chkpt	sweep	2	75.0	$REF/eval_out/long--REF-Long--10000_chkpt--sweep.log
+09:28:16	REF-Long--15000_chkpt	sweep	2	50.0	$REF/eval_out/long--REF-Long--15000_chkpt--sweep.log
+09:33:08	REF-Long--20000_chkpt	sweep	2	90.0	$REF/eval_out/long--REF-Long--20000_chkpt--sweep.log
+09:38:59	REF-Long--25000_chkpt	sweep	2	70.0	$REF/eval_out/long--REF-Long--25000_chkpt--sweep.log
+09:43:45	REF-Long--30000_chkpt	sweep	2	95.0	$REF/eval_out/long--REF-Long--30000_chkpt--sweep.log
+09:48:45	REF-Long--35000_chkpt	sweep	2	85.0	$REF/eval_out/long--REF-Long--35000_chkpt--sweep.log
+09:53:36	REF-Long--40000_chkpt	sweep	2	90.0	$REF/eval_out/long--REF-Long--40000_chkpt--sweep.log
+09:58:14	REF-Long--45000_chkpt	sweep	2	95.0	$REF/eval_out/long--REF-Long--45000_chkpt--sweep.log
+10:02:50	REF-Long--50000_chkpt	sweep	2	90.0	$REF/eval_out/long--REF-Long--50000_chkpt--sweep.log
+11:38:50	REF-Long--30000_chkpt	final	50	93.4	$REF/eval_out/long--REF-Long--30000_chkpt--final.log
+#
+# SUMMARY  final	REF-Long--60000_chkpt	93.0%
+# SUMMARY  best	REF-Long--30000_chkpt	93.4%
+# done 2026-07-27 11:38:50

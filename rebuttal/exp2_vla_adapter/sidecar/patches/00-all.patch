@@ -1,0 +1,3070 @@
+diff --git a/datalib/libero_camera.py b/datalib/libero_camera.py
+new file mode 100644
+index 0000000..bc2cde6
+--- /dev/null
++++ b/datalib/libero_camera.py
+@@ -0,0 +1,159 @@
++"""LIBERO camera geometry: simulator-extracted parameters and per-episode K / camera-to-world.
++
++Moved verbatim out of `scripts/convert_libero_to_trajectory.py` so consumers that need the geometry
++but *not* the converter can import it. The converter sets `CUDA_VISIBLE_DEVICES=""` at module scope
++(it only decodes TFRecords and must keep TensorFlow off the GPU), which blinds torch for anything
++that imports it -- `scripts/extract_rla_latents.py` needs both TF-on-CPU and torch-on-GPU in one
++process, so it imports from here instead. The converter re-exports these names, so existing
++importers (`scripts/backfill_libero_camera_params.py`,
++`scripts/test_libero_camera_geometry.py`) keep working unchanged.
++
++Everything here is pure numpy: no TensorFlow, no torch, no environment side effects.
++"""
++
++import json
++import os
++
++import numpy as np
++
++# Camera names must contain "cam": TrajectoryDataset._build_single_trajectory_info filters stream
++# keys with `if "cam" in k` when counting frames, the same way `front_lower_camera` (maniskill) and
++# `camera_0` (iws) do.
++FRONT_CAM = "agentview_camera"
++WRIST_CAM = "wrist_camera"
++
++# Camera geometry comes from scripts/extract_libero_camera_params.py, which queries a live LIBERO
++# env per task. Do NOT try to read it out of the scene XMLs: they all declare
++# `agentview pos="0.5 0 1.35"`, but LIBERO repositions the camera when the arena loads, and the
++# runtime pose is scene dependent (four distinct poses across the 40 tasks). Likewise the
++# `eye_in_hand` camera hangs off the hand body, ~9.7 cm behind the grip site that
++# `observation.state` reports, not at the 5 cm offset the robot XML suggests.
++CAMERA_PARAMS_DEFAULT = "data/libero_converted/camera_params.json"
++
++
++def load_camera_params(path: str = CAMERA_PARAMS_DEFAULT) -> dict:
++    """Load the simulator-extracted camera parameters."""
++    if not os.path.exists(path):
++        raise FileNotFoundError(
++            f"{path} not found. Generate it first:\n"
++            "  source scripts/vla_adapter_env.sh\n"
++            "  .venv/bin/python scripts/extract_libero_camera_params.py"
++        )
++    with open(path) as f:
++        return json.load(f)
++
++
++def episode_camera_arrays(
++    task_description: str,
++    eef_pos: np.ndarray,
++    eef_rot: np.ndarray,
++    params: dict,
++    height: int,
++    width: int,
++) -> dict:
++    """Per-frame camera intrinsics/extrinsics for one episode.
++
++    Args:
++        task_description: language instruction, the key into the params table.
++        eef_pos: ``[T, 3]`` end-effector positions from ``observation.state``.
++        eef_rot: ``[T, 3, 3]`` end-effector rotations.
++
++    Returns dict of ``[T, 1, 3, 3]`` intrinsics and ``[T, 1, 3, 4]`` camera-to-world extrinsics,
++    keyed by stream name. The singleton camera axis is the layout
++    TrajectoryDataset.__getitem__ assigns into (`intrinsics[:, [cam_idx]] = ...`).
++    """
++    entry = params["tasks"].get(task_description)
++    if entry is None:
++        raise KeyError(
++            f"No camera parameters for task {task_description!r}. Re-run "
++            "scripts/extract_libero_camera_params.py so every suite is covered."
++        )
++
++    num_frames = len(eef_pos)
++    # The sim was queried at one resolution; rescale if the stored frames differ.
++    scale = height / float(params["resolution"])
++    front_k = np.array(entry["agentview_K"], dtype=np.float64)
++    wrist_k = np.array(entry["wrist_K"], dtype=np.float64)
++    if not np.isclose(scale, 1.0):
++        front_k[:2] *= scale
++        wrist_k[:2] *= scale
++
++    # The RLDS frames are a HORIZONTAL MIRROR of the standard camera frame, so a ray built from
++    # unmodified intrinsics points at the wrong side of the scene.
++    #
++    # Why: robosuite renders with IMAGE_CONVENTION="opengl" (robosuite/macros.py), so
++    # `obs['<cam>_image']` is the raw bottom-up render, while `get_camera_extrinsic_matrix`
++    # applies the OpenCV axis correction -- i.e. the matrices describe `obs[::-1]`. The RLDS
++    # export stores `obs[::-1, ::-1]` (the 180-degree rotation that
++    # `libero_utils.get_libero_image` undoes at eval), and
++    #     obs[::-1, ::-1] == (obs[::-1])[:, ::-1]
++    # leaves exactly one horizontal mirror between the matrices and the stored pixels.
++    #
++    # A mirror is improper, so it cannot be folded into the extrinsics without making them
++    # non-rigid. Negating fx is the standard way to express it and keeps the extrinsics a proper
++    # rigid transform; inv(K) then yields correctly mirrored ray directions.
++    #
++    # This is invisible at the robot's home pose (the gripper sits at u ~ W/2, where a horizontal
++    # mirror is a no-op), which is why frame-0 reprojection checks cannot detect it. The check
++    # that does is cross-view photometric consistency in scripts/verify_libero_plucker.py.
++    front_k[0, 0] *= -1.0
++    wrist_k[0, 0] *= -1.0
++
++    front_e = np.array(entry["agentview_c2w"], dtype=np.float64)  # [3, 4], world-fixed
++
++    # The wrist camera rides the hand: T_world_cam = T_world_eef @ T_eef_cam.
++    eef_to_cam = np.array(params["eef_to_wrist_cam"], dtype=np.float64)
++    world_eef = np.tile(np.eye(4), (num_frames, 1, 1))
++    world_eef[:, :3, :3] = eef_rot
++    world_eef[:, :3, 3] = eef_pos
++    wrist_e = (world_eef @ eef_to_cam)[:, :3, :]
++
++    return {
++        f"{FRONT_CAM}_intrinsics": np.tile(front_k, (num_frames, 1, 1, 1)).astype(np.float32),
++        f"{FRONT_CAM}_extrinsics": np.tile(front_e, (num_frames, 1, 1, 1)).astype(np.float32),
++        f"{WRIST_CAM}_intrinsics": np.tile(wrist_k, (num_frames, 1, 1, 1)).astype(np.float32),
++        f"{WRIST_CAM}_extrinsics": wrist_e[:, None].astype(np.float32),
++    }
++
++
++def quat_wxyz_to_matrix(quat: np.ndarray) -> np.ndarray:
++    """Rotation matrix from a MuJoCo-convention (w, x, y, z) quaternion."""
++    w, x, y, z = quat / np.linalg.norm(quat)
++    return np.array(
++        [
++            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
++            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
++            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
++        ],
++        dtype=np.float64,
++    )
++
++
++def axis_angle_to_matrix(axis_angle: np.ndarray) -> np.ndarray:
++    """Rotation matrices from [T, 3] axis-angle vectors (Rodrigues' formula)."""
++    angle = np.linalg.norm(axis_angle, axis=-1)
++    safe_angle = np.where(angle < 1e-8, 1.0, angle)
++    axis = axis_angle / safe_angle[:, None]
++    kx, ky, kz = axis[:, 0], axis[:, 1], axis[:, 2]
++    zero = np.zeros_like(kx)
++    skew = np.stack(
++        [zero, -kz, ky, kz, zero, -kx, -ky, kx, zero], axis=-1
++    ).reshape(-1, 3, 3)
++    eye = np.broadcast_to(np.eye(3), (len(axis_angle), 3, 3))
++    sin = np.sin(angle)[:, None, None]
++    cos = np.cos(angle)[:, None, None]
++    rot = eye + sin * skew + (1.0 - cos) * (skew @ skew)
++    rot[angle < 1e-8] = np.eye(3)
++    return rot
++
++
++def axis_angle_to_quat(axis_angle: np.ndarray) -> np.ndarray:
++    """Convert [T, 3] axis-angle rotations to [T, 4] wxyz quaternions."""
++    angle = np.linalg.norm(axis_angle, axis=-1, keepdims=True)
++    # Guard the angle==0 case: the axis is arbitrary there, so any unit axis gives identity.
++    safe_angle = np.where(angle < 1e-8, 1.0, angle)
++    axis = axis_angle / safe_angle
++    half = 0.5 * angle
++    quat = np.concatenate([np.cos(half), axis * np.sin(half)], axis=-1)
++    quat[angle[:, 0] < 1e-8] = np.array([1.0, 0.0, 0.0, 0.0])
++    return quat.astype(np.float32)
+diff --git a/docs/rla-vla-adapter-runbook.md b/docs/rla-vla-adapter-runbook.md
+new file mode 100644
+index 0000000..5fbb38a
+--- /dev/null
++++ b/docs/rla-vla-adapter-runbook.md
+@@ -0,0 +1,245 @@
++# RLA → VLA-Adapter runbook
++
++What changed, and the commands to run it. Background and rationale:
++[rla-vla-adapter.md](rla-vla-adapter.md).
++
++Everything runs from the repo root, after `source scripts/vla_adapter_env.sh`.
++
++```bash
++cd "$REBUTTAL_REPO"   # your rla-wm checkout
++source scripts/vla_adapter_env.sh
++```
++
++Status as of **2026-07-25**: all seven gates pass with a randomly-initialised `f_enc`, and a
++12-step training smoke ran the RLA arm end to end (§3). Nothing real has been trained. The only step
++waiting on the RLA autoencoder is §2 — everything else is verified.
++
++---
++
++## 0. Cheat sheet
++
++```bash
++# once f_enc exists: extract targets, ~3 h on one GPU (or one suite per GPU, ~45 min)
++.venv/bin/python scripts/extract_rla_latents.py \
++    --rla-config configs/rla/16x64_libero.yaml \
++    --rla-run runs/<rla-run>/<stamp> \
++    --out data/libero_rla/16x64-<stamp>
++
++# prove the plumbing, ~10 min (gates 1,2,3,4,5,7; add 6 for the GPU one)
++.venv/bin/python scripts/verify_rla_targets.py --sidecar data/libero_rla/16x64-<stamp>
++.venv/bin/python scripts/verify_rla_targets.py --gates 6 --rla-run runs/<rla-run>/<stamp>
++
++# train one arm (and auto-eval it)
++ARM=baseline                                          scripts/train_libero.sh pro spatial
++ARM=rla RLA_SIDECAR=data/libero_rla/16x64-<stamp>     scripts/train_libero.sh pro spatial
++
++# eval an existing checkpoint -- ARM must match how it was trained
++ARM=rla CKPT_NAME=LIBERO-Spatial-Pro-rla--100000_chkpt scripts/run_libero_eval.sh spatial
++```
++
++**The one thing to get right**: `ARM` selects the action head's *shape*, and
++`experiments/robot/openvla_utils.get_action_head()` rebuilds that head and loads it
++**strict**. Training and evaluating with different `ARM` values fails at load — deliberately.
++`scripts/vla_adapter_env.sh` resolves `ARM` for both scripts so they cannot drift.
++
++---
++
++## 1. What changed
++
++New files:
++
++| File | What |
++|---|---|
++| `scripts/extract_rla_latents.py` | offline extractor: RLDS → frozen DINOv3 → frozen `f_enc` → per-frame `(A, Q, D)` fp16 sidecar |
++| `scripts/verify_rla_targets.py` | the seven gates |
++| `datalib/libero_camera.py` | LIBERO camera geometry, moved out of `scripts/convert_libero_to_trajectory.py` (which now re-exports it) so consumers can import it without inheriting that script's `CUDA_VISIBLE_DEVICES=""` |
++| `third_party/VLA-Adapter/prismatic/vla/rla_targets.py` | sidecar reader + the `tf.numpy_function` join |
++| `docs/rla-vla-adapter.md`, this file | |
++
++Edited (all marked `# v4world:`, all inert when `RLA_STEPS=0`):
++
++| File | Change |
++|---|---|
++| `prismatic/vla/constants.py` | `RLA_STEPS` / `RLA_QUERIES` / `RLA_DIM` / `RLA_SIDECAR` from the environment |
++| `.../rlds/oxe/transforms.py` | `libero_dataset_transform` attaches `trajectory["rla"]` via `tf.numpy_function`, once per episode |
++| `.../rlds/dataset.py` | `restructure()` carries `rla` through at the **top level** (not under `observation`) |
++| `.../rlds/traj_transforms.py` | `chunk_act_obs` truncates `rla` to `effective_traj_len` |
++| `.../datasets/datasets.py` | `RLDSBatchTransform.__call__` passes `rla` into the sample dict |
++| `prismatic/util/data_utils.py` | the collator stacks `rla` |
++| `prismatic/models/action_heads.py` | RLA output-query tokens, second output head, per-position `h_t` gate |
++| `vla-scripts/finetune.py` | `--lambda_rla`, the auxiliary L1 term, `rla_loss` in the metrics |
++| `scripts/vla_adapter_env.sh` | the `ARM` switch |
++| `scripts/train_libero.sh` | `ARM` / `LAMBDA_RLA`, arm in the run id, refuses `ARM!=baseline` without a sidecar |
++| `scripts/run_libero_eval.sh` | documents that `ARM` must match training |
++| `AGENTS.md`, `docs/vla-adapter.md` | the "never edit third_party in place" note was stale for VLA-Adapter (vendored since `4e05436`); LIBERO is still a patched clone |
++
++**`window_size` in `datasets.py:185` was deliberately left at 1.** The original design note said to
++raise it to `NUM_ACTIONS_CHUNK`; that gathers *past* frames and would silently swap the policy's
++input image for frame t−7. See [rla-vla-adapter.md §2](rla-vla-adapter.md) row 4.
++
++---
++
++## 2. Extract the targets
++
++Needs a trained RLA autoencoder run directory containing `ckpts/encoder_step*.pt`.
++
++```bash
++.venv/bin/python scripts/extract_rla_latents.py \
++    --rla-config configs/rla/16x64_libero.yaml \
++    --rla-run runs/<rla-run>/<stamp> \
++    --out data/libero_rla/16x64-<stamp> \
++    --suites all
++```
++
++- **0.20 ep/s ≈ 25 frames/s** on an RTX A6000 → ~3 h for all four suites, **3.9 GB** on disk. To
++  parallelise, run one suite per GPU: `CUDA_VISIBLE_DEVICES=$i ... --suites libero_spatial &`
++  (~45 min on a 4-GPU box).
++- Safe to interrupt and re-run: existing `ep_*.npy` are skipped unless `--overwrite`.
++- `--step N` pins a specific checkpoint (default: latest). The exact file lands in `manifest.json`,
++  so a sidecar can always be traced back to its `f_enc`.
++- `--pairs consecutive` produces the alternative target definition
++  (`f_enc(s_{t+i+1} − s_{t+i})` instead of the default anchored `f_enc(s_{t+i+1} − s_t)`) into the
++  same `(N, A, Q, D)` layout, so downstream code cannot tell them apart. Write it to a *different*
++  `--out` and switch arms with `RLA_SIDECAR`.
++- `--random-encoder` skips the checkpoint entirely and leaves `f_enc` randomly initialised. The
++  values are noise; use it to exercise the pipeline before the autoencoder exists. `rla_targets.py`
++  prints a warning whenever a sidecar built this way is loaded.
++
++Layout:
++
++```
++data/libero_rla/<tag>/
++  manifest.json   config + the exact checkpoint, checked against RLA_* at load time
++  stats.json      per-(q, d) mean/std used to normalise the target on read
++  <suite>/keys.json      sha1(state bytes) -> {file, episode_index, traj_len}
++  <suite>/ep_000000.npy  (N, A, Q, D) float16
++```
++
++## 3. Verify
++
++```bash
++.venv/bin/python scripts/verify_rla_targets.py --sidecar data/libero_rla/16x64-<stamp>
++.venv/bin/python scripts/verify_rla_targets.py --gates 6 --rla-run runs/<rla-run>/<stamp>   # GPU
++```
++
++Default gates are `1,2,3,4,5,7`; gate 6 needs a GPU so it is opt-in. `--suite` picks the suite
++(default `libero_spatial`), `--limit` speeds up gates 1 and 2 — it deliberately does **not** shrink
++gate 3's synthetic sidecar, which always covers the whole suite.
++
++**Always pass `--sidecar` once you have one.** Without it gate 2 only checks the RLDS side; with it
++it also verifies every episode has an entry with the right `episode_index`/`traj_len`, and that
++`stats.json` covers `sum(traj_len) × A` rows. That last check exists because a resumed extraction
++once computed the normalisation from only the episodes it rewrote — which would have silently
++mis-scaled every target.
++
++A complete real-shaped sidecar built with `--random-encoder` lives at
++`data/libero_rla/smoke-random` (432 episodes, 804 MB). It is the fixture for gate 2's `--sidecar`
++path. **Its values are noise** — `rla_targets.py` prints a warning if anything ever loads it.
++
++Expected output (abridged), with a randomly-initialised `f_enc`:
++
++```
++=== Gate 1: N frames <-> N actions, and action[k] drives s[k] -> s[k+1]
++  OK  6 episodes: N frames == N actions == N states; gripper-lag peaks at lag 0
++=== Gate 2: sha1(observation/state) is a per-episode bijection
++  OK  432 distinct keys over 432 episodes in libero_spatial -- bijective
++  OK  episode_metadata/file_path is NOT unique (...) -- correctly unused as a key
++=== Gate 3: end-to-end (episode, t, i) alignment through the real RLDSDataset
++  OK  480 samples, 14 distinct episodes, 125 distinct timesteps (t in [0, 140]), 0 misses
++=== Gate 4: RLA_STEPS=0 is byte-identical to upstream
++  OK  key sets and init weights identical to 4e05436 (560 tensors)
++  OK  predict_action bit-identical to upstream for phase=Inference and phase=Training
++  OK  released LIBERO-Spatial-Pro action head loads strict (560 tensors)
++=== Gate 5: RLA_STEPS=NUM_ACTIONS_CHUNK forward/backward
++  OK  action (2, 8, 7), z_hat (2, 8, 1024)
++  OK  action output differs from RLA_STEPS=0 by 1.1964 even at lambda_rla=0
++=== Gate 6: the extractor's encode path == RlaAutoencoderMultiViewTrainer.inference_batch
++  OK  enc_tokens match on a real batch: max |d| = 0.00e+00 (|z|max = 5.353), shape (2, 16, 64)
++=== Gate 7: recomputed dataset statistics match the released reference
++  OK  all 2 cached statistics file(s) match LIBERO-Spatial-Pro to <1e-5
++```
++
++**Gate 3 is the one that matters.** It writes a synthetic sidecar whose values spell out
++`(episode_index, t, i)`, pushes it through the real `RLDSDataset` + collator, and asserts the triple
++that comes out the other end. It needs no trained model and it catches every off-by-one, every
++shuffle/interleave join break, and the `window_size` trap.
++
++### Smoke-testing real training without `f_enc`
++
++The gates cover the two halves separately (target reaches the collator; head emits `z_hat` with
++grads). To exercise the seam inside `run_forward_pass`, build gate 3's synthetic sidecar as a
++persistent fixture and train against it:
++
++```bash
++.venv/bin/python -c "
++import sys; sys.path.insert(0,'scripts')
++from pathlib import Path
++from verify_rla_targets import build_synthetic_sidecar
++print(build_synthetic_sidecar(Path('data/libero_rla/synthetic-spatial'), 'libero_spatial'))"
++
++NCCL_FAST=0 ARM=rla RLA_QUERIES=1 RLA_DIM=4 \
++  RLA_SIDECAR=data/libero_rla/synthetic-spatial \
++  GPUS=2 EVAL_AFTER=0 MAX_STEPS=12 WANDB_MODE=offline \
++  scripts/train_libero.sh smoke spatial
++```
++
++Full coverage, 3.4 MB, ~1 min to build. Last run: 12 steps, **0 sidecar misses**,
++`VLA Train/Rla Loss = 102.5` alongside `VLA Train/Loss = 102.875` — the target values are raw
++`(episode, t, i)` integers under identity normalisation, so a ~100 L1 against a near-zero-init
++prediction is exactly right, and it proves the loss is computed against the real targets rather
++than zeros.
++
++`NCCL_FAST=0` is needed on hosts without an `ib0` interface (`Bootstrap : no socket interface
++found`) — unrelated to RLA. A run shorter than `SAVE_FREQ` exits 2 at the end because no checkpoint
++was written to evaluate; that is the launcher working as intended, not a training failure.
++
++## 4. Train
++
++```bash
++# control arm -- byte-identical to upstream VLA-Adapter (gate 4 proves it)
++ARM=baseline scripts/train_libero.sh pro spatial
++
++# RLA arm
++ARM=rla RLA_SIDECAR=data/libero_rla/16x64-<stamp> scripts/train_libero.sh pro spatial
++
++# all four suites, sequentially
++ARM=rla RLA_SIDECAR=data/libero_rla/16x64-<stamp> scripts/train_libero.sh pro all
++```
++
++- `LAMBDA_RLA=1.0` weights the auxiliary loss. Targets are normalised per-`(q, d)` on read, so this
++  is directly comparable to the action L1 and stable across autoencoder runs.
++- Checkpoints go to `runs/weights/vla-adapter/LIBERO-<Suite>-Pro-<arm>--<step>_chkpt`
++  (`baseline` keeps the historical `-repro` name so existing runs are untouched).
++- Watch `VLA Train/Rla Loss` in wandb next to `VLA Train/Loss`.
++- The **first** run after these changes recomputes the dataset statistics once per suite (a few
++  minutes) — `get_dataset_statistics` hashes the source text of `libero_dataset_transform`. Gate 7
++  proves the recomputed values match the released reference exactly.
++
++> The control arm must be `ARM=baseline`, **not** `LAMBDA_RLA=0`. The RLA tokens sit in the shared
++> self-attention, so they change the action path even at zero loss weight — gate 5 measures the
++> difference (1.1964 on a random batch) precisely so this cannot be forgotten.
++
++## 5. Evaluate
++
++`train_libero.sh` evaluates the final checkpoint automatically (`EVAL_AFTER=0` to skip), passing
++`ARM` through. To evaluate an existing checkpoint:
++
++```bash
++ARM=rla CKPT_NAME=LIBERO-Spatial-Pro-rla--100000_chkpt scripts/run_libero_eval.sh spatial
++.venv/bin/python scripts/summarize_libero_eval.py
++```
++
++`RLA_SIDECAR` is not needed here: `z` is an output query, never an input, so evaluation needs the
++head's *shape* but no targets. `ARM` alone supplies that.
++
++## 6. Troubleshooting
++
++| Symptom | Cause |
++|---|---|
++| `Error(s) in loading state_dict for L1RegressionActionHead: Missing key(s) ... fc2_rla` | `ARM` at eval ≠ `ARM` at training. Working as designed — set them the same. |
++| `RLA_STEPS>0 but the batch has no 'rla' target` | `RLA_SIDECAR` unset or pointing at a directory with no `manifest.json`. |
++| `[rla_targets] MISS: no sidecar entry for episode key ...` | The sidecar does not cover this suite. Re-run the extractor with `--suites all`, or check you are training the suite you extracted. Misses return zeros rather than crashing, so **watch for this line** — training will otherwise regress happily against zeros. |
++| `RLA_QUERIES=16 does not match the sidecar at ... (1)` | Sidecar/`ARM` shape mismatch; the manifest is the source of truth. |
++| `RLA_STEPS>0 requires use_pro_version=True` | The non-Pro block has no positional signal, so every RLA token would predict the same `z`. |
++| Statistics recomputed on a run you expected to be cached | The cache key hashes `str(builder.info)`, which embeds the `data_dir` **string**. Run from `third_party/VLA-Adapter` with `--data_root_dir data/libero`, as the launcher does. |
++| `WARNING: ... was extracted with --random-encoder` | The sidecar holds noise. Fine for plumbing, meaningless for training. |
+diff --git a/docs/rla-vla-adapter.md b/docs/rla-vla-adapter.md
+new file mode 100644
+index 0000000..4f46ba3
+--- /dev/null
++++ b/docs/rla-vla-adapter.md
+@@ -0,0 +1,333 @@
++# RLA → VLA-Adapter — findings, design, and the traps
++
++What the integration actually looks like once you read the code, why each decision was made, and
++the six places the original design note
++([`third_party/VLA-Adapter/rla-vla-adapter-integration.md`](../third_party/VLA-Adapter/rla-vla-adapter-integration.md),
++v2) is wrong about this tree. For the commands, see [rla-vla-adapter-runbook.md](rla-vla-adapter-runbook.md).
++
++Status as of **2026-07-25**: the RLA autoencoder is **not trained yet**. Everything below is built
++and gated against a randomly-initialised `f_enc` and a synthetic sidecar; only the *numbers* wait on
++`f_enc`. When it lands, one re-run of `scripts/extract_rla_latents.py` is the whole delta.
++
++---
++
++## 1. The goal
++
++Get a LIBERO number where RLA measurably improves VLA-Adapter, with an ablation that separates
++"RLA specifically" from "any auxiliary future-prediction target" (reviewer 9yrp) and gives an
++apples-to-apples comparison against the LAPA/UniVLA line (reviewer msVp). LIBERO's wrist camera is
++also the direct rebuttal to msVp's "residual-space assumption breaks under camera motion".
++
++The mechanism, unchanged from the design note: give the policy head **extra output-query tokens**
++that are trained to predict the RLA latent action `z`, alongside the tokens that predict actions.
++`z` is an *output*, never an input, so nothing needs privileged future information at inference.
++
++---
++
++## 2. Corrections to the v2 design note
++
++Verified against this tree, not against the pinned learning clone the note was written from.
++
++| # | The note says | Actually |
++|---|---|---|
++| 1 | `Q = 32`, `\|z\| = 2048` | [`configs/rla/16x64_libero.yaml:9-10`](../configs/rla/16x64_libero.yaml) → `latent_num_tokens: 16`, `token_dim: 64` → **Q=16, \|z\|=1024**. There is no `vq` block in the config, so `use_vq=False` ([`rla_autoencoder_trainer.py:63`](../src/trainers/rla_autoencoder_trainer.py)) and `norm_output_tokens: false` — **`z` is continuous and unnormalised**. Continuity is a feature: it is exactly what distinguishes RLA from LAPA/UniVLA's VQ codes, and `L1RegressionActionHead` is already a continuous head. Unnormalised is a problem — see §6. |
++| 2 | Edit `MLPResNetBlock` | [`finetune.py:134`](../third_party/VLA-Adapter/vla-scripts/finetune.py) defaults `use_pro_version=True` and [`scripts/train_libero.sh`](../scripts/train_libero.sh) passes it explicitly, so the block that runs is **`MLPResNetBlock_Pro`** ([`action_heads.py:287-410`](../third_party/VLA-Adapter/prismatic/models/action_heads.py)). Different code: the gated group is `k_task`/`h_t` at `:391`, and it applies **RoPE** over the `x` sequence at `:381-382`. |
++| 3 | (not mentioned) | `x` entering the policy is **all zeros** (`action_heads.py:60-63`), and `MLPResNetBlock_Pro` has no learned positional embedding — so **RoPE is the only thing that distinguishes token positions in block 0**. This is load-bearing for us: appending RLA tokens at positions 8.. gives them distinct identities for free, with no new embedding table. |
++| 4 | Bump `window_size` to `NUM_ACTIONS_CHUNK` so observations chunk to length `T`, index-aligned with the action chunk | **Wrong, and it fails silently.** `chunk_act_obs` gathers `tf.range(-window_size + 1, 1)` ([`traj_transforms.py:26-30`](../third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py)) — that is frames **t−7..t**, the *past*. Actions get their own `range(-W+1, 1+future_action_window_size)` index tensor; observations never see the future. Worse, `RLDSBatchTransform` reads `observation["image_primary"][0]` ([`datasets.py:161`](../third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py)), so the policy's input image would quietly become frame t−7, and every image would be decoded 8×. **Leave `window_size=1`.** |
++| 5 | Write the rebuilt dataset to `data/libero_converted` | That path is already taken. `data/libero_converted` is the **`TrajectoryDataset` copy** (per-episode `*.mp4` + `metadata.h5`) that the RLA autoencoder itself reads, written by [`scripts/convert_libero_to_trajectory.py`](../scripts/convert_libero_to_trajectory.py). `data/libero` is the RLDS/TFDS source VLA-Adapter reads. Two different formats, two different consumers. |
++| 6 | "the vla-adaptor clone is pinned — do not modify it in place" | No longer true. [`docs/vla-adapter.md:12-15`](vla-adapter.md): VLA-Adapter is **vendored committed source** since `4e05436`; edit it like any other code and mark the edit `# v4world:` (existing convention, e.g. `finetune.py:61`). `scripts/patches/vla-adapter/` is kept only as a record of the delta from upstream. |
++
++### An upstream corollary worth knowing
++
++Follow row 3 through and the *non*-Pro `MLPResNetBlock` has no positional signal at all — no RoPE,
++no embedding, and an all-zero `x`. Every query position is then mathematically identical, so the
++head emits the **same action eight times**. Measured, same seed and inputs, `max |action[i] −
++action[0]|` across the chunk:
++
++| | `use_pro_version=False` | `use_pro_version=True` |
++|---|---|---|
++| chunk spread | **0.000e+00** | 2.470e-01 |
++
++So the non-Pro path cannot represent a varying action chunk at all. Nothing here depends on fixing
++that — `use_pro_version=True` is the default and what `train_libero.sh` passes — but it is worth
++knowing before comparing any non-Pro number against a Pro one. It is also why enabling RLA on the
++non-Pro block raises instead of training a head whose RLA tokens would all predict the same `z`.
++
++### Two facts the note did not have, both load-bearing
++
++- **`episode_metadata/file_path` is not unique per episode.** It names the source HDF5 *task* file,
++  and every demo of a task shares it — spatial episodes 1 and 2 both report
++  `..._wooden_cabinet_and_place_it_on_the_plate_demo.hdf5`. It cannot be a join key. (This is the
++  check the note's §5.3-b flagged as "not yet verified"; the answer is no.)
++- **The extractor does not need `data/libero_converted` at all.** `data/libero` RLDS carries both
++  views at 256², `observation/state` and `language_instruction`; the camera geometry comes from
++  `data/libero_converted/camera_params.json` through `episode_camera_arrays()`, which derives
++  per-frame `K` and camera-to-world from `state` + the instruction. Reading RLDS directly makes
++  episode indexing and the join key exact.
++
++  That function used to live in `scripts/convert_libero_to_trajectory.py`, which sets
++  `CUDA_VISIBLE_DEVICES=""` at module scope (it only decodes TFRecords and must keep TF off the
++  GPU) — importing it would have blinded torch, and the extractor needs TF-on-CPU *and*
++  torch-on-GPU in one process. So the pure-numpy geometry moved to
++  [`datalib/libero_camera.py`](../datalib/libero_camera.py); the converter re-exports it, and
++  `scripts/backfill_libero_camera_params.py` / `scripts/test_libero_camera_geometry.py` are
++  unchanged.
++
++---
++
++## 3. Frame / action alignment — measured
++
++The question that gates everything downstream: does step `k` pair one frame with one action, and
++which transition does `action[k]` cause?
++
++Measured on `data/libero/libero_spatial_no_noops`, first 6 episodes:
++
++- **N steps ↔ N frames (both views) ↔ N actions ↔ N states.** e.g. `steps=110`,
++  `image=(110,256,256,3)`, `wrist=(110,256,256,3)`, `action=(110,7)`, `state=(110,8)`.
++- **`action[k]` drives `s[k] → s[k+1]`.** The discriminating test is the gripper: correlate the
++  gripper command `action[:,6]` against the change in finger separation
++  `width[k+1+lag] − width[k+lag]`. It peaks at **lag 0**:
++
++  | lag | −2 | −1 | **0** | +1 | +2 |
++  |---|---|---|---|---|---|
++  | corr | −0.307 | −0.308 | **−0.316** | −0.309 | −0.275 |
++
++  (The end-effector version, `cos(a[k], s[k+1]−s[k]) = +0.92`, agrees but does not discriminate:
++  consecutive OSC deltas are too correlated for the lagged variant to look different.)
++- Therefore there are **N frames but only N−1 real transitions**. The last action leads nowhere.
++  Targets at the tail must clamp to `N−1` — which is exactly what `chunk_act_obs` already does to
++  the action chunk (`floored_action_chunk_indices = min(max(idx, 0), traj_len − 1)`), so clamping
++  keeps the two in lockstep.
++
++---
++
++## 4. Why the targets are anchored, not consecutive
++
++For frame `t` and `i = 0 … A−1` (`A = NUM_ACTIONS_CHUNK = 8`):
++
++```
++z_i(t) = f_enc( s_{min(t+i+1, N-1)} − s_t )        # both views concatenated, as the trainer does
++```
++
++Every one of the `A` latents is anchored on **frame `t`**, the observation the policy conditions on.
++`z_i` is therefore the cumulative consequence of actions `a_t … a_{t+i}`, and RLA token group `i`
++lines up with action token `i`.
++
++The alternative — consecutive pairs `f_enc(s_{t+i+1} − s_{t+i})`, which is what the note's §3
++describes — was rejected for two reasons:
++
++1. **The decoder diagnostic only works anchored.** `f_dec` is trained as `f_dec(x_t, z) → x_{t+1}`,
++   with `x_t` the *first* frame of the pair. Anchored, all `A` predicted latents decode against the
++   current frame, giving the `A`-step "imagined rollout" figure the note's §7 wants. With
++   consecutive pairs, decoding `z_i` needs `s_{t+i}` — a frame the policy does not have at
++   inference. (Consecutive pairs are also 8× cheaper to store, because `z_i(t) = z_0(t+i)` is
++   shareable. That is the only argument in their favour.)
++2. **Gap-1 residuals barely carry signal on the static camera.** Mean `|img[k+g] − img[k]|` in
++   0–255 units, same 6 episodes:
++
++   | gap | 1 | 2 | 4 | 8 | 16 |
++   |---|---|---|---|---|---|
++   | agentview | 2.5 | 3.8 | 5.4 | **7.0** | 8.7 |
++   | wrist | 7.5 | 10.6 | 14.9 | **20.4** | 26.1 |
++
++   Anchored spans gaps 1..8, i.e. 2.5→7.0 on agentview. All-consecutive sits at 2.5 forever.
++
++There is a third reason, from the autoencoder's own side: it trains on pairs with gap
++`~U{1..63}` (`trajectory_dataset.py:1375` and `_sample_horizon`, driven by `horizon: [2, 64]` and
++`num_frames: 2` — frames `[frame_id, frame_id + h − 1]`). Gap 1 is the extreme tail of that
++distribution; gaps 1..8 sit comfortably inside it.
++
++`scripts/extract_rla_latents.py --pairs consecutive` still emits the other variant — the DINO cache
++makes it free — so "anchored vs consecutive" stays an ablation rather than a rebuild.
++
++---
++
++## 5. The join: sidecar + content hash
++
++`data/libero` stays untouched. The extractor writes one `.npy` per episode; the tf.data graph looks
++it up once per episode inside `libero_dataset_transform`.
++
++**The key is `sha1(observation["state"].astype(float32).tobytes())`.** `state` is a
++`Tensor(shape=(8,), float32)` in the TFRecord, so the bytes are identical on both sides —
++the extractor reads the same records the trainer does. It is unique per episode (Gate 2 asserts the
++bijection), unlike `file_path` (§2).
++
++Why not rebuild the TFDS dataset with `rla` as a native feature (the note's recommended §5.3-a):
++~10 GB rewrite across four suites, a JPEG re-encode of every frame unless `SkipDecoding`
++passthrough works, and a hand-written `features.json`/`dataset_info.json` — for a join that a
++32-byte hash solves exactly. The sidecar is also versioned per autoencoder run, which matters
++because `f_enc` will be retrained.
++
++Where each piece attaches, and why it has to be there:
++
++| File | Change | Why there |
++|---|---|---|
++| `oxe/transforms.py` `libero_dataset_transform` | `tf.numpy_function` lookup → `trajectory["rla"]` | The per-dataset standardize hook; runs **once per trajectory**, before flattening. `observation["state"]` is still present here. |
++| `rlds/dataset.py` `restructure()` | pop `rla` before the dict is rebuilt, put it back at **top level** | `restructure` builds a fresh dict and drops everything not listed. Top level, *not* `observation` — observation keys get windowed with past indices by `chunk_act_obs`, and `add_pad_mask_dict`/`goal_relabeling.uniform` also walk `observation`. |
++| `traj_transforms.py` `chunk_act_obs` | truncate to `effective_traj_len` | The sidecar is already windowed per frame, so there is nothing to gather — just the same truncation `absolute_action_mask` gets at `:56`. |
++| `datasets.py` `RLDSBatchTransform.__call__` | pass `rlds_batch["rla"]` through | After `.flatten()` each element is one frame, so this is `(A, Q·D)`. |
++| `util/data_utils.py` collator | stack like `actions` | Nothing else stacks unknown keys. |
++
++Frame transforms (`apply_frame_transforms`) only touch `observation` and `task`, so a top-level key
++passes through decode/resize/augment untouched.
++
++> ⚠️ **Editing `libero_dataset_transform` invalidates the dataset-statistics cache.**
++> `get_dataset_statistics(hash_dependencies=(..., inspect.getsource(standardize_fn)))`
++> (`rlds/dataset.py:206`) hashes the function's *source text*, so any edit — even one that is inert
++> when RLA is off — costs one full recompute pass per suite (a few minutes; the result is cached as
++> `data/libero/<suite>/1.0.0/dataset_statistics_<hash>.json`).
++>
++> Two things make this benign, both **measured**:
++> - The hash depends on the source text, not on `RLA_STEPS`, so **all four arms share one statistics
++>   file** and are normalisation-comparable by construction.
++> - The recomputed statistics match the ones the released checkpoints were trained with. Against
++>   `runs/weights/vla-adapter/LIBERO-Spatial-Pro/dataset_statistics.json`: `action`/`proprio`
++>   `mean`/`std`/`min`/`max` differ by exactly **0.0**, `q01`/`q99` by ≤ 2.2e-7 (float round-off),
++>   and `num_transitions=52970` / `num_trajectories=432` match. That is Gate 7.
++
++---
++
++## 6. Target normalisation
++
++`z` is continuous and unnormalised (§2.1), so its scale is whatever the autoencoder's training
++happened to settle on. Feeding that straight into an L1 term next to a normalised-action L1 term
++makes `lambda_rla` meaningless and unstable across autoencoder runs.
++
++The extractor therefore accumulates **per-`(q, d)` mean/std** (1024 pairs — the token slots are
++distinct, so per-slot statistics are the right granularity, not a single global scalar) plus a
++global RMS, and writes both to `stats.json`. `rla_targets.py` normalises on read, and the same
++`stats.json` un-normalises for the `f_dec` diagnostic. `lambda_rla` is then comparable across runs.
++
++---
++
++## 7. Architecture: where the RLA tokens go
++
++Unchanged in spirit from the note's §3, adapted to `MLPResNetBlock_Pro` and Q=16.
++
++```
++x_action : (B, 8, ACTION_DIM*D) -> layer_norm1 -> fc1 -> relu -> (B, 8, D)
++x_rla    : (B, RLA_STEPS*RLA_QUERIES, D)  zeros (+ noise in training), starts at D — no fc1
++x        = cat([x_action, x_rla], dim=1)          # (B, 8 + 128, D) = (B, 136, D)
++   ... 24 × MLPResNetBlock_Pro on the combined sequence ...
++action   = fc2(layer_norm2(x[:, :8]))                                  # (B, 8, 7)
++z_hat    = fc2_rla(layer_norm2_rla(x[:, 8:].reshape(B, 8, 16, D)))     # (B, 8, 16, 64)
++```
++
++- **One combined self-attention pass.** Splitting into "action-as-Q" and "rla-as-Q" passes would
++  silently drop cross-group attention unless `K/V` were re-merged in both. Don't.
++- **Gating is vectorised, not duplicated.** `MLPResNetBlock_Pro` multiplies the `h_t` scores by a
++  scalar `tanh(gating_factor)`; that becomes a `(1, 1, T, 1)` vector built from `gating_factor`
++  (positions `< 8`) and a new zero-init `gating_factor_rla` (positions `>= 8`), so each group learns
++  its own "how much Raw feature to let in" schedule. Per-future-step gates (`T+1` of them) stay a
++  later refinement.
++- **RoPE now runs at `seq_len = 136`.** Action and RLA groups share one ladder. Fine, and it is what
++  gives the RLA tokens their identity (§2.3).
++- **`gating_factor_rla`, `fc2_rla` and `layer_norm2_rla` only exist when `RLA_STEPS > 0`**, so with
++  RLA off the state dict is byte-identical to upstream and released `LIBERO-*-Pro` checkpoints still
++  load. Gate 4 asserts this.
++- **RLA tokens stay in `x` at inference.** The attention distributions were trained with them
++  present; removing them is a train/test mismatch. Only the `z_hat` projection is skipped.
++
++Cost: 8 → 136 policy tokens. With Q=16 this is half the note's v2 estimate (~7 GFLOP/forward across
++24 blocks against `D=896`, `K=512`) — low single digits of a percent against the VLM forward pass.
++Parameter count is unaffected by sequence length.
++
++### The strict-load trap
++
++`experiments/robot/openvla_utils.py:510-542` rebuilds `L1RegressionActionHead` with four fixed
++kwargs and then calls `load_state_dict(state_dict)` — **strict**. A `finetune.py` CLI flag would let
++train and eval disagree about the head's shape and fail (or worse, if it were non-strict, silently
++randomise). So `RLA_STEPS` / `RLA_QUERIES` / `RLA_DIM` live in `prismatic/vla/constants.py` and are
++read from the environment, the same way `NUM_ACTIONS_CHUNK` is derived from `sys.argv`. Both
++launchers export them; `ARM=` picks the set.
++
++### Why `predict_action` keeps its return type
++
++`modeling_prismatic.py:877` does `action_head.predict_action(...)` then
++`.reshape(NUM_ACTIONS_CHUNK, ACTION_DIM)`. That file also exists as a **copy** at
++`pretrained_models/configs/modeling_prismatic.py`, which `check_model_logic_mismatch` installs over
++the checkpoint's `auto_map` copy at startup — so any change there has to be made twice and survives
++into every checkpoint dir. Adding `return_rla: bool = False` and returning the bare action tensor by
++default means **neither file is touched**.
++
++---
++
++## 8. The extractor, in one paragraph
++
++Per episode: decode both views, resize 256→224 with `resize_image(..., cv2.INTER_LINEAR)` and
++rescale `K` with `resize_intrinsics(K, 256, 256, 224, 224)` — both from `datalib/dataset.py:41,60`,
++because that is the exact path `read_frames` uses and therefore what the autoencoder trains on (do
++**not** substitute `tf.image.resize`, which VLA-Adapter's own eval path uses with `lanczos3`). Run
++frozen DINOv3-L once over all `N × 2` frames and **keep the tokens in memory for the trajectory
++only** (`N × 2 × 196 × 1024` fp32 ≈ 220 MB at N=140); they are never written to disk. Build Plücker
++rays per anchor frame. Then run `f_enc` over the `N × A` anchored pairs in batches and write
++`(N, A, Q, D)` fp16.
++
++Budget, **measured** on one RTX A6000 with a randomly-initialised `f_enc` (200 `libero_spatial`
++episodes, steady state after torch.compile warmup): **0.20 ep/s ≈ 25 frames/s**, GPU pegged at 100%.
++Across ~272k frames that is **~3 h** on one GPU, or **~45 min** with one suite per GPU on a 4-GPU
++box. Disk: 16.4 KB/frame → **3.9 GB**.
++
++`--batch-pairs 256` is no faster than the default 64, so it is compute-bound, not launch-bound.
++`f_enc` dominates DINO roughly 4:1 (`N·A ≈ 1080` encoder forwards per episode against `N·2 ≈ 280`
++DINO forwards), which is also why the fp32 token cache below costs ~1.8× — it widens the two
++gathers feeding every one of those `N·A` encoder calls.
++
++> ⚠️ **Keep the cached DINO tokens in fp32.** `DINOv3FeatureExtractor.forward` runs the ViT under
++> `autocast(fp16)`, but autocast keeps LayerNorm in fp32, so `last_hidden_state` comes back **fp32**
++> — and that is what `f_enc` was trained on. Caching them as fp16 to halve memory (~220 MB → ~110 MB
++> per trajectory) shifts `z` by ~0.6% (max |d| = 6.1e-3 against `|z|max = 4.7`). Small enough to
++> look like noise, systematic enough to bias every target. Gate 6 is what caught it; after the fix
++> the extractor matches the trainer **exactly** (max |d| = 0.0).
++
++TF must stay on CPU while torch keeps the GPU: call `tf.config.set_visible_devices([], "GPU")`
++immediately after importing TF and before torch touches CUDA. (`prismatic/vla/datasets/rlds/dataset.py:35`
++does the same at module scope; the extractor does it explicitly rather than relying on that.)
++
++---
++
++## 9. Ablation matrix
++
++Same injection point, same recipe; only the auxiliary target changes. `ARM=` in
++`scripts/train_libero.sh` selects one.
++
++| Arm | Aux target | Answers |
++|---|---|---|
++| `baseline` | none (`RLA_STEPS=0`, upstream state dict) | floor |
++| `dino` | per-step `s_{t+i+1}` regression (the DINO-WM-style strawman) | 9yrp: "would any future-prediction target do this?" |
++| `univla` | discrete VQ latent-action code | msVp: apples-to-apples vs LAPA-style |
++| `rla` | `z*_i` from frozen `f_enc` | headline |
++
++Two extra arms the extractor makes nearly free: `--pairs consecutive` (anchored vs consecutive
++targets), and per-view extraction (static-only / wrist-only / fused) for the camera-motion rebuttal.
++
++**The baseline arm must be `RLA_STEPS=0`, not `lambda_rla=0`.** The RLA tokens sit in the shared
++self-attention, so they change the action path even with zero loss weight. Gate 5 asserts exactly
++this, so nobody reaches for the cheaper-looking knob.
++
++---
++
++## 10. Verification
++
++`scripts/verify_rla_targets.py`, gate style of `scripts/verify_vla_adapter_port.py`. Gates 1–5 and 7
++run today, with no trained `f_enc`.
++
++| Gate | What it proves |
++|---|---|
++| 1 | Alignment: `N == len(actions) == len(images) == len(states)`; gripper-lag correlation peaks at lag 0 (§3 as a regression test). |
++| 2 | `sha1(state)` is a bijection over each suite and matches `keys.json`; `file_path` is *not* unique. With `--sidecar`, also: every episode has an entry with matching `episode_index`/`traj_len`, and `stats.json` covers `sum(traj_len) × A` rows — the last one caught a real bug where a *resumed* extraction computed the normalisation from only the episodes it happened to rewrite. |
++| 3 | **End-to-end index alignment.** A synthetic sidecar with `rla[t, i, :3] = (episode_index, t, i)` run through the real `RLDSDataset` + collator, asserting the decoded triple matches each frame's own `observation["timestep"]` and its episode. Catches every off-by-one, every shuffle/interleave join break, and the `window_size` trap — without `f_enc`. |
++| 4 | `RLA_STEPS=0` gives the upstream state-dict key set; a released `LIBERO-Spatial-Pro` action head loads strict; `predict_action` is bit-identical under a fixed seed. |
++| 5 | `RLA_STEPS=8` gives `(B,8,7)` + `(B,8,1024)` with finite grads on `fc2_rla` and `gating_factor_rla`; and the action output *does* differ from `RLA_STEPS=0` at `lambda_rla=0`. |
++| 6 | Extractor's encode path equals the trainer's own `inference_batch` on a shared batch, using the same encoder object (runs with `--random-encoder`). Currently **max \|d\| = 0.0**. This gate has already earned its keep: it caught the fp16 token-cache bias above. |
++| 7 | The recomputed `dataset_statistics_<hash>.json` matches the released `runs/weights/vla-adapter/LIBERO-<Suite>-Pro/dataset_statistics.json` — i.e. our edit reproduces the normalisation the published checkpoints were trained with. |
++
++---
++
++## 11. Not doing
++
++- **§8's two-stage LAPA-style pretrain** (regress `z*` on actionless video, then swap the head back
++  and finetune). Reuses the same extracted targets, so it stays cheap to add later; out of scope now.
++- **RLA as a fourth bridge KV condition.** Rejected in the note's §9 and still rejected: `z*` depends
++  on a future frame that does not exist at inference. As output queries there is no asymmetry.
++- **Rebuilding the TFDS dataset.** §5.
+diff --git a/docs/vla-adapter.md b/docs/vla-adapter.md
+index 3dcc85c..539f97c 100644
+--- a/docs/vla-adapter.md
++++ b/docs/vla-adapter.md
+@@ -270,6 +270,15 @@ from source), but nothing uses it unless you change patch 06 to `flash_attention
+ For how the training and eval code fit together, see
+ [vla-adapter-internals.md](vla-adapter-internals.md).
+ 
++### RLA auxiliary targets
++
++The action head can be given extra output-query tokens trained to regress the RLA autoencoder's
++latent actions, as an auxiliary objective alongside the action L1. It is off by default
++(`ARM=baseline`) and, when off, byte-identical to upstream. `ARM=rla` turns it on for both
++`train_libero.sh` and `run_libero_eval.sh`. Design and verified findings:
++[rla-vla-adapter.md](rla-vla-adapter.md); commands:
++[rla-vla-adapter-runbook.md](rla-vla-adapter-runbook.md).
++
+ ## Troubleshooting
+ 
+ - **`uv sync` removed the eval deps** — pass `--group vla-adapter`, or just re-run
+diff --git a/scripts/convert_libero_to_trajectory.py b/scripts/convert_libero_to_trajectory.py
+index c9d5342..e142086 100644
+--- a/scripts/convert_libero_to_trajectory.py
++++ b/scripts/convert_libero_to_trajectory.py
+@@ -44,7 +44,6 @@ Usage:
+ """
+ 
+ import argparse
+-import json
+ import os
+ import sys
+ 
+@@ -63,6 +62,21 @@ from datalib.dataset import (
+     VideoEncoding,
+ )
+ 
++# The camera geometry lives in datalib/ so consumers that need it but not this converter can import
++# it without inheriting the CUDA_VISIBLE_DEVICES="" above. Re-exported here because
++# scripts/backfill_libero_camera_params.py and scripts/test_libero_camera_geometry.py import these
++# names from this module.
++from datalib.libero_camera import (  # noqa: F401  (re-export)
++    CAMERA_PARAMS_DEFAULT,
++    FRONT_CAM,
++    WRIST_CAM,
++    axis_angle_to_matrix,
++    axis_angle_to_quat,
++    episode_camera_arrays,
++    load_camera_params,
++    quat_wxyz_to_matrix,
++)
++
+ # RGB is stored visually-lossless: H.264 with full-resolution chroma (yuv444p) and qp=0. This
+ # removes the chroma-subsampling colour blocks the historical default (lossy crf23 / yuv420p) left
+ # on the close-up wrist camera, is imperceptibly close to the source (|diff| <= ~2/255, no
+@@ -79,20 +93,6 @@ SUITES = {
+     "libero_10": "libero_10_no_noops",
+ }
+ 
+-# Camera names must contain "cam": TrajectoryDataset._build_single_trajectory_info filters stream
+-# keys with `if "cam" in k` when counting frames, the same way `front_lower_camera` (maniskill) and
+-# `camera_0` (iws) do.
+-FRONT_CAM = "agentview_camera"
+-WRIST_CAM = "wrist_camera"
+-
+-# Camera geometry comes from scripts/extract_libero_camera_params.py, which queries a live LIBERO
+-# env per task. Do NOT try to read it out of the scene XMLs: they all declare
+-# `agentview pos="0.5 0 1.35"`, but LIBERO repositions the camera when the arena loads, and the
+-# runtime pose is scene dependent (four distinct poses across the 40 tasks). Likewise the
+-# `eye_in_hand` camera hangs off the hand body, ~9.7 cm behind the grip site that
+-# `observation.state` reports, not at the 5 cm offset the robot XML suggests.
+-CAMERA_PARAMS_DEFAULT = "data/libero_converted/camera_params.json"
+-
+ PANDA_ARM_JOINTS = [f"panda_joint{i}" for i in range(1, 8)]
+ PANDA_GRIPPER_JOINTS = ["panda_finger_joint1", "panda_finger_joint2"]
+ 
+@@ -110,134 +110,6 @@ def panda_robot_info() -> RobotInfo:
+     )
+ 
+ 
+-def load_camera_params(path: str = CAMERA_PARAMS_DEFAULT) -> dict:
+-    """Load the simulator-extracted camera parameters."""
+-    if not os.path.exists(path):
+-        raise FileNotFoundError(
+-            f"{path} not found. Generate it first:\n"
+-            "  source scripts/vla_adapter_env.sh\n"
+-            "  .venv/bin/python scripts/extract_libero_camera_params.py"
+-        )
+-    with open(path) as f:
+-        return json.load(f)
+-
+-
+-def episode_camera_arrays(
+-    task_description: str,
+-    eef_pos: np.ndarray,
+-    eef_rot: np.ndarray,
+-    params: dict,
+-    height: int,
+-    width: int,
+-) -> dict:
+-    """Per-frame camera intrinsics/extrinsics for one episode.
+-
+-    Args:
+-        task_description: language instruction, the key into the params table.
+-        eef_pos: ``[T, 3]`` end-effector positions from ``observation.state``.
+-        eef_rot: ``[T, 3, 3]`` end-effector rotations.
+-
+-    Returns dict of ``[T, 1, 3, 3]`` intrinsics and ``[T, 1, 3, 4]`` camera-to-world extrinsics,
+-    keyed by stream name. The singleton camera axis is the layout
+-    TrajectoryDataset.__getitem__ assigns into (`intrinsics[:, [cam_idx]] = ...`).
+-    """
+-    entry = params["tasks"].get(task_description)
+-    if entry is None:
+-        raise KeyError(
+-            f"No camera parameters for task {task_description!r}. Re-run "
+-            "scripts/extract_libero_camera_params.py so every suite is covered."
+-        )
+-
+-    num_frames = len(eef_pos)
+-    # The sim was queried at one resolution; rescale if the stored frames differ.
+-    scale = height / float(params["resolution"])
+-    front_k = np.array(entry["agentview_K"], dtype=np.float64)
+-    wrist_k = np.array(entry["wrist_K"], dtype=np.float64)
+-    if not np.isclose(scale, 1.0):
+-        front_k[:2] *= scale
+-        wrist_k[:2] *= scale
+-
+-    # The RLDS frames are a HORIZONTAL MIRROR of the standard camera frame, so a ray built from
+-    # unmodified intrinsics points at the wrong side of the scene.
+-    #
+-    # Why: robosuite renders with IMAGE_CONVENTION="opengl" (robosuite/macros.py), so
+-    # `obs['<cam>_image']` is the raw bottom-up render, while `get_camera_extrinsic_matrix`
+-    # applies the OpenCV axis correction -- i.e. the matrices describe `obs[::-1]`. The RLDS
+-    # export stores `obs[::-1, ::-1]` (the 180-degree rotation that
+-    # `libero_utils.get_libero_image` undoes at eval), and
+-    #     obs[::-1, ::-1] == (obs[::-1])[:, ::-1]
+-    # leaves exactly one horizontal mirror between the matrices and the stored pixels.
+-    #
+-    # A mirror is improper, so it cannot be folded into the extrinsics without making them
+-    # non-rigid. Negating fx is the standard way to express it and keeps the extrinsics a proper
+-    # rigid transform; inv(K) then yields correctly mirrored ray directions.
+-    #
+-    # This is invisible at the robot's home pose (the gripper sits at u ~ W/2, where a horizontal
+-    # mirror is a no-op), which is why frame-0 reprojection checks cannot detect it. The check
+-    # that does is cross-view photometric consistency in scripts/verify_libero_plucker.py.
+-    front_k[0, 0] *= -1.0
+-    wrist_k[0, 0] *= -1.0
+-
+-    front_e = np.array(entry["agentview_c2w"], dtype=np.float64)  # [3, 4], world-fixed
+-
+-    # The wrist camera rides the hand: T_world_cam = T_world_eef @ T_eef_cam.
+-    eef_to_cam = np.array(params["eef_to_wrist_cam"], dtype=np.float64)
+-    world_eef = np.tile(np.eye(4), (num_frames, 1, 1))
+-    world_eef[:, :3, :3] = eef_rot
+-    world_eef[:, :3, 3] = eef_pos
+-    wrist_e = (world_eef @ eef_to_cam)[:, :3, :]
+-
+-    return {
+-        f"{FRONT_CAM}_intrinsics": np.tile(front_k, (num_frames, 1, 1, 1)).astype(np.float32),
+-        f"{FRONT_CAM}_extrinsics": np.tile(front_e, (num_frames, 1, 1, 1)).astype(np.float32),
+-        f"{WRIST_CAM}_intrinsics": np.tile(wrist_k, (num_frames, 1, 1, 1)).astype(np.float32),
+-        f"{WRIST_CAM}_extrinsics": wrist_e[:, None].astype(np.float32),
+-    }
+-
+-
+-def quat_wxyz_to_matrix(quat: np.ndarray) -> np.ndarray:
+-    """Rotation matrix from a MuJoCo-convention (w, x, y, z) quaternion."""
+-    w, x, y, z = quat / np.linalg.norm(quat)
+-    return np.array(
+-        [
+-            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+-            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+-            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+-        ],
+-        dtype=np.float64,
+-    )
+-
+-
+-def axis_angle_to_matrix(axis_angle: np.ndarray) -> np.ndarray:
+-    """Rotation matrices from [T, 3] axis-angle vectors (Rodrigues' formula)."""
+-    angle = np.linalg.norm(axis_angle, axis=-1)
+-    safe_angle = np.where(angle < 1e-8, 1.0, angle)
+-    axis = axis_angle / safe_angle[:, None]
+-    kx, ky, kz = axis[:, 0], axis[:, 1], axis[:, 2]
+-    zero = np.zeros_like(kx)
+-    skew = np.stack(
+-        [zero, -kz, ky, kz, zero, -kx, -ky, kx, zero], axis=-1
+-    ).reshape(-1, 3, 3)
+-    eye = np.broadcast_to(np.eye(3), (len(axis_angle), 3, 3))
+-    sin = np.sin(angle)[:, None, None]
+-    cos = np.cos(angle)[:, None, None]
+-    rot = eye + sin * skew + (1.0 - cos) * (skew @ skew)
+-    rot[angle < 1e-8] = np.eye(3)
+-    return rot
+-
+-
+-def axis_angle_to_quat(axis_angle: np.ndarray) -> np.ndarray:
+-    """Convert [T, 3] axis-angle rotations to [T, 4] wxyz quaternions."""
+-    angle = np.linalg.norm(axis_angle, axis=-1, keepdims=True)
+-    # Guard the angle==0 case: the axis is arbitrary there, so any unit axis gives identity.
+-    safe_angle = np.where(angle < 1e-8, 1.0, angle)
+-    axis = axis_angle / safe_angle
+-    half = 0.5 * angle
+-    quat = np.concatenate([np.cos(half), axis * np.sin(half)], axis=-1)
+-    quat[angle[:, 0] < 1e-8] = np.array([1.0, 0.0, 0.0, 0.0])
+-    return quat.astype(np.float32)
+-
+-
+ def episode_to_trajectory_data(episode, camera_params: dict) -> TrajectoryData:
+     """Turn one decoded RLDS episode into a TrajectoryData ready for write_trajectory."""
+     front, wrist, states, joints, actions = [], [], [], [], []
+diff --git a/scripts/extract_rla_latents.py b/scripts/extract_rla_latents.py
+new file mode 100644
+index 0000000..b2917d3
+--- /dev/null
++++ b/scripts/extract_rla_latents.py
+@@ -0,0 +1,598 @@
++#!/usr/bin/env python
++"""Precompute RLA latent-action targets for every LIBERO frame, for VLA-Adapter to regress.
++
++Reads the RLDS datasets VLA-Adapter itself trains on (`data/libero/<suite>_no_noops/1.0.0`) and
++writes, for each frame `t`, the `A = NUM_ACTIONS_CHUNK` latent actions that the action chunk
++starting at `t` is supposed to bring about:
++
++    z_i(t) = f_enc( s_{min(t+i+1, N-1)} - s_t )        i = 0 .. A-1        ("anchored", default)
++
++Every latent is anchored on frame `t` -- the observation the policy conditions on -- so `z_i` is the
++cumulative consequence of actions `a_t .. a_{t+i}`, and RLA token group `i` lines up with action
++token `i`. `--pairs consecutive` instead emits `f_enc(s_{t+i+1} - s_{t+i})`; see
++docs/rla-vla-adapter.md §4 for why anchored is the default (short version: `f_dec(x_t, z)` can only
++decode an anchored `z` at inference, and gap-1 agentview residuals are ~2.5/255).
++
++Why RLDS and not data/libero_converted: the RLDS records carry both views, `observation/state` and
++`language_instruction`, which is everything needed -- camera geometry comes from
++`data/libero_converted/camera_params.json` through `datalib.libero_camera.episode_camera_arrays`.
++Reading the same records the trainer reads also makes the episode index and the join key exact.
++
++Output (see docs/rla-vla-adapter.md §5; consumed by prismatic/vla/rla_targets.py):
++
++    <out>/manifest.json          config + provenance, so a sidecar can never be silently mismatched
++    <out>/stats.json             per-(q, d) mean/std and global RMS over the whole corpus
++    <out>/<suite>/keys.json      sha1(state bytes) -> {file, episode_index, traj_len}
++    <out>/<suite>/ep_000000.npy  (N, A, Q, D) float16
++
++DINO tokens are cached in memory for the current trajectory only (fp32, ~220 MB at N=140 -- see
++`RlaLatentEncoder.dino_tokens` for why not fp16) and are never written to disk; only `z` is
++persisted (~16 KB/frame, ~3.9 GB for all four suites). Throughput is ~0.2 episodes/s
++(~25 frames/s) on an RTX A6000, so budget ~3 h for all four suites or run one suite per GPU.
++
++Usage (after `source scripts/vla_adapter_env.sh`):
++
++    # before f_enc exists -- exercises the whole pipeline with a randomly-initialised encoder
++    .venv/bin/python scripts/extract_rla_latents.py --random-encoder \
++        --out data/libero_rla/smoke --suites libero_spatial --limit 4
++
++    # the real thing
++    .venv/bin/python scripts/extract_rla_latents.py \
++        --rla-config configs/rla/16x64_libero.yaml \
++        --rla-run runs/<rla-run>/<stamp> \
++        --out data/libero_rla/16x64-<stamp>
++"""
++
++import argparse
++import hashlib
++import json
++import os
++import sys
++import time
++from pathlib import Path
++from typing import Dict, List, Optional, Tuple
++
++import numpy as np
++
++REPO_ROOT = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(REPO_ROOT))
++
++# TensorFlow decodes the TFRecords; torch runs DINOv3 and f_enc on the GPU. TF must be pinned to CPU
++# *before* it grabs any device, or it takes the whole GPU and torch OOMs. Note this is
++# `set_visible_devices`, not CUDA_VISIBLE_DEVICES="" -- torch still needs to see the GPU.
++# (prismatic/vla/datasets/rlds/dataset.py:35 does the same at module scope; doing it explicitly here
++# keeps the extractor independent of that import.)
++os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
++import tensorflow as tf  # noqa: E402
++
++tf.config.set_visible_devices([], "GPU")
++
++import tensorflow_datasets as tfds  # noqa: E402
++import torch  # noqa: E402
++from easydict import EasyDict as edict  # noqa: E402
++
++from datalib.dataset import resize_image, resize_intrinsics  # noqa: E402
++from datalib.libero_camera import (  # noqa: E402
++    FRONT_CAM,
++    WRIST_CAM,
++    CAMERA_PARAMS_DEFAULT,
++    axis_angle_to_matrix,
++    episode_camera_arrays,
++    load_camera_params,
++)
++from src import models  # noqa: E402
++from src.models.plucker_embedding import compute_plucker_rays  # noqa: E402
++from utils.cam import convert_extrinsics_3x4_to_4x4  # noqa: E402
++from utils.dino import DINOv3FeatureExtractor, get_dinov3_model_for_channels  # noqa: E402
++from utils.misc import fetch_state_dict, load_config  # noqa: E402
++
++# RLDS directory name -> suite name, same mapping scripts/convert_libero_to_trajectory.py uses.
++SUITES = {
++    "libero_spatial": "libero_spatial_no_noops",
++    "libero_object": "libero_object_no_noops",
++    "libero_goal": "libero_goal_no_noops",
++    "libero_10": "libero_10_no_noops",
++}
++
++# The camera order the RLA autoencoder was trained with
++# (configs/rla/16x64_libero.yaml: cameras: ["agentview_camera", "wrist_camera"]). The per-view token
++# blocks are concatenated along the sequence in this order, and MultiViewTokenTransformer's view
++# embedding / Plucker rays are indexed by it, so it must not be permuted.
++CAMERA_ORDER = (FRONT_CAM, WRIST_CAM)
++RLDS_IMAGE_KEY = {FRONT_CAM: "image", WRIST_CAM: "wrist_image"}
++
++
++def episode_key(states: np.ndarray) -> str:
++    """Stable per-episode join key: sha1 of the raw `observation/state` bytes.
++
++    `state` is a float32 Tensor feature, so the bytes here are byte-identical to what
++    `libero_dataset_transform` sees inside the tf.data graph -- that is what makes the join exact.
++    `episode_metadata/file_path` cannot be used: it names the source HDF5 *task* file, which every
++    demo of a task shares.
++    """
++    return hashlib.sha1(np.ascontiguousarray(states, dtype=np.float32).tobytes()).hexdigest()
++
++
++class RlaLatentEncoder:
++    """Frozen DINOv3 + frozen `f_enc`, driving the same math RlaAutoencoderMultiViewTrainer does.
++
++    Deliberately not the trainer itself: constructing one builds an optimizer, the decoders and a
++    TrajectoryDataset, none of which extraction needs. `scripts/verify_rla_targets.py` Gate 6
++    asserts this path is numerically identical to `RlaAutoencoderMultiViewTrainer.inference_batch`
++    on a shared batch, which is the safety a shared base class would have given.
++    """
++
++    def __init__(
++        self,
++        config_path: str,
++        run_dir: Optional[str],
++        step: Optional[int] = None,
++        device: str = "cuda",
++        random_encoder: bool = False,
++    ) -> None:
++        self.cfg = edict(load_config(config_path))
++        self.device = torch.device(device)
++        self.config_path = config_path
++        self.run_dir = run_dir
++        self.step = step
++
++        enc_cfg = self.cfg.models.encoder
++        self.encoder = getattr(models, enc_cfg.name)(**enc_cfg.args).to(self.device)
++        if random_encoder:
++            print("[extract_rla] --random-encoder: f_enc is randomly initialised, z is MEANINGLESS")
++            self.loaded_ckpt = None
++        else:
++            if not run_dir:
++                raise ValueError("--rla-run is required unless --random-encoder is given")
++            self.encoder.load_state_dict(
++                fetch_state_dict("encoder", run_dir, self.device, step=step), strict=True
++            )
++            # Record which file actually got loaded: `step=None` means "latest", and the manifest
++            # has to pin the exact checkpoint or a sidecar cannot be traced back to its f_enc.
++            ckpts = sorted(Path(run_dir, "ckpts").glob("encoder_step*.pt"))
++            self.loaded_ckpt = str(
++                ckpts[-1] if step is None else Path(run_dir, "ckpts", f"encoder_step{step:07d}.pt")
++            )
++        self.encoder.eval()
++        for p in self.encoder.parameters():
++            p.requires_grad = False
++
++        self.num_tokens = int(enc_cfg.args.num_tokens)
++        self.token_dim = int(enc_cfg.args.out_channels)
++        self.dino_channels = int(self.cfg.trainer.args.get("dino_channels", 1024))
++        self.num_views = int(self.cfg.trainer.args.get("num_views", len(CAMERA_ORDER)))
++        self.inverse_input_mode = str(
++            self.cfg.trainer.args.get("inverse_input_mode", "sub")
++        ).lower()
++        if self.inverse_input_mode == "append":
++            # Same restriction RlaAutoencoderMultiViewTrainer.__init__ enforces: "append"
++            # concatenates along the sequence, so the per-view blocks stop being equally sized.
++            raise ValueError("inverse_input_mode='append' is not supported with multiple views")
++
++        # Probe on the inner module, mirroring RlaAutoencoderMultiViewTrainer._forward_views.
++        self.expects_num_views = bool(getattr(self.encoder, "expects_num_views", False))
++        self.expects_plucker = bool(getattr(self.encoder, "expects_plucker", False))
++
++        self.dino = DINOv3FeatureExtractor(
++            model_name=get_dinov3_model_for_channels(self.dino_channels)
++        ).to(self.device)
++        self.dino.eval()
++        for p in self.dino.parameters():
++            p.requires_grad = False
++
++    @torch.no_grad()
++    def dino_tokens(self, images: np.ndarray) -> Tuple[torch.Tensor, Tuple[int, int]]:
++        """[N, Cam, 3, H, W] uint8 -> ([N, Cam, Lp, C] on device, (ph, pw)).
++
++        Mirrors RlaAutoencoderTrainer._extract_dino_tokens, including its uint8 -> [0, 1] rescale.
++
++        The tokens stay in DINO's own output dtype -- **fp32**. DINOv3FeatureExtractor.forward runs
++        the ViT under `autocast(fp16)`, but autocast keeps LayerNorm in fp32, so `last_hidden_state`
++        comes back fp32 and that is what f_enc was trained on. Caching them as fp16 to halve memory
++        shifts z by ~0.6% (max |d| = 6.1e-3 on a |z|max = 4.7 batch); gate 6 of
++        scripts/verify_rla_targets.py caught exactly that. ~220 MB per trajectory at N=140, which is
++        the price of matching training bit-for-bit.
++
++        LIBERO's foreground masks are a constant 255 (the converter has no segmentation to write --
++        verified: `rgbs * (foreground_masks > 0).float() == rgbs.float()`), so the trainer's masking
++        step is the identity and is skipped here. If real masks ever land, this is the line that has
++        to change with them.
++        """
++        num, cams = images.shape[:2]
++        flat = torch.from_numpy(images).to(self.device).reshape(num * cams, *images.shape[2:])
++        flat = flat.float() / 255.0
++        _, patch_grid = self.dino(flat, return_spatial_grid=True)
++        _, ch, ph, pw = patch_grid.shape
++        tokens = patch_grid.flatten(2).transpose(1, 2).reshape(num, cams, ph * pw, ch)
++        return tokens, (ph, pw)
++
++    def compose(self, x_t: torch.Tensor, x_T: torch.Tensor) -> torch.Tensor:
++        """RlaAutoencoderTrainer._compose_inverse_input, minus the unsupported 'append' mode.
++
++        Dtype-preserving on purpose -- see `encode`.
++        """
++        if self.inverse_input_mode == "sub":
++            return x_T - x_t
++        if self.inverse_input_mode == "concat":
++            return torch.cat([x_T, x_t], dim=2)
++        raise RuntimeError(f"Unhandled inverse_input_mode={self.inverse_input_mode!r}")
++
++    @torch.no_grad()
++    def encode(
++        self,
++        x_anchor: torch.Tensor,
++        x_future: torch.Tensor,
++        plucker: Optional[torch.Tensor],
++    ) -> torch.Tensor:
++        """([B, Cam*Lp, C], [B, Cam*Lp, C], [B, Cam*Lp, 6]) -> [B, Q, D] latent actions.
++
++        Composition is dtype-preserving, so with `dino_tokens`'s fp32 output the residual is formed
++        in fp32 exactly as RlaAutoencoderTrainer.inference_batch does.
++        """
++        enc_input = self.compose(x_anchor, x_future)
++        if not self.expects_num_views:
++            tokens, _ = self.encoder(enc_input, tokens=None)
++        elif self.expects_plucker:
++            tokens, _ = self.encoder(
++                enc_input, tokens=None, num_views=self.num_views, plucker=plucker
++            )
++        else:
++            tokens, _ = self.encoder(enc_input, tokens=None, num_views=self.num_views)
++        if tokens.ndim != 3:
++            raise ValueError(f"Encoder token output must be rank-3 [B, Q, D], got {tokens.shape}")
++        return tokens
++
++
++def decode_episode(episode) -> Dict[str, np.ndarray]:
++    """One RLDS episode -> stacked numpy arrays. N frames <-> N actions <-> N states (verified)."""
++    frames = {cam: [] for cam in CAMERA_ORDER}
++    states: List[np.ndarray] = []
++    actions: List[np.ndarray] = []
++    instruction = ""
++    for step in episode["steps"]:
++        obs = step["observation"]
++        for cam in CAMERA_ORDER:
++            frames[cam].append(obs[RLDS_IMAGE_KEY[cam]].numpy())
++        states.append(obs["state"].numpy())
++        actions.append(step["action"].numpy())
++        if not instruction:
++            instruction = step["language_instruction"].numpy().decode("utf-8")
++
++    out = {cam: np.stack(frames[cam]) for cam in CAMERA_ORDER}
++    out["state"] = np.stack(states).astype(np.float32)
++    out["action"] = np.stack(actions).astype(np.float32)
++    out["instruction"] = instruction
++    return out
++
++
++def prepare_views(
++    episode: Dict[str, np.ndarray], img_size: int, camera_params: dict
++) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
++    """Resize both views to `img_size` and build the matching per-frame K / camera-to-world.
++
++    Resizing goes through `datalib.dataset.resize_image` (cv2 INTER_LINEAR) and
++    `resize_intrinsics`, because that is the exact path `ManiSkillTrajectoryDataset.read_frames`
++    takes -- i.e. what the RLA autoencoder was trained on. Do NOT swap in `tf.image.resize`
++    (lanczos3), which is what VLA-Adapter's own eval preprocessing uses.
++
++    Returns ([N, Cam, 3, S, S] uint8, [N, Cam, 3, 3] float32, [N, Cam, 4, 4] float32).
++    """
++    orig_h, orig_w = episode[CAMERA_ORDER[0]].shape[1:3]
++    states = episode["state"]
++    cams = episode_camera_arrays(
++        task_description=episode["instruction"],
++        eef_pos=states[:, :3].astype(np.float64),
++        eef_rot=axis_angle_to_matrix(states[:, 3:6].astype(np.float64)),
++        params=camera_params,
++        height=orig_h,
++        width=orig_w,
++    )
++
++    rgbs, intrinsics, c2w = [], [], []
++    for cam in CAMERA_ORDER:
++        video = episode[cam]  # [N, H, W, 3] uint8
++        resized = np.stack([resize_image(frame, img_size) for frame in video])
++        rgbs.append(resized.transpose(0, 3, 1, 2))  # [N, 3, S, S]
++
++        k = cams[f"{cam}_intrinsics"][:, 0]  # [N, 3, 3]
++        intrinsics.append(resize_intrinsics(k, orig_h, orig_w, img_size, img_size))
++        # TrajectoryDataset stores camera-to-world under the key `w2c` and never inverts it;
++        # compute_plucker_rays expects camera-to-world, so pass it straight through.
++        c2w.append(convert_extrinsics_3x4_to_4x4(cams[f"{cam}_extrinsics"][:, 0]))
++
++    return (
++        np.stack(rgbs, axis=1),
++        np.stack(intrinsics, axis=1).astype(np.float32),
++        np.stack(c2w, axis=1).astype(np.float32),
++    )
++
++
++def anchored_pairs(num_frames: int, chunk: int) -> np.ndarray:
++    """[N, A] future frame index for each (anchor, chunk-step), clamped to the last frame.
++
++    `min(t + i + 1, N - 1)` matches `chunk_act_obs`'s own
++    `floored_action_chunk_indices = min(max(idx, 0), traj_len - 1)`, so the RLA targets clamp at the
++    tail exactly the way the action chunk does. (There are N frames but only N-1 real transitions:
++    the last action leads nowhere.)
++    """
++    t = np.arange(num_frames)[:, None]
++    i = np.arange(chunk)[None, :]
++    return np.minimum(t + i + 1, num_frames - 1)
++
++
++@torch.no_grad()
++def encode_episode_anchored(
++    enc: RlaLatentEncoder,
++    tokens: torch.Tensor,
++    plucker: torch.Tensor,
++    chunk: int,
++    batch_pairs: int,
++) -> torch.Tensor:
++    """[N, A, Q, D] with z[t, i] = f_enc(s_{min(t+i+1, N-1)} - s_t), anchored on frame t."""
++    num_frames, cams, lp, ch = tokens.shape
++    flat = tokens.reshape(num_frames, cams * lp, ch)
++    future = torch.from_numpy(anchored_pairs(num_frames, chunk)).to(tokens.device)  # [N, A]
++    anchor_idx = torch.arange(num_frames, device=tokens.device, dtype=future.dtype)
++    anchor_idx = anchor_idx[:, None].expand_as(future)
++
++    a_flat, f_flat = anchor_idx.reshape(-1), future.reshape(-1)
++    out = torch.empty(
++        a_flat.numel(), enc.num_tokens, enc.token_dim, device=tokens.device, dtype=torch.float32
++    )
++    for lo in range(0, a_flat.numel(), batch_pairs):
++        hi = min(lo + batch_pairs, a_flat.numel())
++        a, f = a_flat[lo:hi], f_flat[lo:hi]
++        out[lo:hi] = enc.encode(flat[a], flat[f], plucker[a] if plucker is not None else None)
++    return out.reshape(num_frames, chunk, enc.num_tokens, enc.token_dim)
++
++
++@torch.no_grad()
++def encode_episode_consecutive(
++    enc: RlaLatentEncoder,
++    tokens: torch.Tensor,
++    plucker: torch.Tensor,
++    chunk: int,
++    batch_pairs: int,
++) -> torch.Tensor:
++    """[N, A, Q, D] with z[t, i] = f_enc(s_{k+1} - s_k), k = min(t+i, N-2).
++
++    Consecutive latents are shareable across anchors (`z_i(t) == z_0(t+i)`), so only N-1 are
++    computed and then gathered into the same [N, A, ...] layout the anchored mode produces --
++    downstream code cannot tell the two apart.
++    """
++    num_frames, cams, lp, ch = tokens.shape
++    flat = tokens.reshape(num_frames, cams * lp, ch)
++    num_pairs = max(num_frames - 1, 1)
++    base = torch.empty(
++        num_pairs, enc.num_tokens, enc.token_dim, device=tokens.device, dtype=torch.float32
++    )
++    idx = torch.arange(num_pairs, device=tokens.device)
++    for lo in range(0, num_pairs, batch_pairs):
++        hi = min(lo + batch_pairs, num_pairs)
++        k = idx[lo:hi]
++        nxt = torch.clamp(k + 1, max=num_frames - 1)
++        base[lo:hi] = enc.encode(flat[k], flat[nxt], plucker[k] if plucker is not None else None)
++
++    t = torch.arange(num_frames, device=tokens.device)[:, None]
++    i = torch.arange(chunk, device=tokens.device)[None, :]
++    return base[torch.clamp(t + i, max=num_pairs - 1)]
++
++
++class RunningStats:
++    """Per-(q, d) mean/std accumulated in float64 across the whole corpus."""
++
++    def __init__(self, num_tokens: int, token_dim: int) -> None:
++        self.count = 0
++        self.total = np.zeros((num_tokens, token_dim), dtype=np.float64)
++        self.total_sq = np.zeros((num_tokens, token_dim), dtype=np.float64)
++
++    def update(self, z: np.ndarray) -> None:
++        flat = z.reshape(-1, *z.shape[-2:]).astype(np.float64)
++        self.count += flat.shape[0]
++        self.total += flat.sum(axis=0)
++        self.total_sq += (flat**2).sum(axis=0)
++
++    def finalize(self) -> dict:
++        if self.count == 0:
++            raise RuntimeError("no latents were accumulated; nothing to write stats for")
++        mean = self.total / self.count
++        var = np.maximum(self.total_sq / self.count - mean**2, 0.0)
++        std = np.sqrt(var)
++        return {
++            "count": int(self.count),
++            "mean": mean.tolist(),
++            "std": std.tolist(),
++            # Floor the std so a dead latent slot cannot blow up the normalised target.
++            "std_floor": 1e-3,
++            "global_rms": float(np.sqrt((self.total_sq.sum()) / (self.count * mean.size))),
++        }
++
++
++def compute_stats(out_root: Path, num_tokens: int, token_dim: int) -> dict:
++    """Per-(q, d) statistics over every `ep_*.npy` present under `out_root`.
++
++    A final pass over the files, not an accumulator threaded through extraction, because extraction
++    skips episodes that already exist: accumulating inline would silently compute the statistics
++    from only the episodes a *resumed* run happened to write, and every target would then be
++    normalised against the wrong mean/std.
++    """
++    stats = RunningStats(num_tokens, token_dim)
++    files = sorted(out_root.glob("*/ep_*.npy"))
++    for idx, path in enumerate(files):
++        stats.update(np.load(path))
++        if idx % 200 == 0:
++            print(f"  stats {idx + 1}/{len(files)}", flush=True)
++    print(f"  stats over {len(files)} episodes, {stats.count} frames")
++    return stats.finalize()
++
++
++def write_keys(path: Path, keys: Dict[str, dict]) -> None:
++    """Atomic-ish write, so an interrupt cannot leave a half-written keys.json behind."""
++    tmp = path.with_suffix(".json.tmp")
++    tmp.write_text(json.dumps(keys, indent=1, sort_keys=True))
++    tmp.replace(path)
++
++
++def extract_suite(
++    suite: str,
++    enc: RlaLatentEncoder,
++    args: argparse.Namespace,
++    camera_params: dict,
++) -> dict:
++    rlds_dir = REPO_ROOT / args.rlds_root / SUITES[suite] / "1.0.0"
++    if not rlds_dir.is_dir():
++        print(f"[skip] {suite}: {rlds_dir} does not exist")
++        return {}
++
++    out_dir = Path(args.out) / suite
++    out_dir.mkdir(parents=True, exist_ok=True)
++    keys_path = out_dir / "keys.json"
++    keys: Dict[str, dict] = {}
++    if keys_path.exists() and not args.overwrite:
++        keys = json.loads(keys_path.read_text())
++
++    builder = tfds.builder_from_directory(str(rlds_dir))
++    total = builder.info.splits["train"].num_examples
++    if args.limit > 0:
++        total = min(total, args.limit)
++    print(f"[{suite}] {total} episodes -> {out_dir}")
++
++    encode = encode_episode_anchored if args.pairs == "anchored" else encode_episode_consecutive
++    started = time.time()
++    num_written = 0
++    for ep_idx, raw in enumerate(builder.as_dataset(split=f"train[:{total}]", shuffle_files=False)):
++        rel = f"ep_{ep_idx:06d}.npy"
++        target = out_dir / rel
++        episode = decode_episode(raw)
++        key = episode_key(episode["state"])
++        num_frames = len(episode["state"])
++        if key in keys and keys[key]["file"] != rel:
++            raise RuntimeError(
++                f"[{suite}] state hash collision: {key} maps to both {keys[key]['file']} and {rel}"
++            )
++        keys[key] = {"file": rel, "episode_index": ep_idx, "traj_len": num_frames}
++
++        if target.exists() and not args.overwrite:
++            continue
++
++        rgbs, intrinsics, c2w = prepare_views(episode, args.img_size, camera_params)
++        tokens, patch_hw = enc.dino_tokens(rgbs)
++
++        plucker = None
++        if enc.expects_plucker:
++            rays = compute_plucker_rays(
++                intrinsics=torch.from_numpy(intrinsics).to(enc.device),
++                cam2world=torch.from_numpy(c2w).to(enc.device),
++                patch_hw=patch_hw,
++                image_hw=(args.img_size, args.img_size),
++            )  # [N, Cam, Lp, 6]
++            plucker = rays.reshape(rays.shape[0], -1, 6)
++
++        z = encode(enc, tokens, plucker, args.chunk, args.batch_pairs)
++        z_np = z.detach().float().cpu().numpy()
++        np.save(target, z_np.astype(np.float16))
++        num_written += 1
++        if ep_idx % 25 == 0 or ep_idx == total - 1:
++            rate = (ep_idx + 1) / max(time.time() - started, 1e-6)
++            print(
++                f"  [{suite}] {ep_idx + 1}/{total}  N={num_frames}  "
++                f"z={tuple(z_np.shape)}  {rate:.2f} ep/s",
++                flush=True,
++            )
++
++        del tokens, plucker, z
++        if ep_idx % 50 == 0:
++            torch.cuda.empty_cache()
++            # Flush the index as we go: extraction takes hours, and a run interrupted before the
++            # end would otherwise leave the .npy files with no keys.json to join them by --
++            # unusable, and invisible to `verify_rla_targets.py --sidecar`.
++            write_keys(keys_path, keys)
++
++    write_keys(keys_path, keys)
++    print(f"[{suite}] wrote {num_written} new episodes ({len(keys)} keys total)")
++    return {"num_episodes": len(keys), "num_written": num_written}
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    parser.add_argument("--rla-config", default="configs/rla/16x64_libero.yaml")
++    parser.add_argument("--rla-run", default=None, help="RLA autoencoder run dir holding ckpts/")
++    parser.add_argument("--step", type=int, default=None, help="checkpoint step (default: latest)")
++    parser.add_argument("--out", required=True, help="sidecar root, e.g. data/libero_rla/16x64-<stamp>")
++    parser.add_argument("--rlds-root", default="data/libero")
++    parser.add_argument("--camera-params", default=CAMERA_PARAMS_DEFAULT)
++    parser.add_argument("--suites", nargs="+", default=["all"], choices=["all"] + list(SUITES))
++    parser.add_argument("--chunk", type=int, default=8, help="A; must equal NUM_ACTIONS_CHUNK")
++    parser.add_argument("--img-size", type=int, default=224)
++    parser.add_argument("--pairs", choices=["anchored", "consecutive"], default="anchored")
++    parser.add_argument("--batch-pairs", type=int, default=64, help="encoder pairs per forward")
++    parser.add_argument("--limit", type=int, default=-1, help="only the first N episodes per suite")
++    parser.add_argument("--device", default="cuda")
++    parser.add_argument(
++        "--random-encoder",
++        action="store_true",
++        help="skip the checkpoint and keep f_enc randomly initialised -- for exercising the "
++        "pipeline before the autoencoder is trained. z is meaningless.",
++    )
++    parser.add_argument("--overwrite", action="store_true", help="re-extract existing episodes")
++    args = parser.parse_args()
++
++    if args.device.startswith("cuda") and not torch.cuda.is_available():
++        raise SystemExit("no CUDA device: DINOv3 + f_enc need a GPU (pass --device cpu to force)")
++
++    enc = RlaLatentEncoder(
++        config_path=args.rla_config,
++        run_dir=args.rla_run,
++        step=args.step,
++        device=args.device,
++        random_encoder=args.random_encoder,
++    )
++    camera_params = load_camera_params(args.camera_params)
++
++    out_root = Path(args.out)
++    out_root.mkdir(parents=True, exist_ok=True)
++    suites = list(SUITES) if "all" in args.suites else args.suites
++
++    per_suite = {}
++    for suite in suites:
++        result = extract_suite(suite, enc, args, camera_params)
++        if result:
++            per_suite[suite] = result
++
++    # Authoritative final pass over everything on disk -- see compute_stats.
++    print("\ncomputing normalisation statistics")
++    (out_root / "stats.json").write_text(
++        json.dumps(compute_stats(out_root, enc.num_tokens, enc.token_dim))
++    )
++    (out_root / "manifest.json").write_text(
++        json.dumps(
++            {
++                "rla_config": args.rla_config,
++                "rla_config_sha1": hashlib.sha1(
++                    Path(args.rla_config).read_bytes()
++                ).hexdigest(),
++                "rla_run": args.rla_run,
++                "checkpoint": enc.loaded_ckpt,
++                "random_encoder": bool(args.random_encoder),
++                "chunk": args.chunk,
++                "num_tokens": enc.num_tokens,
++                "token_dim": enc.token_dim,
++                "img_size": args.img_size,
++                "pairs": args.pairs,
++                "cameras": list(CAMERA_ORDER),
++                "inverse_input_mode": enc.inverse_input_mode,
++                "dino_channels": enc.dino_channels,
++                "rlds_root": args.rlds_root,
++                "suites": per_suite,
++            },
++            indent=1,
++        )
++    )
++    print(f"\ndone -> {out_root}")
++    if args.random_encoder:
++        print("WARNING: --random-encoder was used; these latents are noise, not RLA targets.")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/scripts/run_libero_eval.sh b/scripts/run_libero_eval.sh
+index a06a936..821e604 100755
+--- a/scripts/run_libero_eval.sh
++++ b/scripts/run_libero_eval.sh
+@@ -18,6 +18,12 @@
+ #   NUM_TRIALS=n        trials per task
+ #   GPUS="0 1 2 3"      GPUs to spread the suites over in `full` mode
+ #   SAVE_VIDEOS=True    write an MP4 per episode (off by default -- 500 encodes/suite is slow)
++#   ARM=baseline|rla|dino|univla
++#                       must match the arm the checkpoint was TRAINED with. Resolved in
++#                       scripts/vla_adapter_env.sh into RLA_STEPS/RLA_QUERIES/RLA_DIM; the action
++#                       head is rebuilt from those and loaded strict, so a mismatch fails at load
++#                       rather than degrading silently. No RLA_SIDECAR needed here -- z is an
++#                       output, never an input. See docs/rla-vla-adapter-runbook.md.
+ #
+ # Output is namespaced per machine, because runs/ is an NFS symlink that several hosts share:
+ #   runs/vla-adapter-eval/$EVAL_TAG/logs/             stdout + the eval's own EVAL-*.txt
+diff --git a/scripts/train_libero.sh b/scripts/train_libero.sh
+index 4d12218..f5b1b41 100755
+--- a/scripts/train_libero.sh
++++ b/scripts/train_libero.sh
+@@ -36,6 +36,12 @@
+ #   NCCL_FAST=0/1    enable InfiniBand + GPU P2P for DDP all-reduce (default 1). Forces
+ #                    NCCL_IB_DISABLE=0, NCCL_P2P_DISABLE=0, NCCL_SOCKET_IFNAME=ib0.
+ #   IB_IFNAME        InfiniBand interface for NCCL_SOCKET_IFNAME (default ib0)
++#   ARM              ablation arm: baseline (default, vanilla VLA-Adapter) | rla | dino | univla.
++#                    Anything but baseline needs RLA_SIDECAR=<dir from
++#                    scripts/extract_rla_latents.py> and appends the RLA output-query tokens to the
++#                    policy head. Resolved in scripts/vla_adapter_env.sh so eval matches. See
++#                    docs/rla-vla-adapter-runbook.md.
++#   LAMBDA_RLA       weight on the auxiliary RLA loss (default 1.0; ignored when ARM=baseline)
+ #
+ # Effective batch = GPU_BATCH * (#GPUs) * grad_accum. The faithful Pro recipe is eff batch 64,
+ # 100k steps, LoRA rank 64, lr 2e-4 (4xH100, batch 16). We hold eff batch 64 across GPU counts by
+@@ -86,8 +92,21 @@ case "$PRESET" in
+     *) echo "usage: $0 <smoke|fast|med|pro> <spatial|object|goal|long|all>" >&2; exit 2 ;;
+ esac
+ : "${LR:=2e-4}" "${LORA_RANK:=64}" "${EVAL_AFTER:=1}" "${EVAL_TRIALS:=50}" "${SAVE_LATEST_ONLY:=0}"
++: "${LAMBDA_RLA:=1.0}"
+ save_latest="False"; [ "$SAVE_LATEST_ONLY" = "1" ] && save_latest="True"
+ 
++# ARM / RLA_* were resolved by vla_adapter_env.sh. Training (unlike eval) genuinely needs the
++# targets, so fail here rather than 200 steps in.
++if [ "${RLA_STEPS:-0}" != "0" ] && [ -z "${RLA_SIDECAR:-}" ]; then
++    echo "ARM=$ARM needs RLA_SIDECAR=<dir>. Build one with:" >&2
++    echo "  .venv/bin/python scripts/extract_rla_latents.py --rla-run <run> --out data/libero_rla/<tag>" >&2
++    exit 2
++fi
++if [ "${RLA_STEPS:-0}" != "0" ] && [ ! -f "${RLA_SIDECAR}/manifest.json" ]; then
++    echo "RLA_SIDECAR=$RLA_SIDECAR has no manifest.json -- not a sidecar directory" >&2
++    exit 2
++fi
++
+ # wandb: online sync by default for real runs; the smoke/debug preset stays offline. WANDB_MODE
+ # overrides either way. Entity is left to the environment (WANDB_ENTITY) / your wandb login -- we do
+ # not pass --wandb_entity, so finetune.py's placeholder resolves to None and wandb reads the env.
+@@ -121,12 +140,18 @@ train_suite() {
+     local suite="$1"
+     local dataset Suite eval_suite
+     read -r dataset Suite eval_suite <<<"$(suite_spec "$suite")"
++    # The arm goes in the run_id so the four ablation arms produce distinct checkpoint dirs and
++    # wandb runs instead of overwriting each other. baseline keeps the historical name.
+     local run_id="LIBERO-${Suite}-Pro-repro"
++    [ "$ARM" != "baseline" ] && run_id="LIBERO-${Suite}-Pro-${ARM}"
+     local stamp log
+     stamp="$(date +%Y%m%d_%H%M%S)"
+-    log="$LOG_DIR/${suite}--${PRESET}--${stamp}.log"
++    log="$LOG_DIR/${suite}--${ARM}--${PRESET}--${stamp}.log"
+ 
+-    echo "==> train [$suite] preset=$PRESET  GPUs=$GPU_CSV (x$NGPU)  gpu_batch=$GPU_BATCH x grad_accum=$grad_accum -> eff batch $actual_eff  steps=$MAX_STEPS"
++    echo "==> train [$suite] arm=$ARM preset=$PRESET  GPUs=$GPU_CSV (x$NGPU)  gpu_batch=$GPU_BATCH x grad_accum=$grad_accum -> eff batch $actual_eff  steps=$MAX_STEPS"
++    if [ "${RLA_STEPS:-0}" != "0" ]; then
++        echo "    rla: ${RLA_STEPS}x${RLA_QUERIES}x${RLA_DIM} tokens, lambda=$LAMBDA_RLA, sidecar=$RLA_SIDECAR"
++    fi
+     if [ "$actual_eff" -ne "$EFF_BATCH" ]; then
+         echo "    note: requested EFF_BATCH=$EFF_BATCH not divisible by GPU_BATCH*NGPU=$micro; using $actual_eff"
+     fi
+@@ -176,8 +201,9 @@ train_suite() {
+         --save_freq "$SAVE_FREQ" \
+         --save_latest_checkpoint_only "$save_latest" \
+         --merge_lora_during_training True \
++        --lambda_rla "$LAMBDA_RLA" \
+         --wandb_project "$WANDB_PROJECT" \
+-        --run_id_note "$PRESET-$TRAIN_TAG" \
++        --run_id_note "$ARM-$PRESET-$TRAIN_TAG" \
+         2>&1 | tee "$log"
+ 
+     # Locate the checkpoint to evaluate. --save_latest_checkpoint_only writes straight to run_dir;
+@@ -197,8 +223,10 @@ train_suite() {
+     echo "    final checkpoint: $(basename "$last_ckpt")"
+ 
+     if [ "$EVAL_AFTER" = "1" ]; then
+-        echo "==> eval [$suite] on $(basename "$last_ckpt")"
+-        USE_PRO_VERSION=True CKPT_NAME="$(basename "$last_ckpt")" EVAL_LABEL="repro-$PRESET" \
++        echo "==> eval [$suite] arm=$ARM on $(basename "$last_ckpt")"
++        # ARM is exported, so run_libero_eval.sh -> vla_adapter_env.sh resolves the same RLA_STEPS /
++        # RLA_QUERIES / RLA_DIM. It has to: get_action_head() rebuilds the head and loads it strict.
++        USE_PRO_VERSION=True CKPT_NAME="$(basename "$last_ckpt")" EVAL_LABEL="$ARM-$PRESET" \
+             NUM_TRIALS="$EVAL_TRIALS" GPUS="${gpu_arr[0]}" \
+             "$REPO_ROOT/scripts/run_libero_eval.sh" "$eval_suite"
+     fi
+diff --git a/scripts/verify_rla_targets.py b/scripts/verify_rla_targets.py
+new file mode 100644
+index 0000000..330a750
+--- /dev/null
++++ b/scripts/verify_rla_targets.py
+@@ -0,0 +1,783 @@
++#!/usr/bin/env python
++"""Gates for the RLA -> VLA-Adapter auxiliary-target integration.
++
++The design note this implements got several things about the pipeline wrong, all of which would
++have failed *silently* (see docs/rla-vla-adapter.md §2). These gates turn each of those into a hard
++error. Gates 1, 2, 3, 4, 5 and 7 run **without a trained RLA autoencoder**, which is the point: the
++plumbing can be locked down before `f_enc` exists, and re-running the extractor is then the only
++delta.
++
++    Gate 1  frames and actions are index-aligned; action[k] drives s[k] -> s[k+1]
++    Gate 2  sha1(state) is a per-episode bijection (and episode_metadata/file_path is NOT)
++    Gate 3  end-to-end index alignment through the real RLDSDataset, via a synthetic sidecar
++            whose values encode (episode_index, t, i)          <-- the one that matters
++    Gate 4  RLA_STEPS=0 is byte-identical to upstream: same key set, same outputs, strict load
++            of a released LIBERO-*-Pro action head
++    Gate 5  RLA_STEPS=8 gives the right shapes and finite grads, and *does* change the action
++            output -- so the baseline arm must be RLA_STEPS=0, not lambda_rla=0
++    Gate 6  the extractor's encode path equals RlaAutoencoderMultiViewTrainer.inference_batch
++    Gate 7  the recomputed dataset statistics match the released reference, i.e. editing
++            libero_dataset_transform did not perturb action/proprio normalisation
++
++Usage (after `source scripts/vla_adapter_env.sh`):
++
++    .venv/bin/python scripts/verify_rla_targets.py                       # 1,2,3,4,5,7
++    .venv/bin/python scripts/verify_rla_targets.py --gates 3
++    .venv/bin/python scripts/verify_rla_targets.py --sidecar data/libero_rla/16x64-<stamp>
++    .venv/bin/python scripts/verify_rla_targets.py --gates 6 --rla-run runs/<rla-run>/<stamp>
++
++Gates 3/4/5 read RLA_STEPS, which prismatic/vla/constants.py resolves at import time, so each runs
++in its own subprocess with the right environment. That is also what a real arm switch does.
++"""
++
++import argparse
++import hashlib
++import json
++import os
++import shutil
++import subprocess
++import sys
++import tempfile
++from pathlib import Path
++
++import numpy as np
++
++REPO_ROOT = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(REPO_ROOT))
++sys.path.insert(0, str(REPO_ROOT / "third_party" / "VLA-Adapter"))
++
++# The commit that vendored VLA-Adapter in-tree. Gate 4 diffs the current action head against the
++# version at this commit, which is upstream + the eight porting patches and nothing else.
++UPSTREAM_REF = "4e05436"
++DEFAULT_SUITE = "libero_spatial"
++RELEASED_CKPT = "runs/weights/vla-adapter/LIBERO-Spatial-Pro"
++
++GREEN, RED, YELLOW, BOLD, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[1m", "\033[0m"
++
++
++def banner(msg: str) -> None:
++    print(f"\n{BOLD}=== {msg}{RESET}", flush=True)
++
++
++def ok(msg: str) -> None:
++    print(f"  {GREEN}OK{RESET}  {msg}", flush=True)
++
++
++def skip(msg: str) -> None:
++    print(f"  {YELLOW}SKIP{RESET}  {msg}", flush=True)
++
++
++def pin_tf_to_cpu():
++    """TF decodes TFRecords, torch owns the GPU. Must happen before TF grabs a device."""
++    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
++    import tensorflow as tf
++
++    tf.config.set_visible_devices([], "GPU")
++    # Grappler's CropAndResize cost-model warnings are harmless and drown out the gate output.
++    tf.get_logger().setLevel("ERROR")
++    try:
++        from absl import logging as absl_logging
++
++        absl_logging.set_verbosity(absl_logging.ERROR)
++    except ImportError:
++        pass
++    return tf
++
++
++def rlds_dir(suite: str) -> Path:
++    return REPO_ROOT / "data" / "libero" / f"{suite}_no_noops" / "1.0.0"
++
++
++def iter_state_only(suite: str, limit: int = -1):
++    """Yield (episode_index, states, actions, file_path) without decoding any JPEG."""
++    pin_tf_to_cpu()
++    import tensorflow_datasets as tfds
++
++    builder = tfds.builder_from_directory(str(rlds_dir(suite)))
++    total = builder.info.splits["train"].num_examples
++    if limit > 0:
++        total = min(total, limit)
++    no_decode = tfds.decode.SkipDecoding()
++    dataset = builder.as_dataset(
++        split=f"train[:{total}]",
++        shuffle_files=False,
++        decoders={"steps": {"observation": {"image": no_decode, "wrist_image": no_decode}}},
++    )
++    for ep_idx, episode in enumerate(dataset):
++        steps = list(episode["steps"])
++        states = np.stack([s["observation"]["state"].numpy() for s in steps]).astype(np.float32)
++        actions = np.stack([s["action"].numpy() for s in steps]).astype(np.float32)
++        yield ep_idx, states, actions, episode["episode_metadata"]["file_path"].numpy().decode()
++
++
++def episode_key(states: np.ndarray) -> str:
++    return hashlib.sha1(np.ascontiguousarray(states, dtype=np.float32).tobytes()).hexdigest()
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 1 -- frame/action alignment
++# --------------------------------------------------------------------------------------------
++def gate_1_alignment(args) -> None:
++    banner("Gate 1: N frames <-> N actions, and action[k] drives s[k] -> s[k+1]")
++    pin_tf_to_cpu()
++    import tensorflow_datasets as tfds
++
++    builder = tfds.builder_from_directory(str(rlds_dir(args.suite)))
++    limit = args.limit if args.limit > 0 else 6
++    dataset = builder.as_dataset(split=f"train[:{limit}]", shuffle_files=False)
++
++    lag_corr = {lag: [] for lag in (-2, -1, 0, 1, 2)}
++    for episode in dataset:
++        steps = list(episode["steps"])
++        num = len(steps)
++        images = np.stack([s["observation"]["image"].numpy() for s in steps])
++        wrists = np.stack([s["observation"]["wrist_image"].numpy() for s in steps])
++        states = np.stack([s["observation"]["state"].numpy() for s in steps])
++        actions = np.stack([s["action"].numpy() for s in steps])
++        assert len(images) == len(wrists) == len(states) == len(actions) == num, (
++            f"ragged episode: {len(images)}/{len(wrists)}/{len(states)}/{len(actions)} vs {num}"
++        )
++
++        # The discriminating test. The end-effector version (cos between the action's xyz and the
++        # achieved delta) does NOT discriminate: consecutive OSC deltas are too correlated for a
++        # one-step lag to look different. The gripper does, because the command is near-binary.
++        width = states[:, 6] - states[:, 7]
++        dwidth = np.diff(width)
++        grip = actions[:, 6]
++        for lag in lag_corr:
++            a = grip[max(0, -lag) : len(grip) - max(0, lag)]
++            d = dwidth[max(0, lag) : len(dwidth) - max(0, -lag)]
++            n = min(len(a), len(d))
++            a, d = a[:n], d[:n]
++            if a.std() > 0 and d.std() > 0:
++                lag_corr[lag].append(np.corrcoef(a, d)[0, 1])
++
++    means = {lag: float(np.nanmean(v)) for lag, v in lag_corr.items() if v}
++    for lag in sorted(means):
++        print(f"      corr(gripper_cmd[k], width[k+1+lag] - width[k+lag])  lag {lag:+d}: {means[lag]:+.4f}")
++    peak = min(means, key=lambda k: means[k])  # the correlation is negative: close -> width shrinks
++    assert peak == 0, (
++        f"gripper-lag correlation peaks at lag {peak:+d}, not 0 -- the frame/action convention is "
++        "NOT action[k]: s[k] -> s[k+1], and every RLA target is off by one."
++    )
++    ok(f"{limit} episodes: N frames == N actions == N states; gripper-lag peaks at lag 0")
++    ok("=> N frames but only N-1 real transitions; tail targets must clamp to N-1")
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 2 -- the join key
++# --------------------------------------------------------------------------------------------
++def gate_2_join_key(args) -> None:
++    banner("Gate 2: sha1(observation/state) is a per-episode bijection")
++    keys, paths, lengths = {}, {}, {}
++    for ep_idx, states, _actions, file_path in iter_state_only(args.suite, args.limit):
++        key = episode_key(states)
++        assert key not in keys, (
++            f"state-hash collision: episodes {keys[key]} and {ep_idx} hash to {key}"
++        )
++        keys[key] = ep_idx
++        lengths[ep_idx] = len(states)
++        paths.setdefault(file_path, []).append(ep_idx)
++    ok(f"{len(keys)} distinct keys over {len(keys)} episodes in {args.suite} -- bijective")
++
++    shared = {p: e for p, e in paths.items() if len(e) > 1}
++    assert shared, (
++        "episode_metadata/file_path looks unique here; the docs claim it is not. Re-check before "
++        "relying on either as a key."
++    )
++    example = next(iter(shared.items()))
++    ok(
++        f"episode_metadata/file_path is NOT unique ({len(shared)} paths shared by >1 episode, "
++        f"e.g. {len(example[1])} episodes share ...{example[0][-46:]}) -- correctly unused as a key"
++    )
++
++    if not args.sidecar:
++        skip("no --sidecar given; not cross-checking keys.json")
++        return
++
++    keys_path = Path(args.sidecar) / args.suite / "keys.json"
++    assert keys_path.exists(), f"{keys_path} missing -- run scripts/extract_rla_latents.py first"
++    sidecar_keys = json.loads(keys_path.read_text())
++    missing = [k for k in keys if k not in sidecar_keys]
++    assert not missing, f"{len(missing)} episodes have no sidecar entry (first: {missing[0]})"
++    for key, ep_idx in keys.items():
++        entry = sidecar_keys[key]
++        assert entry["episode_index"] == ep_idx, (
++            f"sidecar says key {key} is episode {entry['episode_index']}, RLDS says {ep_idx}"
++        )
++        assert entry["traj_len"] == lengths[ep_idx], (
++            f"episode {ep_idx}: sidecar traj_len={entry['traj_len']}, RLDS has {lengths[ep_idx]}"
++        )
++    ok(f"all {len(keys)} keys present in the sidecar with matching episode_index and traj_len")
++
++    # The normalisation statistics must cover every frame on disk. This caught a real bug: the
++    # extractor used to accumulate inline, which silently skipped episodes a *resumed* run did not
++    # rewrite, so every target got normalised against statistics from a subset of the corpus.
++    # Only meaningful when --limit is not restricting the RLDS side.
++    if args.limit <= 0:
++        manifest = json.loads((Path(args.sidecar) / "manifest.json").read_text())
++        stats = json.loads((Path(args.sidecar) / "stats.json").read_text())
++        expected = sum(v["traj_len"] for v in sidecar_keys.values()) * manifest["chunk"]
++        assert stats["count"] == expected, (
++            f"stats.json covers {stats['count']} rows but the sidecar holds {expected} "
++            f"({sum(v['traj_len'] for v in sidecar_keys.values())} frames x {manifest['chunk']}). "
++            "Re-run the extractor: the normalisation statistics are computed from a subset."
++        )
++        ok(f"stats.json covers all {expected} rows ({expected // manifest['chunk']} frames x "
++           f"{manifest['chunk']} chunk steps)")
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 3 -- end-to-end index alignment through the real dataloader
++# --------------------------------------------------------------------------------------------
++SYNTHETIC_Q, SYNTHETIC_D, SYNTHETIC_A = 1, 4, 8
++
++
++def build_synthetic_sidecar(out: Path, suite: str) -> int:
++    """A sidecar whose values spell out (episode_index, t, i, traj_len).
++
++    Always covers the **whole** suite -- `--limit` deliberately does not apply here. Partial
++    coverage would leave most sampled frames as zero-filled misses, and the gate would then be
++    asserting against zeros instead of against the join.
++
++    Q=1/D=4 instead of the real 16/64 is what makes full coverage cheap (<5 MB for a suite). It also
++    exercises RlaSidecar's shape-consistency check against the manifest.
++    """
++    suite_dir = out / suite
++    suite_dir.mkdir(parents=True, exist_ok=True)
++    keys = {}
++    for ep_idx, states, _actions, _path in iter_state_only(suite, limit=-1):
++        num = len(states)
++        z = np.zeros((num, SYNTHETIC_A, SYNTHETIC_Q, SYNTHETIC_D), dtype=np.float16)
++        z[:, :, 0, 0] = ep_idx
++        z[:, :, 0, 1] = np.arange(num)[:, None]
++        z[:, :, 0, 2] = np.arange(SYNTHETIC_A)[None, :]
++        z[:, :, 0, 3] = num
++        np.save(suite_dir / f"ep_{ep_idx:06d}.npy", z)
++        keys[episode_key(states)] = {
++            "file": f"ep_{ep_idx:06d}.npy",
++            "episode_index": ep_idx,
++            "traj_len": num,
++        }
++    (suite_dir / "keys.json").write_text(json.dumps(keys, indent=1, sort_keys=True))
++    # Identity normalisation, so the encoded integers survive RlaSidecar.lookup().
++    (out / "stats.json").write_text(
++        json.dumps(
++            {
++                "count": 0,
++                "mean": np.zeros((SYNTHETIC_Q, SYNTHETIC_D)).tolist(),
++                "std": np.ones((SYNTHETIC_Q, SYNTHETIC_D)).tolist(),
++                "std_floor": 1e-3,
++                "global_rms": 1.0,
++            }
++        )
++    )
++    (out / "manifest.json").write_text(
++        json.dumps(
++            {
++                "chunk": SYNTHETIC_A,
++                "num_tokens": SYNTHETIC_Q,
++                "token_dim": SYNTHETIC_D,
++                "random_encoder": False,
++                "synthetic": True,
++                "pairs": "anchored",
++            }
++        )
++    )
++    return len(keys)
++
++
++def _child_gate_3(args) -> None:
++    """Runs with RLA_STEPS/QUERIES/DIM set for the synthetic sidecar."""
++    pin_tf_to_cpu()  # also quiets grappler, before prismatic imports TF
++    import torch  # noqa: F401
++    from torch.utils.data import DataLoader
++    from transformers import AutoConfig, AutoImageProcessor, AutoProcessor
++
++    from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
++    from prismatic.extern.hf.processing_prismatic import PrismaticImageProcessor, PrismaticProcessor
++    from prismatic.models.backbones.llm.prompting import PurePromptBuilder
++    from prismatic.util.data_utils import PaddedCollatorForActionPrediction
++    from prismatic.vla.action_tokenizer import ActionTokenizer
++    from prismatic.vla.constants import RLA_DIM, RLA_QUERIES, RLA_STEPS
++    from prismatic.vla.datasets import RLDSBatchTransform, RLDSDataset
++
++    AutoConfig.register("openvla", OpenVLAConfig)
++    AutoImageProcessor.register(OpenVLAConfig, PrismaticImageProcessor)
++    AutoProcessor.register(OpenVLAConfig, PrismaticProcessor)
++
++    config_dir = REPO_ROOT / "third_party" / "VLA-Adapter" / "pretrained_models" / "configs"
++    processor = AutoProcessor.from_pretrained(str(config_dir), trust_remote_code=True)
++    batch_transform = RLDSBatchTransform(
++        ActionTokenizer(processor.tokenizer),
++        processor.tokenizer,
++        image_transform=processor.image_processor.apply_transform,
++        prompt_builder_fn=PurePromptBuilder,
++        use_wrist_image=True,
++        use_proprio=True,
++        use_minivlm=True,
++    )
++    # Relative "data/libero" with cwd=third_party/VLA-Adapter, exactly as scripts/train_libero.sh
++    # invokes finetune.py. This is not cosmetic: get_dataset_statistics hashes `str(builder.info)`,
++    # which embeds the data_dir *string*, so a different spelling of the same physical directory
++    # forces a fresh statistics recompute and writes a second cache file.
++    dataset = RLDSDataset(
++        Path("data/libero"),
++        f"{args.suite}_no_noops",
++        batch_transform,
++        resize_resolution=(224, 224),
++        shuffle_buffer_size=1000,
++        image_aug=True,
++    )
++    collator = PaddedCollatorForActionPrediction(
++        processor.tokenizer.model_max_length, processor.tokenizer.pad_token_id, padding_side="right"
++    )
++    loader = DataLoader(dataset, batch_size=8, sampler=None, collate_fn=collator, num_workers=0)
++
++    from prismatic.vla import rla_targets
++
++    num_checked, episodes, timesteps = 0, set(), set()
++    for batch_idx, batch in enumerate(loader):
++        assert "rla" in batch, "the collator did not emit 'rla'"
++        rla = batch["rla"]
++        assert rla.shape[1:] == (RLA_STEPS, RLA_QUERIES * RLA_DIM), rla.shape
++        z = rla.reshape(rla.shape[0], RLA_STEPS, RLA_QUERIES, RLA_DIM).numpy()
++        ep, t, i, n = z[:, :, 0, 0], z[:, :, 0, 1], z[:, :, 0, 2], z[:, :, 0, 3]
++
++        # Check misses first: a zero-filled row would otherwise trip the axis assertion below with
++        # a much less informative message.
++        assert rla_targets.get_sidecar().num_misses == 0, (
++            f"{rla_targets.get_sidecar().num_misses} episode(s) missed the sidecar by batch "
++            f"{batch_idx}. Either the join is broken, or the sidecar does not cover every episode "
++            "of this suite (a partial sidecar makes this gate meaningless)."
++        )
++
++        assert np.array_equal(i, np.broadcast_to(np.arange(RLA_STEPS), i.shape)), (
++            f"the chunk axis is scrambled -- expected 0..{RLA_STEPS - 1} per row, got\n{i[:2]}"
++        )
++        assert (ep == ep[:, :1]).all(), "episode index varies along the chunk axis"
++        assert (t == t[:, :1]).all(), "timestep varies along the chunk axis"
++        # chunk_act_obs truncates to effective_traj_len = N - (NUM_ACTIONS_CHUNK - 1).
++        assert (t[:, 0] >= 0).all() and (t[:, 0] <= n[:, 0] - RLA_STEPS).all(), (
++            f"timestep outside the effective range: t={t[:, 0]} n={n[:, 0]}"
++        )
++        episodes.update(ep[:, 0].astype(int).tolist())
++        timesteps.update(t[:, 0].astype(int).tolist())
++        num_checked += rla.shape[0]
++        if batch_idx + 1 >= args.batches:
++            break
++
++    assert rla_targets.get_sidecar().num_misses == 0, (
++        f"{rla_targets.get_sidecar().num_misses} episodes missed the sidecar -- the join is broken "
++        "or the synthetic sidecar does not cover the whole suite"
++    )
++    assert len(episodes) > 5 and len(timesteps) > 20, (
++        f"suspiciously little variety: {len(episodes)} episodes, {len(timesteps)} timesteps"
++    )
++    print(
++        f"  {GREEN}OK{RESET}  {num_checked} samples, {len(episodes)} distinct episodes, "
++        f"{len(timesteps)} distinct timesteps (t in [{min(timesteps)}, {max(timesteps)}]), 0 misses"
++    )
++
++
++def gate_3_end_to_end(args) -> None:
++    banner("Gate 3: end-to-end (episode, t, i) alignment through the real RLDSDataset")
++    workdir = Path(tempfile.mkdtemp(prefix="rla_gate3_"))
++    try:
++        num = build_synthetic_sidecar(workdir, args.suite)
++        print(f"      synthetic sidecar: {num} episodes, Q={SYNTHETIC_Q} D={SYNTHETIC_D} -> {workdir}")
++        run_child(
++            "3",
++            args,
++            env={
++                "RLA_STEPS": str(SYNTHETIC_A),
++                "RLA_QUERIES": str(SYNTHETIC_Q),
++                "RLA_DIM": str(SYNTHETIC_D),
++                "RLA_SIDECAR": str(workdir),
++            },
++            cwd=REPO_ROOT / "third_party" / "VLA-Adapter",
++        )
++    finally:
++        shutil.rmtree(workdir, ignore_errors=True)
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 4 / 5 -- the action head
++# --------------------------------------------------------------------------------------------
++def _build_head(module, dim=896):
++    from prismatic.vla.constants import ACTION_DIM
++
++    return module(input_dim=dim, hidden_dim=dim, action_dim=ACTION_DIM, use_pro_version=True)
++
++
++def _head_inputs(dim=896, num_patches=512, batch=2, layers=25):
++    import torch
++
++    from prismatic.vla.constants import NUM_TOKENS
++
++    torch.manual_seed(7)
++    return (
++        torch.randn(batch, layers, num_patches + NUM_TOKENS, dim),
++        torch.randn(batch, 8),
++        torch.nn.Linear(8, dim).to(torch.bfloat16),
++    )
++
++
++def _child_gate_4(args) -> None:
++    """Runs with RLA_STEPS=0. Must be indistinguishable from the pre-RLA code."""
++    import importlib.util
++
++    import torch
++
++    from prismatic.models.action_heads import L1RegressionActionHead as Modified
++    from prismatic.vla.constants import RLA_STEPS
++
++    assert RLA_STEPS == 0, "gate 4 must run with RLA_STEPS=0"
++
++    # (a) bit-identity against the vendored-upstream action head.
++    upstream_src = subprocess.run(
++        ["git", "show", f"{args.upstream_ref}:third_party/VLA-Adapter/prismatic/models/action_heads.py"],
++        cwd=REPO_ROOT, capture_output=True, text=True,
++    )
++    if upstream_src.returncode != 0:
++        skip(f"cannot read action_heads.py at {args.upstream_ref}: {upstream_src.stderr.strip()}")
++    else:
++        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as handle:
++            handle.write(upstream_src.stdout)
++            upstream_path = handle.name
++        try:
++            spec = importlib.util.spec_from_file_location("ah_upstream", upstream_path)
++            upstream = importlib.util.module_from_spec(spec)
++            spec.loader.exec_module(upstream)
++        finally:
++            os.unlink(upstream_path)
++
++        torch.manual_seed(0)
++        head_mod = _build_head(Modified)
++        torch.manual_seed(0)
++        head_up = _build_head(upstream.L1RegressionActionHead)
++
++        assert sorted(head_mod.state_dict()) == sorted(head_up.state_dict()), (
++            "state-dict key sets differ from upstream with RLA_STEPS=0"
++        )
++        for key, value in head_up.state_dict().items():
++            assert torch.equal(value, head_mod.state_dict()[key]), f"init differs at {key}"
++        ok(f"key sets and init weights identical to {args.upstream_ref} ({len(head_up.state_dict())} tensors)")
++
++        hidden, proprio, projector = _head_inputs()
++        for phase in ("Inference", "Training"):
++            torch.manual_seed(99)
++            out_up = head_up.predict_action(hidden, proprio, projector, phase=phase)
++            torch.manual_seed(99)
++            out_mod = head_mod.predict_action(hidden, proprio, projector, phase=phase)
++            assert torch.equal(out_up, out_mod), (
++                f"phase={phase}: output differs from upstream, max |d| = "
++                f"{float((out_up - out_mod).abs().max()):.3e}"
++            )
++        ok("predict_action bit-identical to upstream for phase=Inference and phase=Training")
++
++    # (b) a released checkpoint still loads strict.
++    ckpt_path = REPO_ROOT / args.released_ckpt / "action_head--checkpoint.pt"
++    if not ckpt_path.exists():
++        skip(f"{ckpt_path} not present; not checking the strict load")
++        return
++    raw = torch.load(ckpt_path, map_location="cpu", weights_only=False)
++    state = raw["model_state_dict"] if isinstance(raw, dict) and "model_state_dict" in raw else raw
++    state = {k[7:] if k.startswith("module.") else k: v for k, v in state.items()}
++    _build_head(Modified).load_state_dict(state)  # strict
++    ok(f"released {Path(args.released_ckpt).name} action head loads strict ({len(state)} tensors)")
++
++
++def _child_gate_5(args) -> None:
++    """Runs with RLA_STEPS=NUM_ACTIONS_CHUNK."""
++    import torch
++
++    from prismatic.models.action_heads import L1RegressionActionHead
++    from prismatic.vla.constants import ACTION_DIM, NUM_ACTIONS_CHUNK, RLA_DIM, RLA_QUERIES, RLA_STEPS
++
++    assert RLA_STEPS == NUM_ACTIONS_CHUNK, "gate 5 must run with RLA_STEPS=NUM_ACTIONS_CHUNK"
++
++    torch.manual_seed(0)
++    head = L1RegressionActionHead(input_dim=896, hidden_dim=896, action_dim=ACTION_DIM, use_pro_version=True)
++    rla_keys = [k for k in head.state_dict() if "rla" in k]
++    assert len(rla_keys) == len(head.model.mlp_resnet_blocks) + 4, (
++        f"expected one gating_factor_rla per block plus fc2_rla/layer_norm2_rla, got {rla_keys}"
++    )
++    ok(f"{len(rla_keys)} RLA-specific tensors ({len(head.model.mlp_resnet_blocks)} gates + 2 heads)")
++
++    hidden, proprio, projector = _head_inputs()
++    batch = hidden.shape[0]
++
++    torch.manual_seed(99)
++    action, z_hat = head.predict_action(hidden, proprio, projector, phase="Training", return_rla=True)
++    assert action.shape == (batch, NUM_ACTIONS_CHUNK, ACTION_DIM), action.shape
++    assert z_hat.shape == (batch, RLA_STEPS, RLA_QUERIES * RLA_DIM), z_hat.shape
++    ok(f"action {tuple(action.shape)}, z_hat {tuple(z_hat.shape)}")
++
++    torch.manual_seed(99)
++    action_only = head.predict_action(hidden, proprio, projector, phase="Training")
++    assert torch.is_tensor(action_only), (
++        "predict_action must return the bare action tensor by default -- modeling_prismatic.py "
++        "calls it that way and is deliberately left unmodified"
++    )
++    ok("predict_action(...) without return_rla still returns just the action tensor")
++
++    torch.nn.L1Loss()(z_hat, torch.randn_like(z_hat)).backward()
++    grad_head = head.model.fc2_rla.weight.grad
++    grad_gate = head.model.mlp_resnet_blocks[0].gating_factor_rla.grad
++    assert grad_head is not None and torch.isfinite(grad_head).all() and grad_head.abs().sum() > 0
++    assert grad_gate is not None and torch.isfinite(grad_gate).all()
++    assert head.model.fc2.weight.grad is None, (
++        "the RLA loss reached the action output head; the two branches should be disjoint"
++    )
++    ok(f"aux loss backprops: |grad fc2_rla| = {float(grad_head.abs().sum()):.3f}, "
++       f"|grad gating_factor_rla| = {float(grad_gate.abs().sum()):.2e}, action head untouched")
++
++    # The RLA tokens live in the shared self-attention, so the *action* path changes too. Prove it,
++    # so nobody uses lambda_rla=0 as the control arm.
++    result = subprocess.run(
++        [sys.executable, str(Path(__file__).resolve()), "--_child", "5ref"],
++        cwd=REPO_ROOT, capture_output=True, text=True,
++        env={**os.environ, "RLA_STEPS": "0", "RLA_SIDECAR": ""},
++    )
++    assert result.returncode == 0, f"reference child failed:\n{result.stdout}\n{result.stderr}"
++    baseline = torch.tensor(json.loads(result.stdout.strip().splitlines()[-1]))
++    torch.manual_seed(99)
++    with_rla = head.predict_action(hidden, proprio, projector, phase="Inference")
++    delta = float((baseline - with_rla.detach()).abs().max())
++    assert delta > 1e-6, (
++        "the action output is unchanged by the RLA tokens -- they are not in the shared attention"
++    )
++    ok(f"action output differs from RLA_STEPS=0 by {delta:.4f} even at lambda_rla=0 "
++       f"=> the control arm MUST be RLA_STEPS=0")
++
++
++def _child_gate_5ref() -> None:
++    """Emit the RLA_STEPS=0 action output for gate 5 to compare against. Prints JSON on stdout."""
++    import torch
++
++    from prismatic.models.action_heads import L1RegressionActionHead
++    from prismatic.vla.constants import ACTION_DIM
++
++    torch.manual_seed(0)
++    head = L1RegressionActionHead(input_dim=896, hidden_dim=896, action_dim=ACTION_DIM, use_pro_version=True)
++    hidden, proprio, projector = _head_inputs()
++    torch.manual_seed(99)
++    print(json.dumps(head.predict_action(hidden, proprio, projector, phase="Inference").tolist()))
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 6 -- extractor vs trainer
++# --------------------------------------------------------------------------------------------
++def gate_6_extractor_matches_trainer(args) -> None:
++    banner("Gate 6: the extractor's encode path == RlaAutoencoderMultiViewTrainer.inference_batch")
++    import torch
++    from torch.utils.data import DataLoader
++
++    from src import datasets, models, trainers
++    from src.models.plucker_embedding import compute_plucker_rays
++    from utils.misc import load_config, move_to_device
++
++    sys.path.insert(0, str(REPO_ROOT / "scripts"))
++    from extract_rla_latents import RlaLatentEncoder
++
++    if not torch.cuda.is_available():
++        skip("no GPU; gate 6 needs one for DINOv3")
++        return
++
++    from easydict import EasyDict as edict
++
++    cfg = edict(load_config(args.rla_config))
++    encoder = RlaLatentEncoder(
++        config_path=args.rla_config,
++        run_dir=args.rla_run,
++        step=args.step,
++        device="cuda",
++        random_encoder=args.rla_run is None,
++    )
++
++    # Same weights on both sides: hand the extractor's own encoder to the trainer.
++    model_dict = {
++        name: getattr(models, spec.name)(**spec.args).cuda()
++        for name, spec in cfg.models.items()
++        if name != "encoder"
++    }
++    model_dict["encoder"] = encoder.encoder
++
++    dataset = getattr(datasets, cfg.dataset.name)(None, **cfg.dataset.args)
++    trainer_args = dict(cfg.trainer.args)
++    trainer_args.update(
++        batch_size=args.batch_size, num_workers=0, max_steps=1, image_decoder_ckpt="", load_dir=None
++    )
++    with tempfile.TemporaryDirectory(prefix="rla_gate6_") as output_dir:
++        trainer = getattr(trainers, cfg.trainer.name)(
++            model_dict, dataset, **trainer_args, output_dir=output_dir,
++            step=None, wandb_run=None, val_dataset=None, cfg=cfg,
++        )
++        loader = DataLoader(
++            dataset, batch_size=args.batch_size, shuffle=True, num_workers=0,
++            collate_fn=dataset.collate_fn,
++        )
++        batch = move_to_device(next(iter(loader)), trainer.device)
++        for module in trainer.models.values():
++            module.eval()
++        with torch.no_grad():
++            reference = trainer.inference_batch(trainer.models, batch, training=False)["enc_tokens"]
++
++            # Now the extractor's path over the same pixels.
++            rgbs = batch["rgbs"].detach().cpu().numpy()  # [B, K, Cam, 3, H, W] uint8
++            tokens_0, patch_hw = encoder.dino_tokens(rgbs[:, 0])
++            tokens_1, _ = encoder.dino_tokens(rgbs[:, 1])
++            num, cams, lp, ch = tokens_0.shape
++            plucker = None
++            if encoder.expects_plucker:
++                rays = compute_plucker_rays(
++                    intrinsics=batch["intrinsics"][:, 0].float(),
++                    cam2world=batch["w2c"][:, 0].float(),
++                    patch_hw=patch_hw,
++                    image_hw=tuple(rgbs.shape[-2:]),
++                )
++                plucker = rays.reshape(rays.shape[0], -1, 6)
++            mine = encoder.encode(
++                tokens_0.reshape(num, cams * lp, ch), tokens_1.reshape(num, cams * lp, ch), plucker
++            )
++
++    diff = float((reference - mine).abs().max())
++    scale = float(reference.abs().max())
++    assert torch.allclose(reference, mine, atol=1e-4, rtol=1e-3), (
++        f"extractor and trainer disagree: max |d| = {diff:.3e} (|z|max = {scale:.3f})"
++    )
++    ok(f"enc_tokens match on a real batch: max |d| = {diff:.2e} (|z|max = {scale:.3f}), "
++       f"shape {tuple(mine.shape)}")
++
++
++# --------------------------------------------------------------------------------------------
++# Gate 7 -- dataset statistics
++# --------------------------------------------------------------------------------------------
++def gate_7_dataset_statistics(args) -> None:
++    banner("Gate 7: recomputed dataset statistics match the released reference")
++    computed = sorted(rlds_dir(args.suite).glob("dataset_statistics_*.json"))
++    if not computed:
++        skip(
++            f"no dataset_statistics_*.json under {rlds_dir(args.suite)} yet -- it is written the "
++            "first time the pipeline runs (gate 3 does that)"
++        )
++        return
++
++    reference_path = REPO_ROOT / args.released_ckpt / "dataset_statistics.json"
++    if not reference_path.exists():
++        skip(f"{reference_path} not present; nothing to compare against")
++        return
++    reference = json.loads(reference_path.read_text())
++    reference = reference.get(f"{args.suite}_no_noops", reference)
++
++    # Every cached file, not just the newest: the cache key hashes `str(builder.info)`, which
++    # embeds the data_dir *string*, so running from a different cwd legitimately produces a second
++    # file for the same data. They must all agree with the released reference.
++    for path in computed:
++        ours = json.loads(path.read_text())
++        worst = 0.0
++        for field in ("action", "proprio"):
++            for stat in ("mean", "std", "q01", "q99", "min", "max"):
++                if stat not in reference.get(field, {}) or stat not in ours.get(field, {}):
++                    continue
++                a = np.asarray(reference[field][stat], dtype=np.float64)
++                b = np.asarray(ours[field][stat], dtype=np.float64)
++                delta = float(np.abs(a - b).max())
++                assert delta < 1e-5, (
++                    f"{path.name}: {field}.{stat} drifted by {delta:.3e} from the released reference"
++                )
++                worst = max(worst, delta)
++        for count in ("num_transitions", "num_trajectories"):
++            assert reference[count] == ours[count], (
++                f"{path.name}: {count} released {reference[count]} vs ours {ours[count]}"
++            )
++        print(
++            f"      {path.name[:34]}...  worst |d| = {worst:.2e}  "
++            f"transitions={ours['num_transitions']} trajectories={ours['num_trajectories']}"
++        )
++    ok(
++        f"all {len(computed)} cached statistics file(s) match "
++        f"{Path(args.released_ckpt).name} to <1e-5"
++    )
++    ok("=> editing libero_dataset_transform did not perturb action/proprio normalisation")
++
++
++# --------------------------------------------------------------------------------------------
++def run_child(gate: str, args, env: dict, cwd: Path = REPO_ROOT) -> None:
++    """Re-exec this script for a gate that needs a specific RLA_* environment."""
++    command = [sys.executable, str(Path(__file__).resolve()), "--_child", gate, "--suite", args.suite]
++    if args.limit > 0:
++        command += ["--limit", str(args.limit)]
++    command += ["--batches", str(args.batches), "--upstream-ref", args.upstream_ref]
++    command += ["--released-ckpt", args.released_ckpt]
++    sys.stdout.flush()
++    result = subprocess.run(command, cwd=cwd, env={**os.environ, **env})
++    if result.returncode != 0:
++        raise SystemExit(f"{RED}gate {gate} FAILED{RESET} (child exit {result.returncode})")
++
++
++GATES = {
++    "1": ("frame/action alignment", gate_1_alignment),
++    "2": ("join key", gate_2_join_key),
++    "3": ("end-to-end index alignment", gate_3_end_to_end),
++    "4": ("baseline byte-equivalence", None),   # child-only
++    "5": ("RLA forward/backward", None),        # child-only
++    "6": ("extractor == trainer", gate_6_extractor_matches_trainer),
++    "7": ("dataset statistics", gate_7_dataset_statistics),
++}
++DEFAULT_GATES = "1,2,3,4,5,7"
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    parser.add_argument("--gates", default=DEFAULT_GATES, help=f"comma-separated; default {DEFAULT_GATES}")
++    parser.add_argument("--suite", default=DEFAULT_SUITE)
++    parser.add_argument("--sidecar", default=None, help="a real sidecar to cross-check in gate 2")
++    parser.add_argument("--limit", type=int, default=-1, help="episodes per suite (default: all)")
++    parser.add_argument("--batches", type=int, default=60, help="dataloader batches in gate 3")
++    parser.add_argument("--rla-config", default="configs/rla/16x64_libero.yaml")
++    parser.add_argument("--rla-run", default=None, help="gate 6: RLA run dir (default: random f_enc)")
++    parser.add_argument("--step", type=int, default=None)
++    parser.add_argument("--batch-size", type=int, default=2, help="gate 6 batch size")
++    parser.add_argument("--upstream-ref", default=UPSTREAM_REF)
++    parser.add_argument("--released-ckpt", default=RELEASED_CKPT)
++    parser.add_argument("--_child", default=None, help=argparse.SUPPRESS)
++    args = parser.parse_args()
++
++    if args._child == "3":
++        _child_gate_3(args)
++        return 0
++    if args._child == "4":
++        _child_gate_4(args)
++        return 0
++    if args._child == "5":
++        _child_gate_5(args)
++        return 0
++    if args._child == "5ref":
++        _child_gate_5ref()
++        return 0
++
++    requested = [g.strip() for g in args.gates.split(",") if g.strip()]
++    unknown = [g for g in requested if g not in GATES]
++    if unknown:
++        raise SystemExit(f"unknown gate(s): {unknown}; known: {sorted(GATES)}")
++
++    for gate in requested:
++        name, fn = GATES[gate]
++        if gate == "4":
++            banner("Gate 4: RLA_STEPS=0 is byte-identical to upstream")
++            run_child("4", args, env={"RLA_STEPS": "0", "RLA_SIDECAR": ""})
++        elif gate == "5":
++            banner("Gate 5: RLA_STEPS=NUM_ACTIONS_CHUNK forward/backward")
++            run_child("5", args, env={"RLA_STEPS": "8", "RLA_QUERIES": "16", "RLA_DIM": "64",
++                                      "RLA_SIDECAR": "unused-by-gate-5"})
++        else:
++            fn(args)
++
++    print(f"\n{GREEN}{BOLD}all requested gates passed: {', '.join(requested)}{RESET}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/scripts/vla_adapter_env.sh b/scripts/vla_adapter_env.sh
+index f0e2dee..6e1c6de 100755
+--- a/scripts/vla_adapter_env.sh
++++ b/scripts/vla_adapter_env.sh
+@@ -31,6 +31,37 @@ export LIBERO_CONFIG_PATH="$VLA_REPO_ROOT/third_party/LIBERO/.libero"
+ export MUJOCO_GL="${MUJOCO_GL:-egl}"
+ export PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM:-egl}"
+ 
++# RLA auxiliary latent-action target (docs/rla-vla-adapter.md). ARM picks an ablation arm and is
++# resolved *here*, in the file both scripts/train_libero.sh and scripts/run_libero_eval.sh source,
++# because training and evaluation must agree on the action head's shape: openvla_utils's
++# get_action_head() rebuilds the head from fixed kwargs and then load_state_dict(..., strict=True).
++# Disagreeing is a hard failure, which is what we want -- but only if both sides read the same
++# switch.
++#
++#   ARM=baseline            vanilla VLA-Adapter; the head is byte-identical to upstream
++#   ARM=rla|dino|univla     RLA output-query tokens on; the arm's identity is which sidecar you
++#                           point RLA_SIDECAR at. Training needs it; evaluation does not
++#                           (z is an output, never an input).
++#
++# RLA_STEPS/RLA_QUERIES/RLA_DIM can still be overridden individually, e.g. by the gates in
++# scripts/verify_rla_targets.py.
++: "${ARM:=baseline}"
++case "$ARM" in
++    baseline)
++        export RLA_STEPS="${RLA_STEPS:-0}"
++        ;;
++    rla|dino|univla)
++        export RLA_STEPS="${RLA_STEPS:-8}"          # must equal NUM_ACTIONS_CHUNK
++        export RLA_QUERIES="${RLA_QUERIES:-16}"     # configs/rla/16x64_libero.yaml latent_num_tokens
++        export RLA_DIM="${RLA_DIM:-64}"             # configs/rla/16x64_libero.yaml token_dim
++        export RLA_SIDECAR="${RLA_SIDECAR:-}"
++        ;;
++    *)
++        echo "vla_adapter_env.sh: unknown ARM='$ARM' (expected baseline|rla|dino|univla)" >&2
++        ;;
++esac
++export ARM
++
+ export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
+ # TensorFlow is only used for tf.image resize/crop in the eval preprocessing path; it is already
+ # pinned to CPU by prismatic/vla/datasets/rlds/dataset.py. Quiet its startup spam.
+diff --git a/third_party/VLA-Adapter/prismatic/models/action_heads.py b/third_party/VLA-Adapter/prismatic/models/action_heads.py
+index 5e26fa3..4cc4ad2 100644
+--- a/third_party/VLA-Adapter/prismatic/models/action_heads.py
++++ b/third_party/VLA-Adapter/prismatic/models/action_heads.py
+@@ -8,6 +8,12 @@ import math
+ import torch
+ import torch.nn as nn
+ from prismatic.vla.constants import ACTION_DIM, ACTION_TOKEN_BEGIN_IDX, IGNORE_INDEX, NUM_ACTIONS_CHUNK, PROPRIO_DIM, STOP_INDEX, NUM_TOKENS
++# v4world: RLA auxiliary latent-action target, see docs/rla-vla-adapter.md §7.
++from prismatic.vla.constants import RLA_DIM, RLA_QUERIES, RLA_STEPS
++
++# v4world: number of extra output-query tokens appended to the policy sequence. 0 keeps every module
++# below byte-identical to upstream, so the released LIBERO-*-Pro checkpoints still load strict.
++NUM_RLA_TOKENS = RLA_STEPS * RLA_QUERIES
+ 
+ 
+ 
+@@ -41,12 +47,19 @@ class L1RegressionActionHead(nn.Module):
+             )
+ 
+     def predict_action(
+-            self, 
+-            actions_hidden_states, 
+-            proprio=None, 
++            self,
++            actions_hidden_states,
++            proprio=None,
+             proprio_projector=None,
+-            phase="Inference"
++            phase="Inference",
++            return_rla=False,
+             ):
++        # v4world: `return_rla` defaults to False and the return type is then the bare action
++        # tensor, exactly as upstream. That is deliberate: modeling_prismatic.py:877 does
++        # `action_head.predict_action(...).reshape(NUM_ACTIONS_CHUNK, ACTION_DIM)`, and that file
++        # also exists as a copy at pretrained_models/configs/modeling_prismatic.py which
++        # check_model_logic_mismatch() installs over every checkpoint's auto_map copy. Keeping the
++        # default signature means neither file has to change.
+         batch_size = actions_hidden_states.shape[0]
+         device = actions_hidden_states.device
+ 
+@@ -75,7 +88,9 @@ class L1RegressionActionHead(nn.Module):
+             rearranged_actions_hidden_states,
+             h_a=actions_hidden_states,
+             p=proprio_features,
+-            h_t=task_hidden_states
++            h_t=task_hidden_states,
++            phase=phase,
++            return_rla=return_rla,
+             )
+ 
+         return action
+@@ -98,27 +113,72 @@ class MLPResNet(nn.Module):
+         self.relu = nn.ReLU()
+         self.mlp_resnet_blocks = nn.ModuleList()
+ 
++        # v4world: the RLA tokens only make sense on the Pro block. `x` entering the policy is all
++        # zeros, and MLPResNetBlock (non-Pro) has neither RoPE nor any positional embedding, so all
++        # of its query positions are mathematically identical -- every RLA token would predict the
++        # same z. Fail loudly rather than train a degenerate model.
++        if NUM_RLA_TOKENS and not use_pro_version:
++            raise ValueError(
++                "RLA_STEPS>0 requires use_pro_version=True: MLPResNetBlock has no positional "
++                "signal, so its query positions are indistinguishable. See docs/rla-vla-adapter.md."
++            )
++
+         for _ in range(num_blocks):
+             if use_pro_version:
+                 self.mlp_resnet_blocks.append(MLPResNetBlock_Pro(dim=hidden_dim))
+             else:
+                 self.mlp_resnet_blocks.append(MLPResNetBlock(dim=hidden_dim))
+-                
++
+         self.layer_norm2 = nn.LayerNorm(hidden_dim)
+         self.fc2 = nn.Linear(hidden_dim, output_dim)
+ 
++        # v4world: second output head for the RLA latent-action target. Only created when RLA is
++        # enabled, so with RLA_STEPS=0 this module's state dict is byte-identical to upstream.
++        self.num_rla_tokens = NUM_RLA_TOKENS
++        if self.num_rla_tokens:
++            self.layer_norm2_rla = nn.LayerNorm(hidden_dim)
++            self.fc2_rla = nn.Linear(hidden_dim, RLA_DIM)
++
+ 
+-    def forward(self, x, h_a=None, h_t=None, p= None):
+- 
+-        # x: (batch_size, input_dim)
++    def forward(self, x, h_a=None, h_t=None, p=None, phase="Inference", return_rla=False):
++
++        # x: (batch_size, NUM_ACTIONS_CHUNK, input_dim)
+         x = self.layer_norm1(x)  # shape: (batch_size, input_dim)
+         x = self.fc1(x)  # shape: (batch_size, hidden_dim)
+         x = self.relu(x)  # shape: (batch_size, hidden_dim)
++
++        # v4world: append the RLA output-query tokens. They start at hidden_dim directly -- there is
++        # no ACTION_DIM-style reshape to undo -- and are appended *after* fc1 so the action path is
++        # untouched. Zeros (+ the same training-time noise the action tokens get), symmetric with
++        # `rearranged_actions_hidden_states` in predict_action. The blocks then run over the
++        # combined sequence, which is the point: action and RLA tokens attend to each other in every
++        # layer. Their positional identity comes from MLPResNetBlock_Pro's RoPE -- see
++        # docs/rla-vla-adapter.md §2.3, `x` carries no other position signal.
++        if self.num_rla_tokens:
++            batch_size = x.shape[0]
++            x_rla = torch.zeros(
++                batch_size, self.num_rla_tokens, x.shape[-1], device=x.device, dtype=x.dtype
++            )
++            if phase == "Training":
++                x_rla = x_rla + learnable_random_perturbations(
++                    self.num_rla_tokens, x.shape[-1], device=x.device, dtype=x.dtype
++                )
++            x = torch.cat([x, x_rla], dim=1)  # (batch, NUM_ACTIONS_CHUNK + num_rla_tokens, hidden)
++
+         for i, block in enumerate(self.mlp_resnet_blocks):
+             x = block(x, h_t = h_t[:,i+1,:], h_a = h_a[:,i+1,:], p=p)  # shape: (batch_size, hidden_dim)
+-        x = self.layer_norm2(x)  # shape: (batch_size, hidden_dim)
+-        x = self.fc2(x)  # shape: (batch_size, output_dim)
+-        return x   
++
++        if self.num_rla_tokens:
++            x, x_rla = x[:, :NUM_ACTIONS_CHUNK], x[:, NUM_ACTIONS_CHUNK:]
++
++        action = self.fc2(self.layer_norm2(x))  # shape: (batch_size, chunk, output_dim)
++
++        if not (return_rla and self.num_rla_tokens):
++            return action
++
++        z_hat = self.fc2_rla(self.layer_norm2_rla(x_rla))  # (batch, RLA_STEPS*RLA_QUERIES, RLA_DIM)
++        z_hat = z_hat.reshape(z_hat.shape[0], RLA_STEPS, RLA_QUERIES * RLA_DIM)
++        return action, z_hat
+ 
+ 
+ 
+@@ -319,6 +379,14 @@ class MLPResNetBlock_Pro(nn.Module):
+         # gating
+         self.gating_factor = nn.Parameter(torch.zeros(1))
+ 
++        # v4world: a second gate so the RLA output-query tokens learn their own "how much Raw
++        # feature to let in" schedule, independent of the action tokens'. Zero-init like the
++        # original, and only created when RLA is on -- otherwise this block's state dict stays
++        # byte-identical to upstream. See docs/rla-vla-adapter.md §7.
++        self.num_rla_tokens = NUM_RLA_TOKENS
++        if self.num_rla_tokens:
++            self.gating_factor_rla = nn.Parameter(torch.zeros(1))
++
+         # RoPE
+         self.rope = RotaryPositionEmbedding(self.head_dim)
+ 
+@@ -348,6 +416,20 @@ class MLPResNetBlock_Pro(nn.Module):
+ 
+         h_task = h_t
+         B, T, C = x.shape
++
++        # v4world: with RLA tokens appended, `ratio_g` becomes a per-query-position vector instead
++        # of a scalar -- action positions keep `gating_factor`, RLA positions get
++        # `gating_factor_rla`. Broadcast to (1, 1, T, 1) so it multiplies the (B, H, T, K_t) task
++        # scores below. Note this is the only change: the self-attention op stays single and
++        # combined, because running two passes (action-as-Q, rla-as-Q) would silently drop the
++        # cross-group attention unless K/V were re-merged in both.
++        if self.num_rla_tokens and T > NUM_ACTIONS_CHUNK:
++            ratio_g = torch.cat(
++                [
++                    ratio_g.expand(NUM_ACTIONS_CHUNK),
++                    torch.tanh(self.gating_factor_rla).expand(T - NUM_ACTIONS_CHUNK),
++                ]
++            ).view(1, 1, T, 1)
+         K_a = h_adapter.size(1) if h_a is not None else 0
+         K_t = h_task.size(1) if h_task is not None else 0
+ 
+diff --git a/third_party/VLA-Adapter/prismatic/util/data_utils.py b/third_party/VLA-Adapter/prismatic/util/data_utils.py
+index 6f0d265..041b8e3 100644
+--- a/third_party/VLA-Adapter/prismatic/util/data_utils.py
++++ b/third_party/VLA-Adapter/prismatic/util/data_utils.py
+@@ -172,4 +172,10 @@ class PaddedCollatorForActionPrediction:
+         )
+         if dataset_names is not None:
+             output["dataset_names"] = dataset_names
++
++        # v4world: stack the RLA latent-action targets exactly like `actions` above.
++        if "rla" in instances[0]:
++            output["rla"] = torch.stack(
++                [torch.from_numpy(np.copy(instance["rla"])) for instance in instances]
++            )
+         return output
+diff --git a/third_party/VLA-Adapter/prismatic/vla/constants.py b/third_party/VLA-Adapter/prismatic/vla/constants.py
+index 0985a83..9292b81 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/constants.py
++++ b/third_party/VLA-Adapter/prismatic/vla/constants.py
+@@ -4,6 +4,7 @@ Important constants for VLA training and evaluation.
+ Attempts to automatically identify the correct constants to set based on the Python command used to launch
+ training or evaluation. If it is unclear, defaults to using the LIBERO simulation benchmark constants.
+ """
++import os
+ import sys
+ from enum import Enum
+ 
+@@ -97,3 +98,32 @@ print(f"  ACTION_DIM = {ACTION_DIM}")
+ print(f"  PROPRIO_DIM = {PROPRIO_DIM}")
+ print(f"  ACTION_PROPRIO_NORMALIZATION_TYPE = {ACTION_PROPRIO_NORMALIZATION_TYPE}")
+ print("If needed, manually set the correct constants in `prismatic/vla/constants.py`!")
++
++
++# v4world: RLA auxiliary latent-action target (docs/rla-vla-adapter.md).
++#
++# The policy head gets RLA_STEPS * RLA_QUERIES extra output-query tokens trained to regress the
++# frozen RLA autoencoder's latent action z. RLA_STEPS=0 disables all of it and keeps the action
++# head's state dict byte-identical to upstream, so released LIBERO-*-Pro checkpoints still load.
++#
++# These live here, read from the environment, rather than as finetune.py CLI flags on purpose:
++# experiments/robot/openvla_utils.get_action_head() rebuilds L1RegressionActionHead with four fixed
++# kwargs and then calls load_state_dict(...) *strict*. A CLI flag would let training and eval
++# disagree about the head's shape. Both launchers export these via their ARM= switch.
++RLA_STEPS = int(os.environ.get("RLA_STEPS", 0))         # A: one latent per action-chunk step
++RLA_QUERIES = int(os.environ.get("RLA_QUERIES", 16))    # Q, from configs/rla/16x64_libero.yaml
++RLA_DIM = int(os.environ.get("RLA_DIM", 64))            # token_dim, same config
++RLA_SIDECAR = os.environ.get("RLA_SIDECAR", "")         # dir written by scripts/extract_rla_latents.py
++
++if RLA_STEPS not in (0, NUM_ACTIONS_CHUNK):
++    raise ValueError(
++        f"RLA_STEPS={RLA_STEPS} must be 0 (disabled) or NUM_ACTIONS_CHUNK={NUM_ACTIONS_CHUNK}: the "
++        "RLA targets are index-aligned with the action chunk, one latent per chunk step."
++    )
++if RLA_STEPS:
++    print(f"  RLA_STEPS = {RLA_STEPS} x RLA_QUERIES = {RLA_QUERIES} x RLA_DIM = {RLA_DIM}")
++    # RLA_SIDECAR is deliberately NOT required here. Evaluation needs the same head *shape* (the
++    # strict load in get_action_head would fail otherwise) but no targets -- z is an output, never
++    # an input. Training without a sidecar fails loudly instead: rla_targets.rla_enabled() stays
++    # False, no "rla" key reaches the batch, and run_forward_pass raises.
++    print(f"  RLA_SIDECAR = {RLA_SIDECAR or '<unset: inference-only, no targets>'}")
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py b/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
+index 2f2daff..4caf873 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
+@@ -140,6 +140,11 @@ class RLDSBatchTransform:
+             proprio = rlds_batch["observation"]["proprio"]
+             return_dict["proprio"] = proprio
+ 
++        # v4world: RLA latent-action target for this frame's action chunk, (RLA_STEPS, Q*D).
++        # Top level, not under "observation" -- see libero_dataset_transform.
++        if "rla" in rlds_batch:
++            return_dict["rla"] = rlds_batch["rla"]
++
+         return return_dict
+     
+     
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
+index f07215a..9d0ae92 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
+@@ -170,6 +170,11 @@ def make_dataset_from_rlds(
+         # add timestep info
+         new_obs["timestep"] = tf.range(traj_len)
+ 
++        # v4world: the RLA target the standardize_fn attached, if any. Captured before the traj dict
++        # is rebuilt below, which drops every key not listed. Stays at the top level -- see the
++        # comment in libero_dataset_transform for why it must not live under "observation".
++        rla_target = traj.pop("rla", None)
++
+         # extracts `language_key` into the "task" dict
+         task = {}
+         if language_key is not None:
+@@ -186,6 +191,9 @@ def make_dataset_from_rlds(
+             "dataset_name": tf.repeat(name, traj_len),
+         }
+ 
++        if rla_target is not None:  # v4world
++            traj["rla"] = rla_target
++
+         if absolute_action_mask is not None:
+             if len(absolute_action_mask) != traj["action"].shape[-1]:
+                 raise ValueError(
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
+index f253d4b..ac0d723 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
+@@ -20,6 +20,10 @@ from typing import Any, Dict
+ import tensorflow as tf
+ 
+ from prismatic.vla.datasets.rlds.oxe.utils.droid_utils import droid_baseact_transform, droid_finetuning_transform
++
++# v4world: RLA auxiliary latent-action targets, see docs/rla-vla-adapter.md.
++from prismatic.vla.constants import RLA_QUERIES, RLA_DIM, RLA_STEPS
++from prismatic.vla import rla_targets
+ from prismatic.vla.datasets.rlds.utils.data_utils import (
+     binarize_gripper_actions,
+     invert_gripper_actions,
+@@ -838,6 +842,27 @@ def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+     )
+     trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
+     trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -2:]  # 2D gripper state
++
++    # v4world: attach the precomputed RLA latent-action targets (docs/rla-vla-adapter.md §5).
++    #
++    # Top level, NOT inside "observation": chunk_act_obs windows every observation key with *past*
++    # indices (tf.range(-window_size + 1, 1)), and add_pad_mask_dict / goal_relabeling.uniform also
++    # walk the observation dict. Top-level keys are carried through untouched and truncated
++    # alongside the action chunk instead.
++    #
++    # This runs once per trajectory, not per frame, so the numpy_function is free. Note that editing
++    # this function invalidates the dataset-statistics cache: get_dataset_statistics() hashes
++    # inspect.getsource(standardize_fn), so one recompute pass per suite is expected the first time
++    # (Gate 7 in scripts/verify_rla_targets.py proves the statistics themselves are unchanged).
++    if rla_targets.rla_enabled():
++        rla = tf.numpy_function(
++            rla_targets.lookup_numpy,
++            [tf.cast(trajectory["observation"]["state"], tf.float32)],
++            tf.float32,
++        )
++        rla.set_shape([None, RLA_STEPS, RLA_QUERIES * RLA_DIM])
++        trajectory["rla"] = rla
++
+     return trajectory
+ 
+ 
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
+index d2ae695..2c10d13 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
+@@ -54,6 +54,13 @@ def chunk_act_obs(traj: Dict, window_size: int, future_action_window_size: int =
+     traj["dataset_name"] = tf.gather(traj["dataset_name"], tf.range(effective_traj_len))
+     traj["absolute_action_mask"] = tf.gather(traj["absolute_action_mask"], tf.range(effective_traj_len))
+ 
++    # v4world: the RLA target is already windowed per frame by the offline extractor -- one
++    # (RLA_STEPS, Q*D) block per anchor frame, clamped at the tail the same way
++    # floored_action_chunk_indices is -- so there is nothing to gather here, only the same
++    # truncation the other top-level keys get.
++    if "rla" in traj:
++        traj["rla"] = tf.gather(traj["rla"], tf.range(effective_traj_len))
++
+     return traj
+ 
+ 
+diff --git a/third_party/VLA-Adapter/prismatic/vla/rla_targets.py b/third_party/VLA-Adapter/prismatic/vla/rla_targets.py
+new file mode 100644
+index 0000000..ea3935e
+--- /dev/null
++++ b/third_party/VLA-Adapter/prismatic/vla/rla_targets.py
+@@ -0,0 +1,151 @@
++"""
++rla_targets.py
++
++v4world: reads the precomputed RLA latent-action targets that `scripts/extract_rla_latents.py`
++writes, and joins them onto the RLDS trajectory stream.
++
++The join key is `sha1(observation["state"].astype(float32).tobytes())` for the whole episode.
++`state` is a float32 Tensor feature in the TFRecord, so the bytes the extractor hashed and the bytes
++`libero_dataset_transform` sees are identical -- that is what makes the join exact. The obvious
++alternative, `episode_metadata/file_path`, is *not* usable: it names the source HDF5 *task* file,
++which every demo of a task shares.
++
++Lookup runs once per *episode* (inside the trajectory-level `standardize_fn`), not once per frame,
++so a `tf.numpy_function` here costs nothing measurable. Arrays are mmapped.
++
++See docs/rla-vla-adapter.md §5-6 for the design and §10 for what verifies it.
++"""
++
++import hashlib
++import json
++import os
++from pathlib import Path
++from typing import Dict, Optional
++
++import numpy as np
++
++from prismatic.vla.constants import RLA_DIM, RLA_QUERIES, RLA_SIDECAR, RLA_STEPS
++
++
++def rla_enabled() -> bool:
++    return RLA_STEPS > 0 and bool(RLA_SIDECAR)
++
++
++def episode_key(states: np.ndarray) -> str:
++    """Must stay byte-for-byte identical to `scripts/extract_rla_latents.episode_key`."""
++    return hashlib.sha1(np.ascontiguousarray(states, dtype=np.float32).tobytes()).hexdigest()
++
++
++class RlaSidecar:
++    """One sidecar directory: `keys.json` per suite, `stats.json`, one `.npy` per episode."""
++
++    def __init__(self, root: str) -> None:
++        self.root = Path(root)
++        manifest_path = self.root / "manifest.json"
++        if not manifest_path.exists():
++            raise FileNotFoundError(
++                f"{manifest_path} not found. Generate the sidecar first:\n"
++                "  .venv/bin/python scripts/extract_rla_latents.py --help"
++            )
++        self.manifest = json.loads(manifest_path.read_text())
++
++        # Fail loudly on a shape mismatch rather than silently regressing against the wrong target.
++        for name, want, got in (
++            ("RLA_STEPS", RLA_STEPS, self.manifest["chunk"]),
++            ("RLA_QUERIES", RLA_QUERIES, self.manifest["num_tokens"]),
++            ("RLA_DIM", RLA_DIM, self.manifest["token_dim"]),
++        ):
++            if want != got:
++                raise ValueError(
++                    f"{name}={want} does not match the sidecar at {self.root} ({got}). "
++                    "Re-extract, or fix the ARM= env in the launcher."
++                )
++        if self.manifest.get("random_encoder"):
++            print(
++                f"[rla_targets] WARNING: {self.root} was extracted with --random-encoder. "
++                "These targets are noise -- fine for plumbing tests, meaningless for training."
++            )
++
++        stats = json.loads((self.root / "stats.json").read_text())
++        self.mean = np.asarray(stats["mean"], dtype=np.float32)  # (Q, D)
++        std = np.asarray(stats["std"], dtype=np.float32)
++        # Floor the std so a dead latent slot (std ~ 0) cannot blow the normalised target up.
++        self.std = np.maximum(std, float(stats.get("std_floor", 1e-3)))
++
++        # key -> (suite, entry). Merged across suites: a training mix can interleave several.
++        self.index: Dict[str, tuple] = {}
++        for keys_path in sorted(self.root.glob("*/keys.json")):
++            suite = keys_path.parent.name
++            for key, entry in json.loads(keys_path.read_text()).items():
++                self.index[key] = (suite, entry)
++        if not self.index:
++            raise RuntimeError(f"no */keys.json under {self.root}; the sidecar is empty")
++
++        self._cache: Dict[str, np.ndarray] = {}
++        self.num_misses = 0
++
++    @property
++    def target_dim(self) -> int:
++        return RLA_QUERIES * RLA_DIM
++
++    def lookup(self, states: np.ndarray) -> np.ndarray:
++        """(N, 8) float32 states -> (N, RLA_STEPS, Q*D) float32, normalised.
++
++        A miss returns zeros and bumps `num_misses` instead of raising: raising inside a
++        `tf.numpy_function` surfaces as an opaque graph error, and the vanilla arms must not be able
++        to crash on a stale sidecar. `scripts/verify_rla_targets.py` Gate 2 is what turns a miss
++        into a hard failure.
++        """
++        states = np.asarray(states, dtype=np.float32)
++        num_frames = states.shape[0]
++        key = episode_key(states)
++
++        entry = self.index.get(key)
++        if entry is None:
++            self.num_misses += 1
++            if self.num_misses <= 5:
++                print(
++                    f"[rla_targets] MISS: no sidecar entry for episode key {key} "
++                    f"(traj_len={num_frames}); returning zeros. Sidecar: {self.root}"
++                )
++            return np.zeros((num_frames, RLA_STEPS, self.target_dim), dtype=np.float32)
++
++        suite, meta = entry
++        cached = self._cache.get(key)
++        if cached is None:
++            cached = np.load(self.root / suite / meta["file"], mmap_mode="r")
++            if len(self._cache) < 64:  # bounded: these are mmaps, but the dict is not
++                self._cache[key] = cached
++
++        z = np.asarray(cached, dtype=np.float32)  # (N, A, Q, D)
++        if z.shape[0] != num_frames:
++            self.num_misses += 1
++            print(
++                f"[rla_targets] MISS: {suite}/{meta['file']} has {z.shape[0]} frames but the "
++                f"episode has {num_frames}; returning zeros."
++            )
++            return np.zeros((num_frames, RLA_STEPS, self.target_dim), dtype=np.float32)
++
++        z = (z - self.mean) / self.std
++        return np.ascontiguousarray(z.reshape(num_frames, RLA_STEPS, self.target_dim))
++
++    def denormalize(self, z: np.ndarray) -> np.ndarray:
++        """Undo `lookup`'s normalisation, for feeding a predicted z back through `f_dec`."""
++        flat = z.reshape(*z.shape[:-1], RLA_QUERIES, RLA_DIM)
++        return flat * self.std + self.mean
++
++
++_SIDECAR: Optional[RlaSidecar] = None
++
++
++def get_sidecar() -> RlaSidecar:
++    """Process-wide sidecar handle. Built lazily so importing this module is free."""
++    global _SIDECAR
++    if _SIDECAR is None:
++        _SIDECAR = RlaSidecar(os.environ.get("RLA_SIDECAR", RLA_SIDECAR))
++    return _SIDECAR
++
++
++def lookup_numpy(states) -> np.ndarray:
++    """The `tf.numpy_function` entry point. Kept module-level so tf.data can pickle it."""
++    return get_sidecar().lookup(np.asarray(states))
+diff --git a/third_party/VLA-Adapter/vla-scripts/finetune.py b/third_party/VLA-Adapter/vla-scripts/finetune.py
+index 04e64b6..d6c35d1 100644
+--- a/third_party/VLA-Adapter/vla-scripts/finetune.py
++++ b/third_party/VLA-Adapter/vla-scripts/finetune.py
+@@ -52,7 +52,8 @@ from prismatic.vla.constants import (
+     ACTION_PROPRIO_NORMALIZATION_TYPE,
+     NUM_ACTIONS_CHUNK,
+     PROPRIO_DIM,
+-    NUM_TOKENS
++    NUM_TOKENS,
++    RLA_STEPS,  # v4world
+ )
+ from prismatic.vla.datasets import RLDSDataset, RLDSBatchTransform
+ from prismatic.vla.datasets.rlds.utils.data_utils import save_dataset_statistics
+@@ -133,6 +134,11 @@ class FinetuneConfig:
+     # revision version
+     use_pro_version: bool = True                             # the version number
+     phase: str = "Training"
++
++    # v4world: weight on the auxiliary RLA latent-action loss. Only used when RLA_STEPS>0 (set via
++    # the ARM= switch in scripts/train_libero.sh, not here -- see prismatic/vla/constants.py for
++    # why the *shape* config has to be an env var while this scalar can be a flag).
++    lambda_rla: float = 1.0
+     # fmt: on
+ 
+ 
+@@ -416,12 +422,19 @@ def run_forward_pass(
+             multi_layer_hidden_states.append(all_hidden_states)
+         multi_layer_hidden_states = torch.cat(multi_layer_hidden_states, dim = 1)
+ 
+-        predicted_actions = action_head.module.predict_action(
++        # v4world: `return_rla` only flips on when RLA_STEPS>0; otherwise predict_action returns the
++        # bare action tensor exactly as upstream.
++        head_out = action_head.module.predict_action(
+             multi_layer_hidden_states,
+             proprio=batch["proprio"] if use_proprio else None,
+             proprio_projector=proprio_projector if use_proprio else None,
+             phase=cfg.phase,
++            return_rla=RLA_STEPS > 0,
+             )
++        if RLA_STEPS > 0:
++            predicted_actions, predicted_rla = head_out
++        else:
++            predicted_actions, predicted_rla = head_out, None
+ 
+         loss = torch.nn.L1Loss()(predicted_actions, ground_truth_actions)
+ 
+@@ -431,6 +444,25 @@ def run_forward_pass(
+             }
+         )
+ 
++        # v4world: auxiliary RLA latent-action loss. Targets are precomputed offline and already
++        # normalised by prismatic/vla/rla_targets.py, so this L1 is directly comparable to the
++        # action L1 above and lambda_rla means the same thing across autoencoder runs.
++        if predicted_rla is not None:
++            if "rla" not in batch:
++                raise KeyError(
++                    "RLA_STEPS>0 but the batch has no 'rla' target. Check RLA_SIDECAR and that "
++                    "libero_dataset_transform attached it (docs/rla-vla-adapter-runbook.md)."
++                )
++            ground_truth_rla = batch["rla"].to(device_id).to(torch.bfloat16)
++            rla_loss = torch.nn.L1Loss()(predicted_rla, ground_truth_rla)
++            loss = loss + cfg.lambda_rla * rla_loss
++            metrics.update(
++                {
++                    "loss_value": loss.item(),
++                    "rla_loss": rla_loss.item(),
++                }
++            )
++
+         # Get detailed L1 losses for logging
+         should_log_l1_loss = use_l1_regression
+         if should_log_l1_loss:
+@@ -1022,6 +1054,7 @@ def finetune(cfg: FinetuneConfig) -> None:
+         "curr_action_l1_loss": deque(maxlen=cfg.grad_accumulation_steps),
+         "next_actions_accuracy": deque(maxlen=cfg.grad_accumulation_steps),
+         "next_actions_l1_loss": deque(maxlen=cfg.grad_accumulation_steps),
++        "rla_loss": deque(maxlen=cfg.grad_accumulation_steps),  # v4world
+     }
+ 
+     # Start training

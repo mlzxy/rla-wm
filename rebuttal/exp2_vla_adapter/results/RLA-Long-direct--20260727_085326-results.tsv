@@ -1,0 +1,19 @@
+# run_id=RLA-Long-direct stage=long steps=60000 batch=8 accum=1 eff_batch=32
+# lr=2e-4 lora_rank=64 shuffle_buffer=80000 gpus=0,1,2,3 host=gpuk003
+# rla=8x16x64 lambda_act=1.0 lambda_rla=auto:0.25
+# sidecar=$REF/data/libero_rla/16x64-a8-step040000-snapshot
+# init_from=<none>
+# train_log=$REF/train_logs/rla-long--20260727_085326.log
+# loss_curve=$REF/train_logs/rla-long--20260727_085326-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+22:01:43	RLA-Long-direct--60000_chkpt	final	50	91.0	$REF/eval_out/rla-long--RLA-Long-direct--60000_chkpt--final.log
+22:08:47	RLA-Long-direct--10000_chkpt	sweep	2	45.0	$REF/eval_out/rla-long--RLA-Long-direct--10000_chkpt--sweep.log
+22:14:20	RLA-Long-direct--20000_chkpt	sweep	2	75.0	$REF/eval_out/rla-long--RLA-Long-direct--20000_chkpt--sweep.log
+22:19:49	RLA-Long-direct--30000_chkpt	sweep	2	85.0	$REF/eval_out/rla-long--RLA-Long-direct--30000_chkpt--sweep.log
+22:25:02	RLA-Long-direct--40000_chkpt	sweep	2	90.0	$REF/eval_out/rla-long--RLA-Long-direct--40000_chkpt--sweep.log
+22:29:57	RLA-Long-direct--50000_chkpt	sweep	2	100.0	$REF/eval_out/rla-long--RLA-Long-direct--50000_chkpt--sweep.log
+00:07:50	RLA-Long-direct--50000_chkpt	final	50	93.4	$REF/eval_out/rla-long--RLA-Long-direct--50000_chkpt--final.log
+#
+# SUMMARY  final	RLA-Long-direct--60000_chkpt	91.0%
+# SUMMARY  best	RLA-Long-direct--50000_chkpt	93.4%
+# done 2026-07-28 00:07:50

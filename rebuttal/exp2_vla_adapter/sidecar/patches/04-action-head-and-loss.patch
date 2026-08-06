@@ -1,0 +1,249 @@
+diff --git a/third_party/VLA-Adapter/prismatic/models/action_heads.py b/third_party/VLA-Adapter/prismatic/models/action_heads.py
+index 5e26fa3..4cc4ad2 100644
+--- a/third_party/VLA-Adapter/prismatic/models/action_heads.py
++++ b/third_party/VLA-Adapter/prismatic/models/action_heads.py
+@@ -8,6 +8,12 @@ import math
+ import torch
+ import torch.nn as nn
+ from prismatic.vla.constants import ACTION_DIM, ACTION_TOKEN_BEGIN_IDX, IGNORE_INDEX, NUM_ACTIONS_CHUNK, PROPRIO_DIM, STOP_INDEX, NUM_TOKENS
++# v4world: RLA auxiliary latent-action target, see docs/rla-vla-adapter.md §7.
++from prismatic.vla.constants import RLA_DIM, RLA_QUERIES, RLA_STEPS
++
++# v4world: number of extra output-query tokens appended to the policy sequence. 0 keeps every module
++# below byte-identical to upstream, so the released LIBERO-*-Pro checkpoints still load strict.
++NUM_RLA_TOKENS = RLA_STEPS * RLA_QUERIES
+ 
+ 
+ 
+@@ -41,12 +47,19 @@ class L1RegressionActionHead(nn.Module):
+             )
+ 
+     def predict_action(
+-            self, 
+-            actions_hidden_states, 
+-            proprio=None, 
++            self,
++            actions_hidden_states,
++            proprio=None,
+             proprio_projector=None,
+-            phase="Inference"
++            phase="Inference",
++            return_rla=False,
+             ):
++        # v4world: `return_rla` defaults to False and the return type is then the bare action
++        # tensor, exactly as upstream. That is deliberate: modeling_prismatic.py:877 does
++        # `action_head.predict_action(...).reshape(NUM_ACTIONS_CHUNK, ACTION_DIM)`, and that file
++        # also exists as a copy at pretrained_models/configs/modeling_prismatic.py which
++        # check_model_logic_mismatch() installs over every checkpoint's auto_map copy. Keeping the
++        # default signature means neither file has to change.
+         batch_size = actions_hidden_states.shape[0]
+         device = actions_hidden_states.device
+ 
+@@ -75,7 +88,9 @@ class L1RegressionActionHead(nn.Module):
+             rearranged_actions_hidden_states,
+             h_a=actions_hidden_states,
+             p=proprio_features,
+-            h_t=task_hidden_states
++            h_t=task_hidden_states,
++            phase=phase,
++            return_rla=return_rla,
+             )
+ 
+         return action
+@@ -98,27 +113,72 @@ class MLPResNet(nn.Module):
+         self.relu = nn.ReLU()
+         self.mlp_resnet_blocks = nn.ModuleList()
+ 
++        # v4world: the RLA tokens only make sense on the Pro block. `x` entering the policy is all
++        # zeros, and MLPResNetBlock (non-Pro) has neither RoPE nor any positional embedding, so all
++        # of its query positions are mathematically identical -- every RLA token would predict the
++        # same z. Fail loudly rather than train a degenerate model.
++        if NUM_RLA_TOKENS and not use_pro_version:
++            raise ValueError(
++                "RLA_STEPS>0 requires use_pro_version=True: MLPResNetBlock has no positional "
++                "signal, so its query positions are indistinguishable. See docs/rla-vla-adapter.md."
++            )
++
+         for _ in range(num_blocks):
+             if use_pro_version:
+                 self.mlp_resnet_blocks.append(MLPResNetBlock_Pro(dim=hidden_dim))
+             else:
+                 self.mlp_resnet_blocks.append(MLPResNetBlock(dim=hidden_dim))
+-                
++
+         self.layer_norm2 = nn.LayerNorm(hidden_dim)
+         self.fc2 = nn.Linear(hidden_dim, output_dim)
+ 
++        # v4world: second output head for the RLA latent-action target. Only created when RLA is
++        # enabled, so with RLA_STEPS=0 this module's state dict is byte-identical to upstream.
++        self.num_rla_tokens = NUM_RLA_TOKENS
++        if self.num_rla_tokens:
++            self.layer_norm2_rla = nn.LayerNorm(hidden_dim)
++            self.fc2_rla = nn.Linear(hidden_dim, RLA_DIM)
++
+ 
+-    def forward(self, x, h_a=None, h_t=None, p= None):
+- 
+-        # x: (batch_size, input_dim)
++    def forward(self, x, h_a=None, h_t=None, p=None, phase="Inference", return_rla=False):
++
++        # x: (batch_size, NUM_ACTIONS_CHUNK, input_dim)
+         x = self.layer_norm1(x)  # shape: (batch_size, input_dim)
+         x = self.fc1(x)  # shape: (batch_size, hidden_dim)
+         x = self.relu(x)  # shape: (batch_size, hidden_dim)
++
++        # v4world: append the RLA output-query tokens. They start at hidden_dim directly -- there is
++        # no ACTION_DIM-style reshape to undo -- and are appended *after* fc1 so the action path is
++        # untouched. Zeros (+ the same training-time noise the action tokens get), symmetric with
++        # `rearranged_actions_hidden_states` in predict_action. The blocks then run over the
++        # combined sequence, which is the point: action and RLA tokens attend to each other in every
++        # layer. Their positional identity comes from MLPResNetBlock_Pro's RoPE -- see
++        # docs/rla-vla-adapter.md §2.3, `x` carries no other position signal.
++        if self.num_rla_tokens:
++            batch_size = x.shape[0]
++            x_rla = torch.zeros(
++                batch_size, self.num_rla_tokens, x.shape[-1], device=x.device, dtype=x.dtype
++            )
++            if phase == "Training":
++                x_rla = x_rla + learnable_random_perturbations(
++                    self.num_rla_tokens, x.shape[-1], device=x.device, dtype=x.dtype
++                )
++            x = torch.cat([x, x_rla], dim=1)  # (batch, NUM_ACTIONS_CHUNK + num_rla_tokens, hidden)
++
+         for i, block in enumerate(self.mlp_resnet_blocks):
+             x = block(x, h_t = h_t[:,i+1,:], h_a = h_a[:,i+1,:], p=p)  # shape: (batch_size, hidden_dim)
+-        x = self.layer_norm2(x)  # shape: (batch_size, hidden_dim)
+-        x = self.fc2(x)  # shape: (batch_size, output_dim)
+-        return x   
++
++        if self.num_rla_tokens:
++            x, x_rla = x[:, :NUM_ACTIONS_CHUNK], x[:, NUM_ACTIONS_CHUNK:]
++
++        action = self.fc2(self.layer_norm2(x))  # shape: (batch_size, chunk, output_dim)
++
++        if not (return_rla and self.num_rla_tokens):
++            return action
++
++        z_hat = self.fc2_rla(self.layer_norm2_rla(x_rla))  # (batch, RLA_STEPS*RLA_QUERIES, RLA_DIM)
++        z_hat = z_hat.reshape(z_hat.shape[0], RLA_STEPS, RLA_QUERIES * RLA_DIM)
++        return action, z_hat
+ 
+ 
+ 
+@@ -319,6 +379,14 @@ class MLPResNetBlock_Pro(nn.Module):
+         # gating
+         self.gating_factor = nn.Parameter(torch.zeros(1))
+ 
++        # v4world: a second gate so the RLA output-query tokens learn their own "how much Raw
++        # feature to let in" schedule, independent of the action tokens'. Zero-init like the
++        # original, and only created when RLA is on -- otherwise this block's state dict stays
++        # byte-identical to upstream. See docs/rla-vla-adapter.md §7.
++        self.num_rla_tokens = NUM_RLA_TOKENS
++        if self.num_rla_tokens:
++            self.gating_factor_rla = nn.Parameter(torch.zeros(1))
++
+         # RoPE
+         self.rope = RotaryPositionEmbedding(self.head_dim)
+ 
+@@ -348,6 +416,20 @@ class MLPResNetBlock_Pro(nn.Module):
+ 
+         h_task = h_t
+         B, T, C = x.shape
++
++        # v4world: with RLA tokens appended, `ratio_g` becomes a per-query-position vector instead
++        # of a scalar -- action positions keep `gating_factor`, RLA positions get
++        # `gating_factor_rla`. Broadcast to (1, 1, T, 1) so it multiplies the (B, H, T, K_t) task
++        # scores below. Note this is the only change: the self-attention op stays single and
++        # combined, because running two passes (action-as-Q, rla-as-Q) would silently drop the
++        # cross-group attention unless K/V were re-merged in both.
++        if self.num_rla_tokens and T > NUM_ACTIONS_CHUNK:
++            ratio_g = torch.cat(
++                [
++                    ratio_g.expand(NUM_ACTIONS_CHUNK),
++                    torch.tanh(self.gating_factor_rla).expand(T - NUM_ACTIONS_CHUNK),
++                ]
++            ).view(1, 1, T, 1)
+         K_a = h_adapter.size(1) if h_a is not None else 0
+         K_t = h_task.size(1) if h_task is not None else 0
+ 
+diff --git a/third_party/VLA-Adapter/vla-scripts/finetune.py b/third_party/VLA-Adapter/vla-scripts/finetune.py
+index 04e64b6..d6c35d1 100644
+--- a/third_party/VLA-Adapter/vla-scripts/finetune.py
++++ b/third_party/VLA-Adapter/vla-scripts/finetune.py
+@@ -52,7 +52,8 @@ from prismatic.vla.constants import (
+     ACTION_PROPRIO_NORMALIZATION_TYPE,
+     NUM_ACTIONS_CHUNK,
+     PROPRIO_DIM,
+-    NUM_TOKENS
++    NUM_TOKENS,
++    RLA_STEPS,  # v4world
+ )
+ from prismatic.vla.datasets import RLDSDataset, RLDSBatchTransform
+ from prismatic.vla.datasets.rlds.utils.data_utils import save_dataset_statistics
+@@ -133,6 +134,11 @@ class FinetuneConfig:
+     # revision version
+     use_pro_version: bool = True                             # the version number
+     phase: str = "Training"
++
++    # v4world: weight on the auxiliary RLA latent-action loss. Only used when RLA_STEPS>0 (set via
++    # the ARM= switch in scripts/train_libero.sh, not here -- see prismatic/vla/constants.py for
++    # why the *shape* config has to be an env var while this scalar can be a flag).
++    lambda_rla: float = 1.0
+     # fmt: on
+ 
+ 
+@@ -416,12 +422,19 @@ def run_forward_pass(
+             multi_layer_hidden_states.append(all_hidden_states)
+         multi_layer_hidden_states = torch.cat(multi_layer_hidden_states, dim = 1)
+ 
+-        predicted_actions = action_head.module.predict_action(
++        # v4world: `return_rla` only flips on when RLA_STEPS>0; otherwise predict_action returns the
++        # bare action tensor exactly as upstream.
++        head_out = action_head.module.predict_action(
+             multi_layer_hidden_states,
+             proprio=batch["proprio"] if use_proprio else None,
+             proprio_projector=proprio_projector if use_proprio else None,
+             phase=cfg.phase,
++            return_rla=RLA_STEPS > 0,
+             )
++        if RLA_STEPS > 0:
++            predicted_actions, predicted_rla = head_out
++        else:
++            predicted_actions, predicted_rla = head_out, None
+ 
+         loss = torch.nn.L1Loss()(predicted_actions, ground_truth_actions)
+ 
+@@ -431,6 +444,25 @@ def run_forward_pass(
+             }
+         )
+ 
++        # v4world: auxiliary RLA latent-action loss. Targets are precomputed offline and already
++        # normalised by prismatic/vla/rla_targets.py, so this L1 is directly comparable to the
++        # action L1 above and lambda_rla means the same thing across autoencoder runs.
++        if predicted_rla is not None:
++            if "rla" not in batch:
++                raise KeyError(
++                    "RLA_STEPS>0 but the batch has no 'rla' target. Check RLA_SIDECAR and that "
++                    "libero_dataset_transform attached it (docs/rla-vla-adapter-runbook.md)."
++                )
++            ground_truth_rla = batch["rla"].to(device_id).to(torch.bfloat16)
++            rla_loss = torch.nn.L1Loss()(predicted_rla, ground_truth_rla)
++            loss = loss + cfg.lambda_rla * rla_loss
++            metrics.update(
++                {
++                    "loss_value": loss.item(),
++                    "rla_loss": rla_loss.item(),
++                }
++            )
++
+         # Get detailed L1 losses for logging
+         should_log_l1_loss = use_l1_regression
+         if should_log_l1_loss:
+@@ -1022,6 +1054,7 @@ def finetune(cfg: FinetuneConfig) -> None:
+         "curr_action_l1_loss": deque(maxlen=cfg.grad_accumulation_steps),
+         "next_actions_accuracy": deque(maxlen=cfg.grad_accumulation_steps),
+         "next_actions_l1_loss": deque(maxlen=cfg.grad_accumulation_steps),
++        "rla_loss": deque(maxlen=cfg.grad_accumulation_steps),  # v4world
+     }
+ 
+     # Start training

@@ -1,0 +1,16 @@
+# Template for LIBERO's .libero/config.yaml.
+#
+# LIBERO's libero/libero/__init__.py calls input() at import time when this file is missing,
+# which hangs every non-interactive run. It also insists on absolute paths, so it cannot be
+# committed as-is. setup_env.sh rewrites it with two placeholders expanded:
+#
+#   ${LIBERO_ROOT}       the LIBERO checkout, at <clone>/LIBERO
+#   ${LIBERO_DATASETS}   the HDF5 demonstrations, which live in this repo either way
+#
+# Renamed from .libero/config.yaml because a leading-dot directory is easy to lose in a release
+# tarball. Nothing reads this copy directly.
+assets: ${LIBERO_ROOT}/libero/libero/assets
+bddl_files: ${LIBERO_ROOT}/libero/libero/bddl_files
+benchmark_root: ${LIBERO_ROOT}/libero/libero
+datasets: ${LIBERO_DATASETS}
+init_states: ${LIBERO_ROOT}/libero/libero/init_files

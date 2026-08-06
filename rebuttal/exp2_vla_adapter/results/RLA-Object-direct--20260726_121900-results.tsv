@@ -1,0 +1,9 @@
+# run_id=RLA-Object-direct stage=object steps=20000 batch=8 accum=1 eff_batch=32
+# lr=2e-4 lora_rank=64 shuffle_buffer=80000 gpus=0,1,2,3 host=gpuk003
+# rla=8x16x64 lambda_act=1.0 lambda_rla=auto:0.25
+# sidecar=$REF/data/libero_rla/16x64-a8-step040000-snapshot
+# init_from=<none>
+# train_log=$REF/train_logs/rla-object--20260726_121900.log
+# loss_curve=$REF/train_logs/rla-object--20260726_121900-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+17:08:16	RLA-Object-direct--20000_chkpt	final	50	99.2	$REF/eval_out/rla-object--RLA-Object-direct--20000_chkpt--final.log

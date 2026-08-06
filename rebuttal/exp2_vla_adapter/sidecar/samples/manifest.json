@@ -1,0 +1,39 @@
+{
+ "cameras": [
+  "agentview_camera",
+  "wrist_camera"
+ ],
+ "checkpoint": "runs/16x64_libero/20260725_00-39-52/ckpts/encoder_step0032500.pt",
+ "checkpoint_sha256": "bd60672735996007f379dbab0c7d62164add112ce14134a318782d2f7b38e0b1",
+ "chunk": 8,
+ "dino_batch": 16,
+ "dino_channels": 1024,
+ "dino_compile": false,
+ "elapsed_sec": 62.7,
+ "format": "npy",
+ "img_size": 224,
+ "inverse_input_mode": "sub",
+ "num_tokens": 16,
+ "pairs": "anchored",
+ "random_encoder": false,
+ "rla_config": "configs/rla/16x64_libero.yaml",
+ "rla_config_sha1": "23343f9ad12197abd43f9f364567a0d667d0819b",
+ "rla_run": "runs/16x64_libero/20260725_00-39-52",
+ "rlds_root": "data/libero",
+ "suites": {
+  "libero_10": {
+   "num_episodes": 8
+  },
+  "libero_goal": {
+   "num_episodes": 8
+  },
+  "libero_object": {
+   "num_episodes": 8
+  },
+  "libero_spatial": {
+   "num_episodes": 8
+  }
+ },
+ "token_dim": 64,
+ "world_size": 4
+}

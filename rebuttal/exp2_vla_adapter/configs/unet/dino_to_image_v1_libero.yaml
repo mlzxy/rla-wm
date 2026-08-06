@@ -1,0 +1,136 @@
+vars:
+  debug: false
+  use_amp: false
+  img_size: 224 # VLA-Adapter input size; 224/16 = 14x14 DINO patches/view (LIBERO renders 256, downscaled + intrinsics rescaled on read)
+  resolution: 128
+  granularity: 0.02
+  dino_channels: 1024
+  model_channels: 1024
+  horizon: 64
+
+wandb:
+  enabled: true
+  project: "rla-wm"
+  name: ""
+  tags: []
+  notes: ""
+
+
+models:
+  decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+
+
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/libero_converted
+    configs:
+      libero_spatial:
+        paths: ["libero_spatial"]
+        w: 1.0
+      libero_object:
+        paths: ["libero_object"]
+        w: 1.0
+      libero_goal:
+        paths: ["libero_goal"]
+        w: 1.0
+      libero_10:
+        paths: ["libero_10"]
+        w: 1.0
+
+    max_num_cameras: 2
+    start_traj_id: 10
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    read_optional_streams: False
+    # LIBERO RLDS carries no object poses, so interaction detection cannot run.
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["agentview_camera", "wrist_camera"]
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image_libero.train.h${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/libero_converted
+    configs:
+      libero_spatial:
+        paths: ["libero_spatial"]
+        w: 1.0
+      libero_object:
+        paths: ["libero_object"]
+        w: 1.0
+      libero_goal:
+        paths: ["libero_goal"]
+        w: 1.0
+      libero_10:
+        paths: ["libero_10"]
+        w: 1.0
+
+    read_optional_streams: False
+    max_num_cameras: 2
+    start_traj_id: 0
+    end_traj_id: 9
+    min_num_frames: 5
+
+    num_frames: 1
+    manual_limit: 1000000
+
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    cameras: ["agentview_camera", "wrist_camera"]
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: runs/cache/dataset_idx/dino_to_image_libero.val.h${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+trainer:
+  name: DinoToImageTrainerV1
+  args:
+    load_dir: null
+    max_steps: 1000000
+    batch_size: 64
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 1e-5
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 5000
+    save_latest_only: false
+    num_workers: 4
+    num_samples: 16
+    debug: ${vars.debug}
+
+    # Image reconstruction losses
+    lambda_l1: 1.0
+    lambda_ssim: 0.2
+    lambda_lpips: 0.2
+
+    # DINO parameters
+    extractor_type: "dino"
+    dino_channels: ${vars.dino_channels}
+    rgb_key: "rgbs"

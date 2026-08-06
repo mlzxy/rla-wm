@@ -1,0 +1,14 @@
+# run_id=REF-Spatial suite=spatial steps=20000 batch=8 accum=1 eff_batch=32
+# lr=2e-4 lora_rank=64 gpus=0,1,2,3 host=gpuk002
+# train_log=$REF/train_logs/spatial--20260725_210354.log
+# loss_curve=$REF/train_logs/spatial--20260725_210354-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+02:03:59	REF-Spatial--20000_chkpt	final	50	97.0	$REF/eval_out/spatial--REF-Spatial--20000_chkpt--final.log
+02:08:20	REF-Spatial--5000_chkpt	sweep	2	95.0	$REF/eval_out/spatial--REF-Spatial--5000_chkpt--sweep.log
+02:17:29	REF-Spatial--10000_chkpt	sweep	2	100.0	$REF/eval_out/spatial--REF-Spatial--10000_chkpt--sweep.log
+02:28:01	REF-Spatial--15000_chkpt	sweep	2	100.0	$REF/eval_out/spatial--REF-Spatial--15000_chkpt--sweep.log
+03:40:42	REF-Spatial--10000_chkpt	final	50	98.8	$REF/eval_out/spatial--REF-Spatial--10000_chkpt--final.log
+#
+# SUMMARY  final	REF-Spatial--20000_chkpt	97.0%
+# SUMMARY  best	REF-Spatial--10000_chkpt	98.8%
+# done 2026-07-26 03:40:42

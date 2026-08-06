@@ -1,0 +1,199 @@
+vars:
+  debug: false
+  img_size: 224 # VLA-Adapter input size -> 14x14 = 196 DINO patches per view (LIBERO renders 256, downscaled + intrinsics rescaled on read)
+  dino_channels: 1024 # 786 # 1024 # large
+  model_channels: ${vars.dino_channels}
+  num_heads: 16
+  num_blocks: 12
+
+  latent_num_tokens: 16
+  token_dim: 64
+
+  num_views: 2 # agentview (front) + wrist
+
+  horizon: 64
+  num_frames: 2
+
+wandb:
+  enabled: true
+  project: "rla-wm"
+  name: ""
+  tags: []
+  notes: ""
+
+
+models:
+  encoder:
+    name: MultiViewTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.token_dim}
+      num_blocks: ${vars.num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+      norm_output_tokens: false
+      num_views: ${vars.num_views}
+      use_view_embed: false # tells the blocks which camera a token came from
+      # Plucker rays ground each token in 3D (the camera ray through that patch) instead of in a
+      # slot index, so tokens from the two views that observe the same region get similar codes.
+      # Requires the real camera geometry, which comes from
+      # scripts/extract_libero_camera_params.py and is asserted against the simulator by
+      # scripts/test_libero_camera_geometry.py. Use "learned" for a per-slot embedding or
+      # "none" for the SimpleTokenTransformer behaviour.
+      pos_embed_mode: plucker
+      plucker_num_frequencies: 8
+
+  decoder:
+    name: MultiViewTokenTransformer
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: ${vars.dino_channels}
+      token_channels: ${vars.token_dim}
+      num_blocks: ${vars.num_blocks}
+      num_heads: 16
+      mlp_ratio: 4.0
+      use_fp16: true
+      num_tokens: ${vars.latent_num_tokens}
+      zero_init: true
+      num_views: ${vars.num_views}
+      use_view_embed: false # tells the blocks which camera a token came from
+      # The decoder is a token->token map whose inputs already carry view-specific DINO
+      # features, so it keeps the original positional-encoding-free behaviour. Set this to
+      # "plucker" to give it the same 3D grounding as the encoder.
+
+      # pos_embed_mode: none
+      pos_embed_mode: plucker
+      plucker_num_frequencies: 8
+
+  image_decoder:
+    name: DinoToImageDecoderV1
+    args:
+      in_channels: ${vars.dino_channels}
+      model_channels: ${vars.model_channels}
+      out_channels: 3
+      use_fp16: true
+
+dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/libero_converted
+    configs:
+      libero_spatial:
+        paths: ["libero_spatial"]
+        w: 1.0
+      libero_object:
+        paths: ["libero_object"]
+        w: 1.0
+      libero_goal:
+        paths: ["libero_goal"]
+        w: 1.0
+      libero_10:
+        paths: ["libero_10"]
+        w: 1.0
+
+    max_num_cameras: ${vars.num_views}
+    start_traj_id: 10
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    horizon:
+      - ${vars.num_frames}
+      - ${vars.horizon}
+    manual_limit: 1000000
+
+    read_optional_streams: False
+    # LIBERO RLDS carries no object poses, so interaction detection cannot run.
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    img_size: ${vars.img_size}
+    augmentations: null
+    cameras: ["agentview_camera", "wrist_camera"]
+    trajectory_info_cache_file: runs/cache/dataset_idx/32x64_libero.train.num_frames${vars.num_frames}_h${vars.num_frames}-${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+val_dataset:
+  name: TrajectoryDataset
+  args:
+    root: data/libero_converted
+    configs:
+      libero_spatial:
+        paths: ["libero_spatial"]
+        w: 1.0
+      libero_object:
+        paths: ["libero_object"]
+        w: 1.0
+      libero_goal:
+        paths: ["libero_goal"]
+        w: 1.0
+      libero_10:
+        paths: ["libero_10"]
+        w: 1.0
+
+    read_optional_streams: False
+    max_num_cameras: ${vars.num_views}
+    start_traj_id: 0
+    end_traj_id: 9
+    min_num_frames: 5
+
+    num_frames: ${vars.num_frames}
+    manual_limit: 1000000
+
+    horizon:
+      - 10
+      - ${vars.horizon}
+
+    interaction_prob: 0.0
+    interaction_detect: null
+
+    cameras: ["agentview_camera", "wrist_camera"]
+    img_size: ${vars.img_size}
+    augmentations: null
+    trajectory_info_cache_file: runs/cache/dataset_idx/32x64_libero.val.num_frames${vars.num_frames}_h10-${vars.horizon}.json
+    nonlinear_sampling: false
+    bg_mask_top: 0.0
+
+
+trainer:
+  name: RlaAutoencoderMultiViewTrainer
+  args:
+    max_steps: 1000000
+    batch_size: 128 # 2 views -> 2x the tokens per sample vs the single-view configs
+    batch_split: 1
+    optimizer:
+      name: AdamW
+      args:
+        lr: 0.0001
+        weight_decay: 0.0
+    ema_rate: []
+    fp16_mode: inflat_all
+    fp16_scale_growth: 0.001
+    i_log: 50
+    i_sample: 2500
+    i_save: 2500
+    save_latest_only: true
+    num_workers: 5
+    num_samples: 8
+    load_dir: null
+    debug: ${vars.debug}
+
+    num_views: ${vars.num_views}
+
+    lambda_l1: 1.0
+    lambda_mse: 1.0
+
+    dino_channels: ${vars.dino_channels}
+    freeze_models: ["image_decoder"]
+    # No DINO->image decoder has been trained on LIBERO yet, so snapshot images stay noise until
+    # configs/unet/dino_to_image_v1_libero.yaml is trained and its run dir is set here.
+    image_decoder_ckpt: "runs/dino_to_image_v1_libero/20260724_11-59-08"
+
+    snapshot_eval_samples: 200
+    snapshot_eval_seed: 2026
+    skip_initial_snapshot: true

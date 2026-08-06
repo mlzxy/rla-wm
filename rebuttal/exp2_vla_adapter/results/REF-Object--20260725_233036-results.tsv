@@ -1,0 +1,11 @@
+# run_id=REF-Object suite=object steps=20000 batch=8 accum=2 eff_batch=64
+# lr=2e-4 lora_rank=64 gpus=0,1,2,3 host=gpuk001
+# train_log=$REF/train_logs/object--20260725_233036.log
+# loss_curve=$REF/train_logs/object--20260725_233036-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+07:49:48	REF-Object--20000_chkpt	final	50	97.4	$REF/eval_out/object--REF-Object--20000_chkpt--final.log
+07:54:07	REF-Object--5000_chkpt	sweep	2	80.0	$REF/eval_out/object--REF-Object--5000_chkpt--sweep.log
+07:58:36	REF-Object--10000_chkpt	sweep	2	90.0	$REF/eval_out/object--REF-Object--10000_chkpt--sweep.log
+#
+# SUMMARY  final	REF-Object--20000_chkpt	97.4%
+# done 2026-07-26 07:58:36

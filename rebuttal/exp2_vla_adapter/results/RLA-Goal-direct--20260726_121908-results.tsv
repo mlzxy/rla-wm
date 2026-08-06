@@ -1,0 +1,13 @@
+# run_id=RLA-Goal-direct stage=goal steps=50000 batch=8 accum=1 eff_batch=32
+# lr=2e-4 lora_rank=64 shuffle_buffer=80000 gpus=0,1,2,3 host=gpuk004
+# rla=8x16x64 lambda_act=1.0 lambda_rla=auto:0.25
+# sidecar=$REF/data/libero_rla/16x64-a8-step040000-snapshot
+# init_from=<none>
+# train_log=$REF/train_logs/rla-goal--20260726_121908.log
+# loss_curve=$REF/train_logs/rla-goal--20260726_121908-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+22:38:26	RLA-Goal-direct--50000_chkpt	final	50	96.6	$REF/eval_out/rla-goal--RLA-Goal-direct--50000_chkpt--final.log
+22:42:25	RLA-Goal-direct--10000_chkpt	sweep	2	90.0	$REF/eval_out/rla-goal--RLA-Goal-direct--10000_chkpt--sweep.log
+22:45:39	RLA-Goal-direct--20000_chkpt	sweep	2	95.0	$REF/eval_out/rla-goal--RLA-Goal-direct--20000_chkpt--sweep.log
+22:48:45	RLA-Goal-direct--30000_chkpt	sweep	2	100.0	$REF/eval_out/rla-goal--RLA-Goal-direct--30000_chkpt--sweep.log
+22:51:48	RLA-Goal-direct--40000_chkpt	sweep	2	100.0	$REF/eval_out/rla-goal--RLA-Goal-direct--40000_chkpt--sweep.log

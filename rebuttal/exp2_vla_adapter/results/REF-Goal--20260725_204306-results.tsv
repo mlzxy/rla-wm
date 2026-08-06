@@ -1,0 +1,20 @@
+# run_id=REF-Goal suite=goal steps=50000 batch=8 accum=1 eff_batch=32
+# lr=2e-4 lora_rank=64 gpus=0,1,2,3 host=gpuk008
+# train_log=$REF/train_logs/goal--20260725_204306.log
+# loss_curve=$REF/train_logs/goal--20260725_204306-loss.png
+when	checkpoint	kind	trials	success_pct	eval_log
+06:53:28	REF-Goal--50000_chkpt	final	50	96.8	$REF/eval_out/goal--REF-Goal--50000_chkpt--final.log
+07:05:07	REF-Goal--5000_chkpt	sweep	2	70.0	$REF/eval_out/goal--REF-Goal--5000_chkpt--sweep.log
+07:15:07	REF-Goal--10000_chkpt	sweep	2	85.0	$REF/eval_out/goal--REF-Goal--10000_chkpt--sweep.log
+07:19:17	REF-Goal--15000_chkpt	sweep	2	95.0	$REF/eval_out/goal--REF-Goal--15000_chkpt--sweep.log
+07:30:23	REF-Goal--20000_chkpt	sweep	2	95.0	$REF/eval_out/goal--REF-Goal--20000_chkpt--sweep.log
+07:37:26	REF-Goal--25000_chkpt	sweep	2	90.0	$REF/eval_out/goal--REF-Goal--25000_chkpt--sweep.log
+07:46:53	REF-Goal--30000_chkpt	sweep	2	95.0	$REF/eval_out/goal--REF-Goal--30000_chkpt--sweep.log
+07:50:14	REF-Goal--35000_chkpt	sweep	2	95.0	$REF/eval_out/goal--REF-Goal--35000_chkpt--sweep.log
+07:53:17	REF-Goal--40000_chkpt	sweep	2	100.0	$REF/eval_out/goal--REF-Goal--40000_chkpt--sweep.log
+07:58:00	REF-Goal--45000_chkpt	sweep	2	95.0	$REF/eval_out/goal--REF-Goal--45000_chkpt--sweep.log
+08:47:00	REF-Goal--40000_chkpt	final	50	97.6	$REF/eval_out/goal--REF-Goal--40000_chkpt--final.log
+#
+# SUMMARY  final	REF-Goal--50000_chkpt	96.8%
+# SUMMARY  best	REF-Goal--40000_chkpt	97.6%
+# done 2026-07-26 08:47:00

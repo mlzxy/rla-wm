@@ -1,0 +1,31 @@
+Load LIBERO's initial-state files with weights_only=False.
+
+torch 2.6 flipped the default of `torch.load(weights_only=...)` from False to True. The benchmark's
+init_files/*.pruned_init pickle numpy arrays, so on this repo's torch 2.8 every eval dies at the
+first task with:
+
+    _pickle.UnpicklingError: Weights only load failed.
+    WeightsUnpickler error: Unsupported global: GLOBAL numpy.core.multiarray._reconstruct
+
+These files ship inside the LIBERO repo itself and are the benchmark definition, not downloaded
+artifacts, so loading them unrestricted is safe.
+
+Only the path LIBERO exposes to external evaluators (benchmark/__init__.py) is patched; the
+libero.lifelong training framework has the same issue but is unused here.
+
+diff --git a/libero/libero/benchmark/__init__.py b/libero/libero/benchmark/__init__.py
+index 2b833d0..47451a0 100644
+--- a/libero/libero/benchmark/__init__.py
++++ b/libero/libero/benchmark/__init__.py
+@@ -161,7 +161,10 @@ class Benchmark(abc.ABC):
+             self.tasks[i].problem_folder,
+             self.tasks[i].init_states_file,
+         )
+-        init_states = torch.load(init_states_path)
++        # v4world: torch>=2.6 defaults to weights_only=True, which refuses these files because
++        # they pickle numpy arrays (numpy.core.multiarray._reconstruct). They are the benchmark's
++        # own init_files/*.pruned_init shipped in this repo, so loading them fully is safe.
++        init_states = torch.load(init_states_path, weights_only=False)
+         return init_states
+ 
+     def set_task_embs(self, task_embs):

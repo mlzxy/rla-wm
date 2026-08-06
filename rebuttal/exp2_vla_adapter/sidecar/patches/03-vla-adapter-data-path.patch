@@ -1,0 +1,320 @@
+diff --git a/third_party/VLA-Adapter/prismatic/util/data_utils.py b/third_party/VLA-Adapter/prismatic/util/data_utils.py
+index 6f0d265..041b8e3 100644
+--- a/third_party/VLA-Adapter/prismatic/util/data_utils.py
++++ b/third_party/VLA-Adapter/prismatic/util/data_utils.py
+@@ -172,4 +172,10 @@ class PaddedCollatorForActionPrediction:
+         )
+         if dataset_names is not None:
+             output["dataset_names"] = dataset_names
++
++        # v4world: stack the RLA latent-action targets exactly like `actions` above.
++        if "rla" in instances[0]:
++            output["rla"] = torch.stack(
++                [torch.from_numpy(np.copy(instance["rla"])) for instance in instances]
++            )
+         return output
+diff --git a/third_party/VLA-Adapter/prismatic/vla/constants.py b/third_party/VLA-Adapter/prismatic/vla/constants.py
+index 0985a83..9292b81 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/constants.py
++++ b/third_party/VLA-Adapter/prismatic/vla/constants.py
+@@ -4,6 +4,7 @@ Important constants for VLA training and evaluation.
+ Attempts to automatically identify the correct constants to set based on the Python command used to launch
+ training or evaluation. If it is unclear, defaults to using the LIBERO simulation benchmark constants.
+ """
++import os
+ import sys
+ from enum import Enum
+ 
+@@ -97,3 +98,32 @@ print(f"  ACTION_DIM = {ACTION_DIM}")
+ print(f"  PROPRIO_DIM = {PROPRIO_DIM}")
+ print(f"  ACTION_PROPRIO_NORMALIZATION_TYPE = {ACTION_PROPRIO_NORMALIZATION_TYPE}")
+ print("If needed, manually set the correct constants in `prismatic/vla/constants.py`!")
++
++
++# v4world: RLA auxiliary latent-action target (docs/rla-vla-adapter.md).
++#
++# The policy head gets RLA_STEPS * RLA_QUERIES extra output-query tokens trained to regress the
++# frozen RLA autoencoder's latent action z. RLA_STEPS=0 disables all of it and keeps the action
++# head's state dict byte-identical to upstream, so released LIBERO-*-Pro checkpoints still load.
++#
++# These live here, read from the environment, rather than as finetune.py CLI flags on purpose:
++# experiments/robot/openvla_utils.get_action_head() rebuilds L1RegressionActionHead with four fixed
++# kwargs and then calls load_state_dict(...) *strict*. A CLI flag would let training and eval
++# disagree about the head's shape. Both launchers export these via their ARM= switch.
++RLA_STEPS = int(os.environ.get("RLA_STEPS", 0))         # A: one latent per action-chunk step
++RLA_QUERIES = int(os.environ.get("RLA_QUERIES", 16))    # Q, from configs/rla/16x64_libero.yaml
++RLA_DIM = int(os.environ.get("RLA_DIM", 64))            # token_dim, same config
++RLA_SIDECAR = os.environ.get("RLA_SIDECAR", "")         # dir written by scripts/extract_rla_latents.py
++
++if RLA_STEPS not in (0, NUM_ACTIONS_CHUNK):
++    raise ValueError(
++        f"RLA_STEPS={RLA_STEPS} must be 0 (disabled) or NUM_ACTIONS_CHUNK={NUM_ACTIONS_CHUNK}: the "
++        "RLA targets are index-aligned with the action chunk, one latent per chunk step."
++    )
++if RLA_STEPS:
++    print(f"  RLA_STEPS = {RLA_STEPS} x RLA_QUERIES = {RLA_QUERIES} x RLA_DIM = {RLA_DIM}")
++    # RLA_SIDECAR is deliberately NOT required here. Evaluation needs the same head *shape* (the
++    # strict load in get_action_head would fail otherwise) but no targets -- z is an output, never
++    # an input. Training without a sidecar fails loudly instead: rla_targets.rla_enabled() stays
++    # False, no "rla" key reaches the batch, and run_forward_pass raises.
++    print(f"  RLA_SIDECAR = {RLA_SIDECAR or '<unset: inference-only, no targets>'}")
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py b/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
+index 2f2daff..4caf873 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/datasets.py
+@@ -140,6 +140,11 @@ class RLDSBatchTransform:
+             proprio = rlds_batch["observation"]["proprio"]
+             return_dict["proprio"] = proprio
+ 
++        # v4world: RLA latent-action target for this frame's action chunk, (RLA_STEPS, Q*D).
++        # Top level, not under "observation" -- see libero_dataset_transform.
++        if "rla" in rlds_batch:
++            return_dict["rla"] = rlds_batch["rla"]
++
+         return return_dict
+     
+     
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
+index f07215a..9d0ae92 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/dataset.py
+@@ -170,6 +170,11 @@ def make_dataset_from_rlds(
+         # add timestep info
+         new_obs["timestep"] = tf.range(traj_len)
+ 
++        # v4world: the RLA target the standardize_fn attached, if any. Captured before the traj dict
++        # is rebuilt below, which drops every key not listed. Stays at the top level -- see the
++        # comment in libero_dataset_transform for why it must not live under "observation".
++        rla_target = traj.pop("rla", None)
++
+         # extracts `language_key` into the "task" dict
+         task = {}
+         if language_key is not None:
+@@ -186,6 +191,9 @@ def make_dataset_from_rlds(
+             "dataset_name": tf.repeat(name, traj_len),
+         }
+ 
++        if rla_target is not None:  # v4world
++            traj["rla"] = rla_target
++
+         if absolute_action_mask is not None:
+             if len(absolute_action_mask) != traj["action"].shape[-1]:
+                 raise ValueError(
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
+index f253d4b..ac0d723 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/oxe/transforms.py
+@@ -20,6 +20,10 @@ from typing import Any, Dict
+ import tensorflow as tf
+ 
+ from prismatic.vla.datasets.rlds.oxe.utils.droid_utils import droid_baseact_transform, droid_finetuning_transform
++
++# v4world: RLA auxiliary latent-action targets, see docs/rla-vla-adapter.md.
++from prismatic.vla.constants import RLA_QUERIES, RLA_DIM, RLA_STEPS
++from prismatic.vla import rla_targets
+ from prismatic.vla.datasets.rlds.utils.data_utils import (
+     binarize_gripper_actions,
+     invert_gripper_actions,
+@@ -838,6 +842,27 @@ def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+     )
+     trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
+     trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -2:]  # 2D gripper state
++
++    # v4world: attach the precomputed RLA latent-action targets (docs/rla-vla-adapter.md §5).
++    #
++    # Top level, NOT inside "observation": chunk_act_obs windows every observation key with *past*
++    # indices (tf.range(-window_size + 1, 1)), and add_pad_mask_dict / goal_relabeling.uniform also
++    # walk the observation dict. Top-level keys are carried through untouched and truncated
++    # alongside the action chunk instead.
++    #
++    # This runs once per trajectory, not per frame, so the numpy_function is free. Note that editing
++    # this function invalidates the dataset-statistics cache: get_dataset_statistics() hashes
++    # inspect.getsource(standardize_fn), so one recompute pass per suite is expected the first time
++    # (Gate 7 in scripts/verify_rla_targets.py proves the statistics themselves are unchanged).
++    if rla_targets.rla_enabled():
++        rla = tf.numpy_function(
++            rla_targets.lookup_numpy,
++            [tf.cast(trajectory["observation"]["state"], tf.float32)],
++            tf.float32,
++        )
++        rla.set_shape([None, RLA_STEPS, RLA_QUERIES * RLA_DIM])
++        trajectory["rla"] = rla
++
+     return trajectory
+ 
+ 
+diff --git a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
+index d2ae695..2c10d13 100644
+--- a/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
++++ b/third_party/VLA-Adapter/prismatic/vla/datasets/rlds/traj_transforms.py
+@@ -54,6 +54,13 @@ def chunk_act_obs(traj: Dict, window_size: int, future_action_window_size: int =
+     traj["dataset_name"] = tf.gather(traj["dataset_name"], tf.range(effective_traj_len))
+     traj["absolute_action_mask"] = tf.gather(traj["absolute_action_mask"], tf.range(effective_traj_len))
+ 
++    # v4world: the RLA target is already windowed per frame by the offline extractor -- one
++    # (RLA_STEPS, Q*D) block per anchor frame, clamped at the tail the same way
++    # floored_action_chunk_indices is -- so there is nothing to gather here, only the same
++    # truncation the other top-level keys get.
++    if "rla" in traj:
++        traj["rla"] = tf.gather(traj["rla"], tf.range(effective_traj_len))
++
+     return traj
+ 
+ 
+diff --git a/third_party/VLA-Adapter/prismatic/vla/rla_targets.py b/third_party/VLA-Adapter/prismatic/vla/rla_targets.py
+new file mode 100644
+index 0000000..ea3935e
+--- /dev/null
++++ b/third_party/VLA-Adapter/prismatic/vla/rla_targets.py
+@@ -0,0 +1,151 @@
++"""
++rla_targets.py
++
++v4world: reads the precomputed RLA latent-action targets that `scripts/extract_rla_latents.py`
++writes, and joins them onto the RLDS trajectory stream.
++
++The join key is `sha1(observation["state"].astype(float32).tobytes())` for the whole episode.
++`state` is a float32 Tensor feature in the TFRecord, so the bytes the extractor hashed and the bytes
++`libero_dataset_transform` sees are identical -- that is what makes the join exact. The obvious
++alternative, `episode_metadata/file_path`, is *not* usable: it names the source HDF5 *task* file,
++which every demo of a task shares.
++
++Lookup runs once per *episode* (inside the trajectory-level `standardize_fn`), not once per frame,
++so a `tf.numpy_function` here costs nothing measurable. Arrays are mmapped.
++
++See docs/rla-vla-adapter.md §5-6 for the design and §10 for what verifies it.
++"""
++
++import hashlib
++import json
++import os
++from pathlib import Path
++from typing import Dict, Optional
++
++import numpy as np
++
++from prismatic.vla.constants import RLA_DIM, RLA_QUERIES, RLA_SIDECAR, RLA_STEPS
++
++
++def rla_enabled() -> bool:
++    return RLA_STEPS > 0 and bool(RLA_SIDECAR)
++
++
++def episode_key(states: np.ndarray) -> str:
++    """Must stay byte-for-byte identical to `scripts/extract_rla_latents.episode_key`."""
++    return hashlib.sha1(np.ascontiguousarray(states, dtype=np.float32).tobytes()).hexdigest()
++
++
++class RlaSidecar:
++    """One sidecar directory: `keys.json` per suite, `stats.json`, one `.npy` per episode."""
++
++    def __init__(self, root: str) -> None:
++        self.root = Path(root)
++        manifest_path = self.root / "manifest.json"
++        if not manifest_path.exists():
++            raise FileNotFoundError(
++                f"{manifest_path} not found. Generate the sidecar first:\n"
++                "  .venv/bin/python scripts/extract_rla_latents.py --help"
++            )
++        self.manifest = json.loads(manifest_path.read_text())
++
++        # Fail loudly on a shape mismatch rather than silently regressing against the wrong target.
++        for name, want, got in (
++            ("RLA_STEPS", RLA_STEPS, self.manifest["chunk"]),
++            ("RLA_QUERIES", RLA_QUERIES, self.manifest["num_tokens"]),
++            ("RLA_DIM", RLA_DIM, self.manifest["token_dim"]),
++        ):
++            if want != got:
++                raise ValueError(
++                    f"{name}={want} does not match the sidecar at {self.root} ({got}). "
++                    "Re-extract, or fix the ARM= env in the launcher."
++                )
++        if self.manifest.get("random_encoder"):
++            print(
++                f"[rla_targets] WARNING: {self.root} was extracted with --random-encoder. "
++                "These targets are noise -- fine for plumbing tests, meaningless for training."
++            )
++
++        stats = json.loads((self.root / "stats.json").read_text())
++        self.mean = np.asarray(stats["mean"], dtype=np.float32)  # (Q, D)
++        std = np.asarray(stats["std"], dtype=np.float32)
++        # Floor the std so a dead latent slot (std ~ 0) cannot blow the normalised target up.
++        self.std = np.maximum(std, float(stats.get("std_floor", 1e-3)))
++
++        # key -> (suite, entry). Merged across suites: a training mix can interleave several.
++        self.index: Dict[str, tuple] = {}
++        for keys_path in sorted(self.root.glob("*/keys.json")):
++            suite = keys_path.parent.name
++            for key, entry in json.loads(keys_path.read_text()).items():
++                self.index[key] = (suite, entry)
++        if not self.index:
++            raise RuntimeError(f"no */keys.json under {self.root}; the sidecar is empty")
++
++        self._cache: Dict[str, np.ndarray] = {}
++        self.num_misses = 0
++
++    @property
++    def target_dim(self) -> int:
++        return RLA_QUERIES * RLA_DIM
++
++    def lookup(self, states: np.ndarray) -> np.ndarray:
++        """(N, 8) float32 states -> (N, RLA_STEPS, Q*D) float32, normalised.
++
++        A miss returns zeros and bumps `num_misses` instead of raising: raising inside a
++        `tf.numpy_function` surfaces as an opaque graph error, and the vanilla arms must not be able
++        to crash on a stale sidecar. `scripts/verify_rla_targets.py` Gate 2 is what turns a miss
++        into a hard failure.
++        """
++        states = np.asarray(states, dtype=np.float32)
++        num_frames = states.shape[0]
++        key = episode_key(states)
++
++        entry = self.index.get(key)
++        if entry is None:
++            self.num_misses += 1
++            if self.num_misses <= 5:
++                print(
++                    f"[rla_targets] MISS: no sidecar entry for episode key {key} "
++                    f"(traj_len={num_frames}); returning zeros. Sidecar: {self.root}"
++                )
++            return np.zeros((num_frames, RLA_STEPS, self.target_dim), dtype=np.float32)
++
++        suite, meta = entry
++        cached = self._cache.get(key)
++        if cached is None:
++            cached = np.load(self.root / suite / meta["file"], mmap_mode="r")
++            if len(self._cache) < 64:  # bounded: these are mmaps, but the dict is not
++                self._cache[key] = cached
++
++        z = np.asarray(cached, dtype=np.float32)  # (N, A, Q, D)
++        if z.shape[0] != num_frames:
++            self.num_misses += 1
++            print(
++                f"[rla_targets] MISS: {suite}/{meta['file']} has {z.shape[0]} frames but the "
++                f"episode has {num_frames}; returning zeros."
++            )
++            return np.zeros((num_frames, RLA_STEPS, self.target_dim), dtype=np.float32)
++
++        z = (z - self.mean) / self.std
++        return np.ascontiguousarray(z.reshape(num_frames, RLA_STEPS, self.target_dim))
++
++    def denormalize(self, z: np.ndarray) -> np.ndarray:
++        """Undo `lookup`'s normalisation, for feeding a predicted z back through `f_dec`."""
++        flat = z.reshape(*z.shape[:-1], RLA_QUERIES, RLA_DIM)
++        return flat * self.std + self.mean
++
++
++_SIDECAR: Optional[RlaSidecar] = None
++
++
++def get_sidecar() -> RlaSidecar:
++    """Process-wide sidecar handle. Built lazily so importing this module is free."""
++    global _SIDECAR
++    if _SIDECAR is None:
++        _SIDECAR = RlaSidecar(os.environ.get("RLA_SIDECAR", RLA_SIDECAR))
++    return _SIDECAR
++
++
++def lookup_numpy(states) -> np.ndarray:
++    """The `tf.numpy_function` entry point. Kept module-level so tf.data can pickle it."""
++    return get_sidecar().lookup(np.asarray(states))
