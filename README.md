@@ -1,5 +1,7 @@
 # Learning Visual Feature-Based World Models via Residual Latent Action
 
+**NeurIPS 2026**
+
 <a href="https://arxiv.org/abs/2605.07079" target="_blank" rel="noopener noreferrer">Arxiv</a> &nbsp;|&nbsp; <a href="http://mlzxy.github.io/rla-wm" target="_blank" rel="noopener noreferrer">Project page</a> &nbsp;|&nbsp; <a href="https://colab.research.google.com/github/mlzxy/rla-wm/blob/main/notebooks/colab_demo.ipynb" target="_blank" rel="noopener noreferrer"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" height="20" style="vertical-align:middle;"> Colab demo</a>
 
 Code for the paper. Four artifacts in this repo:
@@ -66,13 +68,10 @@ This setup covers RLA-WM inference only. For training, evaluation, BC/BC-RLA, or
 ## Citation
 
 ```bibtex
-@article{zhang2026learning,
+@inproceedings{zhang2026learning,
   title={{Learning Visual Feature-Based World Models via Residual Latent Action}},
   author={Zhang, Xinyu and Xu, Zhengtong and Tao, Yutian and Wang, Yeping and She, Yu and Boularias, Abdeslam},
-  journal={arXiv preprint arXiv:2605.07079},
-  year={2026},
-  eprint={2605.07079},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV}
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2026}
 }
 ```
