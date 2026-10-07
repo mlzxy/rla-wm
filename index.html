@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>RLA-WM</title>
+<title>RLA-WM | NeurIPS 2026</title>
 
 <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700|Source+Serif+Pro:400,600" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
@@ -102,7 +102,7 @@
     <!-- <p class="eq-note reveal">* Equal contribution</p> -->
 
     <!-- Conference / venue line. Delete this <p> for an arXiv preprint. -->
-    <!-- <p class="muted reveal" style="margin-top:8px;">NeurIPS 2026 (under review)</p> -->
+    <p class="muted reveal" style="margin-top:8px;font-weight:600;">NeurIPS 2026</p>
 
     <!-- Action buttons. Add / remove as needed; brand variants live
          in paper.css (.btn-link.arxiv / .github / .linkedin / …). -->
@@ -110,6 +110,10 @@
       <a class="btn-link arxiv" href="https://arxiv.org/abs/2605.07079" target="_blank" rel="noopener">
         <i class="ai ai-arxiv" aria-hidden="true"></i>
         arXiv
+      </a>
+      <a class="btn-link" style="--btn-color:#2563eb;" href="https://arxiv.org/pdf/2605.07079" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V9h5.5L13 3.5zM7 13h10v1.6H7V13zm0 3.4h10V18H7v-1.6zM7 9.6h4V11H7V9.6z"/></svg>
+        Paper
       </a>
       <a class="btn-link github" href="https://github.com/mlzxy/rla-wm" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
@@ -124,7 +128,6 @@
 
     <!-- Demo video. data-src accepts either a YouTube URL or a local
          file path (e.g. "static/videos/teaser.mp4"). -->
-    <!-- TODO: update video, re-recorded -->
      <div class="video-player reveal"
          style="max-width:clamp(360px, 50vw, 640px); margin:28px auto 0;"
          data-src="https://www.youtube.com/watch?v=xDrS3Zz09x0"
@@ -205,10 +208,10 @@ RLA is our latent action representation learned from DINO token residuals, for v
             <strong>3.</strong> Applications
             <ul>
               <li data-slide="3.1">
-                <strong>3.1</strong> RLA extends a BC policy to a <span class="annot">minimalist world action model</span> with just a linear layer, so it can learn directly from videos.
+                <strong>3.1</strong> RLA extends a BC policy to a <span class="annot">minimalist world action model</span> with just a linear layer, so it can learn directly from videos, and also improves a VLA on LIBERO and a real robot.
               </li>
               <li data-slide="3.2">
-                <strong>3.2</strong> We demonstrate <span class="annot">visual RL inside our RLA-WM</span>, which is learned from offline videos, without online interaction or handcrafted rewards.
+                <strong>3.2</strong> We perform <span class="annot">visual RL inside our RLA-WM</span>, which is learned from offline videos, with a video-aligned reward and no online interaction. It can also learn from failed trajectories.
               </li>
           </li>
 
@@ -303,13 +306,70 @@ We use the official action space for each task in IWS. The action space of all M
 
 <section class="alt">
   <div class="container">
-    <div class="markdown-table reveal" data-table>>
-| Method | PushT | Roll Ball | Pull Cube | Pull Cube w. Tool | Poke Cube |  Avg SR ↑ |
-| --- | --- | --- | --- | --- | --- | --- |
-| BC-ResNet | 3.6 | 42.0 | 33.6 | 7.6 | 49.2 | 27.2 |
-| **+RLA (Ours)** | *15.2 | *43.8 | *43.6 | *12.0 | *63.6| *35.6 |
+    <div class="markdown-table reveal" data-table>
+| Method | PushT | Roll Ball | Pull Cube | Pull Cube w. Tool | Poke Cube | Rank ↓ | Avg SR ↑ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| BC-ResNet | 3.6 | 42.0 | 33.6 | 7.6 | 49.2 | 3.8 | 27.2 |
+| DINO CLS | 7.6 | 39.6 | 40.4 | 4.4 | 44.8 | 4.0 | 27.4 |
+| UniVLA | 6.0 | 37.6 | 42.8 | 7.2 | 50.0 | 3.8 | 28.7 |
+| AdaWorld | 9.2 | 38.4 | *48.4 | 10.8 | 61.6 | 2.2 | 33.7 |
+| **+RLA (Ours)** | *15.2 | *43.8 | 43.6 | *12.0 | *63.6 | *1.2 | *35.6 |
 
-<div> Improved success rates over baseline by learning from actionless videos via RLA.</div>
+Success rates (%) of imitation policies trained with actionless videos via different latent actions. RLA gives the highest average success rate and rank. All latent actions share the same auxiliary head, so the gain comes from the RLA target itself.
+    </div>
+  </div>
+</section>
+
+
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Scaling to VLAs and Real Robots</h2>
+    <p class="reveal narrow muted markdown-block" style="margin:0 auto 24px;text-align:center;" data-markdown>
+      RLA also works with a moving wrist camera. We extend the RLA autoencoder to the concatenated DINO tokens of the front and wrist cameras, and let VLA-Adapter predict RLA chunks alongside robot actions. On a real <span class="annot">SO-101</span> robot, we train BC policies for cup stacking from 120 teleoperated demonstrations.
+    </p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container">
+    <div class="markdown-table reveal" data-table>
+| Method | Spatial | Object | Goal | Long | Avg ↑ |
+| --- | --- | --- | --- | --- | --- |
+| LAPA | 73.8 | 74.6 | 58.8 | 55.4 | 65.7 |
+| UniVLA | 96.5 | 96.8 | 95.6 | 92.0 | 95.2 |
+| VLA-Adapter | 97.0 | 97.4 | *96.6 | *93.4 | 96.1 |
+| **VLA-Adapter + RLA (Ours)** | *97.6 | *99.2 | *96.6 | *93.4 | *96.7 |
+
+Latent-action VLAs on LIBERO (success rate, %). RLA improves VLA-Adapter on the Spatial and Object suites and achieves the highest average.
+    </div>
+    <div style="display:flex;justify-content:center;margin-top:24px;">
+    <div class="markdown-table reveal" data-table data-width="360px">
+| Real-robot cup stacking | Success ↑ |
+| --- | --- |
+| BC | 3/20 (15%) |
+| **BC + RLA (Ours)** | *8/20 (40%) |
+
+120 teleoperated demonstrations on an SO-101 robot, evaluated over 20 rollouts.
+    </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Real-Robot Demos</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
+      Cup stacking on a real SO-101 robot with a BC policy extended by RLA.
+    </p>
+    <div class="figure-grid real-demos reveal" style="--figure-grid-cols:4;">
+      <figure><video src="static/videos/real/cup_stack_01.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_02.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_03.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_04.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_05.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_06.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_07.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
+      <figure><video src="static/videos/real/cup_stack_08.mp4" autoplay muted loop playsinline preload="metadata"></video></figure>
     </div>
   </div>
 </section>
@@ -328,11 +388,33 @@ We use the official action space for each task in IWS. The action space of all M
 
 <section class="alt has-side-card">
   <div class="container">
-    <div class="markdown-table reveal" data-table>>
-| Method | XArm (Poke Cube) | UR10e (Roll Ball) | UR10e (PushT) |
-| --- | --- | --- | --- |
-| BC-ResNet | 89.9 | 65.5 | 17.2 |
-| **WMRL (Ours)** | *95.9 | *73.1 | *20.7 |
+    <div class="markdown-table reveal" data-table>
+| Method | XArm Poke Cube | UR10e Roll Ball | UR10e PushT | Panda Pull Cube | Panda Pull Cube w. Tool | Avg ↑ |
+| --- | --- | --- | --- | --- | --- | --- |
+| BC-ResNet | 89.7 | 65.3 | 15.1 | 85.3 | 40.0 | 59.1 |
+| WMRL (Ours, avg) | 94.2† ± 1.1 | 65.6 ± 4.4 | 17.3† ± 1.6 | 83.7 ± 1.7 | 37.7 ± 4.1 | 59.7 |
+| **WMRL (Ours, best)** | *95.9 | *71.3 | *20.5 | *86.1 | *44.7 | *63.7 |
+
+We run WMRL from the best BC checkpoint with 15 seeds and evaluate over 750 episodes. 'best' is the best checkpoint over all seeds, and 'avg' is the mean ± std of each seed's best checkpoint. † WMRL (avg) outperforms BC under a one-sided paired t-test with p &lt; 10⁻⁴.
+    </div>
+  </div>
+</section>
+
+
+<section class="has-side-card">
+  <div class="container">
+    <h2 class="reveal" style="text-align:center;">Learning from Failures</h2>
+    <p class="reveal narrow muted" style="margin:0 auto 24px;text-align:center;">
+      Unlike BC, WMRL can learn from failed trajectories, since they still provide valid dynamics for the world model. Adding 8,000 failed PushT trajectories with noisy actions <span class="annot">hurts BC</span>, whereas WMRL <span class="annot">improves further</span>.
+    </p>
+    <div style="display:flex;justify-content:center;">
+    <div class="markdown-table reveal" data-table data-width="520px">
+| PushT (UR10e) | Before | + Failure data |
+| --- | --- | --- |
+| BC-ResNet | 15.1 | 13.6 |
+| WMRL (best) | 20.5 | *22.5 |
+| WMRL (avg) | 17.3 ± 1.6 | *18.5 ± 2.3 |
+    </div>
     </div>
   </div>
 </section>
@@ -491,16 +573,16 @@ We use the official action space for each task in IWS. The action space of all M
 </section> -->
 
 <!-- ============================================================
-TODO     CITATION — code block with auto-injected copy button.
+CITATION — code block with auto-injected copy button.
      ============================================================ -->
 <section class="alt">
   <div class="container narrow">
     <h2 class="reveal" style="text-align:center;">Citation</h2>
     <div class="code-block reveal" data-lang="BibTeX">
-<pre>@article{zhang2026learning,
+<pre>@inproceedings{zhang2026learning,
   title={{Learning Visual Feature-Based World Models via Residual Latent Action}},
   author={Zhang, Xinyu and Xu, Zhengtong and Tao, Yutian and Wang, Yeping and She, Yu and Boularias, Abdeslam},
-  journal={arXiv preprint arXiv:2605.07079},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
   year={2026},
   eprint={2605.07079},
   archivePrefix={arXiv},
@@ -511,7 +593,7 @@ TODO     CITATION — code block with auto-injected copy button.
 </section>
 
 <!-- ============================================================
-TODO     FOOTER — thin attribution bar. 
+FOOTER — thin attribution bar. 
      ============================================================ -->
 <footer class="footer-bar">
   Feel free to borrow the <a href="https://github.com/mlzxy/rla-wm/tree/pages" target="_blank">source code</a> of this website — just link back to
